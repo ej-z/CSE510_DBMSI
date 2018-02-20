@@ -1,0 +1,102 @@
+Tests
+
+1. Buffer manager
+Test 1 - Tries to allocate new pages. It unpins the first page because the newpage functions pins the first page. Then it dirties each page by pinning the page, adds 99999 to the pid and unpins it (This is to avoid page faults). It checks if the data is consistent with what was written previously again by pinning the page, checking the value and unpinning it. Then it frees all the pages.
+
+Test 2 - Here it tests illegal buffer operations. It tries to pin more pages than there are frames available. It starts off by allocating some pages and pins every page except the last one. Then it tries to pin the last page and fails (Don't understand why though.) It then attempts to free a doubly-pinned page by pinning the first page again. It fails as expected. It then tries to pin a page not in the buffer pool(the last page) and fails as expected (again, why isn't it there?). Frees all the pages.
+
+Test 3 - Here it writes to a few pages, unpins some of them kinda randomly, then reads the pinned pages. It unpins pages whose pids aren't 12 mod 20. It reads the value back again and then unpins the pages (Does it in a wierd way though)
+
+2. Disk space management
+Test 1 - It tries to do some basic operations. It creates 6 files and allocates one page to each file. Then it allocates 30 pages and writes something to 20 of them. Then it deallocates the rest of the pages.
+
+Test 2 - It build on the work done it test 1. It deletes files 0-3 then checks if files 3-6 still exist. Then it tries to read pages 0-20 and checks if the data is the same as what was written in test 1. 
+
+Test 3 - Here it tries to see if illegal statements fail. 
+1. Find a file that was deleted in test 2.
+2. Delete a file that was deleted in test 2.
+3. Find a file that was never created.
+4. Delete a file that was never created.
+5. Add an entry with the same as an exsisting entry.
+6. Add an entry with a name that is too long
+7. Allocate a run of 9000 pages (too long)
+8. Allocate a negative run of pages (-10)
+9. Deallocate a negative run of pages (-10)
+
+
+Test 4 - Checks some boundry conditions.
+1. Checks is total number of buffer pages is equal to total number of unpinned pages. This means that no page is mistakenly pinned.
+2. Database requires a space map to manage its allocated pages. The space map on its own takes up some space. This test allocates all available pages taking into account the space map such that no more space is available. Now it tries to allocate one more page and fails as expected.
+3. It deallocates some pages 3-9 and 33-40.
+4. It reallocates 33-40
+5. Deallocates 2 continous run of pages. 11-17 and then 18-28
+6. Rellocating the 18 freed pages in a single run
+7. Delete leftover file entries from test 2.
+8. Create enough file entires that they take up an extra page. No try to allocate more pages than are available. It will fail as expected
+9. All pages must be allocated by now. Try to allocate one more page and it will fail as expected.
+
+3. Heap file tests
+
+4. Index Tests
+Test 1: Creates a heap with some names in unsorted manner. Creates a Btree with the names as key. Checks id the names are in a sorted manner in the btree
+
+Test 2: Opens previously created btree index. Run a query to return records with key 'dsilva'. There should only be one records, checks if this is true. Runs another query to return records with keys greater than 'dsilva' and lesser than 'yuc'. Checks if the keys returned match the query condition.
+
+Test 3: Creates a heap file and inserts random integer values. Creates a btree index on the int field. Initiates a scan to get keys > 100 and <900. Checks if the keys returned match the query condition.
+
+
+5. Join Tests
+Test 1: Running query to get that name of saliors who have reserved only one boat and the reservantion date. Done by joining the sailor and reverve tables. This is done by filescanning both the tables with projection and then usinga sort-merge join with the filter condition and projection to proQduce the results, Then print the results
+
+Test 2: Query to get the names of all saliors who've reserved to red boat. Obtained by joining salior, boat and reserve tables. Btree index is created on sailors table. Nestedloop join is used to join the tables (My guess is because more than 2 tables are being joined?)
+
+Test 3: Query to get names of all sailors who've reserved a boat. Obtained by joining Sailors and Reserves tables. Uses a sort-merge join to join them.
+
+Test 4: Query to select distinct sailors who've reserved a boat. Same as query three, then duplcates are removed from the resul.
+
+Test 5: Query to get name, age, rating off all sailors who are either above 40 or have a rating below 7. Obtained by joining sailors and reverves tables. Uses sort-merge join
+
+Test 6: Query to get names af all sailors who have a rating over 7 and reserved a red boat in an ascendng manner. Obtained by joining all three tables. Uses a nested loop join. Then sorts the results in ascending order.
+
+6. Sort Tests
+
+Test 1: Create an unsorted heap file. The sort it in ascending order. Check is data is sorted.
+
+Test 2: Create an unsorted heap file. The sort it in descending order. Check is data is sorted.
+
+Test 3: Create a heaf and insert reconds with a random int and float field. Sort in ascending order on int field. Check if sorted properly. Sort in descending order on float field. Check if sorted properly.
+
+Test 4: Insert unsorted names into two tables. Sort one in ascending, sort the other in descending. Check if sorted properly
+
+7. SM Join test - ????
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
