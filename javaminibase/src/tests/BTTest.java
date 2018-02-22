@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Random;
 
+import static tests.TestDriver.isUnix;
+
 /**
  * Note that in JAVA, methods can't be overridden to be more private.
  * Therefore, the declaration of all private functions are now declared
@@ -43,7 +45,7 @@ class BTDriver implements GlobalConst {
         String newlogpath;
         String remove_logcmd;
         String remove_dbcmd;
-        String remove_cmd = "/bin/rm -rf ";
+        String remove_cmd = isUnix()? "/bin/rm -rf " : "cmd /c del /f ";
 
         newdbpath = dbpath;
         newlogpath = logpath;

@@ -13,6 +13,8 @@ import iterator.*;
 import java.io.IOException;
 import java.util.Vector;
 
+import static tests.TestDriver.isUnix;
+
 /**
  * Here is the implementation for the tests. There are N tests performed.
  * We start off by showing that each operator works on its own.
@@ -131,10 +133,12 @@ class JoinsDriver implements GlobalConst {
         int numboats = 5;
         int numboats_attrs = 3;
 
-        String dbpath = "/tmp/" + System.getProperty("user.name") + ".minibase.jointestdb";
-        String logpath = "/tmp/" + System.getProperty("user.name") + ".joinlog";
+        String path = isUnix()? "/tmp" : "C:\\Windows\\Temp\\";
 
-        String remove_cmd = "/bin/rm -rf ";
+        String dbpath = path + System.getProperty("user.name") + ".minibase.jointestdb";
+        String logpath = path + System.getProperty("user.name") + ".joinlog";
+
+        String remove_cmd = isUnix()? "/bin/rm -rf " : "cmd /c del /f ";
         String remove_logcmd = remove_cmd + logpath;
         String remove_dbcmd = remove_cmd + dbpath;
         String remove_joincmd = remove_cmd + dbpath;

@@ -30,6 +30,7 @@ public class TestDriver {
 
     public final static boolean OK = true;
     public final static boolean FAIL = false;
+    private static String os = System.getProperty("os.name").toLowerCase();
 
     protected String dbpath;
     protected String logpath;
@@ -53,8 +54,11 @@ public class TestDriver {
         //To port it to a different platform, get "user.name" should
         //still work well because this feature is not meant to be UNIX
         //dependent.
-        dbpath = "/tmp/" + nameRoot + System.getProperty("user.name") + ".minibase-db";
-        logpath = "/tmp/" + nameRoot + System.getProperty("user.name") + ".minibase-log";
+
+        String path = isUnix()? "/tmp" : "C:\\Windows\\Temp\\";
+
+        dbpath = path + nameRoot + System.getProperty("user.name") + ".minibase-db";
+        logpath = path + nameRoot + System.getProperty("user.name") + ".minibase-log";
     }
 
     /**
@@ -245,5 +249,13 @@ public class TestDriver {
         }
 
     } // end of checkException
+
+    private static boolean isWindows() {
+        return (os.indexOf("win") >= 0);
+    }
+
+    public static boolean isUnix() {
+        return (os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0 || os.indexOf("aix") > 0 );
+    }
 
 } // end of TestDriver  

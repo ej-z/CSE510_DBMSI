@@ -35,7 +35,7 @@ class DBDriver extends TestDriver implements GlobalConst {
         String newlogpath;
         String remove_logcmd;
         String remove_dbcmd;
-        String remove_cmd = "/bin/rm -rf ";
+        String remove_cmd = isUnix()? "/bin/rm -rf " : "cmd /c del /f ";
 
         newdbpath = dbpath;
         newlogpath = logpath;
