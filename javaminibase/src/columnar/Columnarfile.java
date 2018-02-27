@@ -21,6 +21,7 @@ public class Columnarfile_trial {
 	short[] attrsizes;
 	Heapfile[] hf = null;  
     private String fname = null;
+    TID[] tids; 
     /*Convention: hf[] => 0 for hdr file; the rest for tables. The implementation is modified from HFTest.java*/
 	Columnarfile_trial(java.lang.String name, int numcols, AttrType[] types) throws IOException{
 		RID rid1 = new RID();
@@ -39,6 +40,7 @@ public class Columnarfile_trial {
 			//initializing member variables
 			numColumns = (short)(numcols);	
 			this.fname = name;
+			tids = new TID[numColumns];
 			//for TID
 			atype = new AttrType[numColumns];
 			attrsizes=new short[numColumns];
@@ -111,6 +113,8 @@ public class Columnarfile_trial {
 		boolean status = true;
 		temp.setHdr(numColumns, atype, attrsizes);
 		temp.tupleInit(tuplePtr, 0, tuplePtr.length);
+		TID tidtemp = new TID(numColumns+1);
+		RID[] rids = new RID[numColumns+1];
 		for(int i=0;i<numColumns;i++){
 			switch(atype[i].attrType){
 				case 0:
@@ -120,14 +124,9 @@ public class Columnarfile_trial {
 					//integer
 					int datafromtuple = temp.getIntFld(i);
 					DummyRecord rec = new DummyRecord(String.valueOf(datafromtuple).getBytes());
-		            try {
-		            	RID rid1=new RID();
-		            	byte[] one = String.valueOf(i).getBytes();
-		            	byte[] two = rec.toByteArray();
-		            	byte[] three = new byte[one.length+two.length];
-		            	System.arraycopy(one, 0, three, 0, one.length);
-		            	System.arraycopy(two, 0, three, one.length, two.length);
-		                rid1 = hf[i+1].insertRecord(three);
+		            try{
+		            	byte[] two = rec.toByteArray();		            	
+		                rids[i+1] = hf[i+1].insertRecord(two);
 		            }
 		            catch (Exception e) {
 	                    status = false;
@@ -140,13 +139,8 @@ public class Columnarfile_trial {
 					float datafromtuple1 = temp.getFloFld(i);
 					DummyRecord rec1 = new DummyRecord(String.valueOf(datafromtuple1).getBytes());
 		            try {
-		            	RID rid1=new RID();
-		            	byte[] one = String.valueOf(i).getBytes();
-		            	byte[] two = rec1.toByteArray();
-		            	byte[] three = new byte[one.length+two.length];
-		            	System.arraycopy(one, 0, three, 0, one.length);
-		            	System.arraycopy(two, 0, three, one.length, two.length);
-		                rid1 = hf[i+1].insertRecord(three);
+		            	byte[] two = rec1.toByteArray();		            	
+		                rids[i+1] = hf[i+1].insertRecord(two);
 		            }
 		            catch (Exception e) {
 	                    status = false;
@@ -158,8 +152,11 @@ public class Columnarfile_trial {
 		        	//do nothing
 			}
 		}
-		return null;	
+		int last_index = tids.length;
+		tids[last_index]=new TID(numColumns, last_index, rids);
+		return tids[last_index];	
 	}
+	 
 }
 
 class DummyRecord {
