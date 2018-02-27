@@ -62,12 +62,17 @@ public class Tuple implements GlobalConst{
     * @param length the length of the tuple
     */
 
-   public Tuple(byte [] atuple, int offset, int length)
-   {
+   public Tuple(byte [] atuple, int offset, int length) throws IOException {
       data = atuple;
       tuple_offset = offset;
       tuple_length = length;
-    //  fldCnt = getShortValue(offset, data);
+      fldCnt = Convert.getShortValue(offset, data);
+      fldOffset = new short[fldCnt+1];
+      int pos = tuple_offset + 2;
+      for(int i = 0; i < fldCnt+1; i++){
+          fldOffset[i] = Convert.getShortValue(pos, data);
+          pos += 2;
+      }
    }
    
    /** Constructor(used as tuple copy)
@@ -378,7 +383,7 @@ public void setHdr (short numFlds,  AttrType types[], short strSizes[])
   for (i=1; i<numFlds; i++)
   {
     switch(types[i-1].attrType) {
-    
+
    case AttrType.attrInteger:
      incr = 4;
      break;
@@ -390,8 +395,8 @@ public void setHdr (short numFlds,  AttrType types[], short strSizes[])
    case AttrType.attrString:
      incr = (short) (strSizes[strCount] +2);  //strlen in bytes = strlen +2
      strCount++;
-     break;       
- 
+     break;
+
    default:
     throw new InvalidTypeException (null, "TUPLE: TUPLE_TYPE_ERROR");
    }
