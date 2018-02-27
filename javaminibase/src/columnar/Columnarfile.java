@@ -113,7 +113,6 @@ public class Columnarfile_trial {
 		boolean status = true;
 		temp.setHdr(numColumns, atype, attrsizes);
 		temp.tupleInit(tuplePtr, 0, tuplePtr.length);
-		TID tidtemp = new TID(numColumns+1);
 		RID[] rids = new RID[numColumns+1];
 		for(int i=0;i<numColumns;i++){
 			switch(atype[i].attrType){
@@ -125,8 +124,9 @@ public class Columnarfile_trial {
 					int datafromtuple = temp.getIntFld(i);
 					DummyRecord rec = new DummyRecord(String.valueOf(datafromtuple).getBytes());
 		            try{
-		            	byte[] two = rec.toByteArray();		            	
-		                rids[i+1] = hf[i+1].insertRecord(two);
+		            	byte[] two = rec.toByteArray();	
+		            	//assumption that inserted at the end
+		                rids[i] = hf[i+1].insertRecord(two);
 		            }
 		            catch (Exception e) {
 	                    status = false;
@@ -140,7 +140,7 @@ public class Columnarfile_trial {
 					DummyRecord rec1 = new DummyRecord(String.valueOf(datafromtuple1).getBytes());
 		            try {
 		            	byte[] two = rec1.toByteArray();		            	
-		                rids[i+1] = hf[i+1].insertRecord(two);
+		                rids[i] = hf[i+1].insertRecord(two);
 		            }
 		            catch (Exception e) {
 	                    status = false;
@@ -155,6 +155,37 @@ public class Columnarfile_trial {
 		int last_index = tids.length;
 		tids[last_index]=new TID(numColumns, last_index, rids);
 		return tids[last_index];	
+	}
+	public Tuple getTuple(TID tidarg) throws Exception{
+		//fetch the columns from the heap file with the specified RIDs
+		int i;
+		for(i=0;i<tids.length;i++){
+			if(tids[i].equals(tidarg)){
+				break;
+			}
+		}
+		Tuple[] tempjoin=new Tuple[numColumns];
+		Tuple result;
+		if(i<tids.length){
+			//means found the TID
+			int length = 0;
+			for(int j=1;j<numColumns+1;j++){
+				//assuming jth column corresponds to j+1th file
+				tempjoin[j-1] = hf[j].getRecord(tids[i].recordIDs[j-1]);
+				length += tempjoin[j-1].getLength();
+			}
+			byte[] datatobe = new byte[length];
+			int counter=0;
+			for(int j = 0;j<numColumns;j++){
+				System.arraycopy(tempjoin[j].returnTupleByteArray(), 0, datatobe, counter, tempjoin[j].getLength());
+				counter+=tempjoin[j].getLength();
+			}
+			result=new Tuple(datatobe,0,length);
+		}
+		else{
+			throw new Exception("TID doesnot exist");
+		}
+		return result;
 	}
 	 
 }
@@ -176,7 +207,6 @@ class DummyRecord {
      */
     public DummyRecord() {
     }
-
     /**
      * another constructor
      */
