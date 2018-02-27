@@ -1,155 +1,174 @@
 package columnar;
 
-import global.AttrType;
-import global.PageId;
-import global.RID;
-import global.SystemDefs;
-import heap.*;
-
 import java.io.IOException;
 
-public class Columnarfile {
+import global.AttrType;
+import global.Convert;
+import global.RID;
+import heap.Heapfile;
+import heap.Tuple;
 
-    int numColumns;
-    AttrType[] type;
+public class Columnarfile_trial {
+	private static int numColumns;
+	private AttrType[] type;
+	Heapfile[] hf;
+	boolean status = true;    
+    private String fname;
+    /*Convention: hf[] => 0 for hdr file; the rest for tables. The implementation is modified from HFTest.java*/
+	Columnarfile_trial(java.lang.String name, int numcols, AttrType[] types) throws IOException{
+		RID rid1 = new RID();
+		try{
+			hf = new Heapfile[numcols+1];
+			//hf[0] for header file by default
+			hf[0] = new Heapfile(name+".hdr");
+			
+		}
+		catch(Exception e){
+			status = false;
+			e.printStackTrace();
+		}
+		if(status==true){
+			//initializing member variables
+			numColumns = numcols;	
+			this.fname = name;
+			for(int i=0;i<numColumns;i++){
+				type[i] = new AttrType(types[i].attrType);
+			}
+			System.out.println("Inserting "+numcols+" records");
+			//.hdr file initialization hf[0]
+			for(int i=0;i<numColumns;i++){				
+	            //data = "name.colnumber" + type[i].attrType
+	            StringBuilder sb = new StringBuilder();
+	            sb.append(this.fname);
+	            sb.append(".");
+	            sb.append(String.valueOf(i));
+	            String datastr = sb.toString();
+	            
+	            DummyRecord rec = new DummyRecord(datastr.getBytes());
+	            try {
+	                rid1 = hf[0].insertRecord(rec.toByteArray());
+	            }
+	            catch (Exception e) {
+                    status = false;
+                    System.err.println("*** Error inserting record " + i + "\n");
+                    e.printStackTrace();
+                }
+			}
+			//allocating memory for the
+			try{
+				for(int i=0;i<numColumns;i++){
+					hf[i] = new Heapfile(name+String.valueOf(i));
+				}
+			}
+			catch(Exception e){
+				status = false;
+				e.printStackTrace();
+			}
+		}
+	}
+}
 
-    private String _name;
+class DummyRecord {
+
+    //content of the record
+    public int ival;
+    public float fval;
+    public String name;
+
+    //length under control
+    private int reclen;
+
+    private byte[] data;
 
     /**
-     * Constructor to retrieve existing columnar
-     * @param name
+     * Default constructor
      */
-    public Columnarfile(String name){
-
-        this._name = name;
-        try {
-            PageId pid = SystemDefs.JavabaseDB.get_file_entry(name);
-
-            if (pid == null) {
-                throw new Exception("Columnar with the name: " + name + " doesn't exists");
-            }
-
-            Heapfile columnar = new Heapfile(_name);
-            Scan scan = columnar.openScan();
-            Tuple t = scan.getNext(new RID());
-            this.numColumns = t.getIntFld(1);
-            this.type = new AttrType[numColumns];
-            for(int i = 0; i < numColumns; i++){
-                type[i] = new AttrType(t.getIntFld(2+i));
-            }
-        }
-        catch (Exception e){
-            e.printStackTrace();
-        }
+    public DummyRecord() {
     }
 
     /**
-     * Constructor to create new columnar
-     * @param name
+     * another constructor
      */
-    public Columnarfile(String name, int numColumns, AttrType[] type){
+    public DummyRecord(int _reclen) {
+        setRecLen(_reclen);
+        data = new byte[_reclen];
+    }
+public DummyRecord(byte[] arecord)
+        throws java.io.IOException {
+    setIntRec(arecord);
+    setFloRec(arecord);
+    setStrRec(arecord);
+    data = arecord;
+    setRecLen(name.length());
+}
 
-        this._name = name;
-        this.numColumns = numColumns;
-        this.type = new AttrType[numColumns];
-        try {
-            PageId pid = SystemDefs.JavabaseDB.get_file_entry(name);
+/**
+ * constructor: translate a tuple to a DummyRecord object
+ * it will make a copy of the data in the tuple
+ *
+ * @param atuple: the input tuple
+ */
+public DummyRecord(Tuple _atuple)
+        throws java.io.IOException {
+    data = new byte[_atuple.getLength()];
+    data = _atuple.getTupleByteArray();
+    setRecLen(_atuple.getLength());
 
-            if(pid != null){
-                throw new Exception("Columnar with the name: "+name+" already exists");
-            }
+    setIntRec(data);
+    setFloRec(data);
+    setStrRec(data);
 
-            //Create new heap file this will store num of columns, and attr types.
-            //It should ideally hold the TIDs too.
-            AttrType[] ctypes = new AttrType[1+numColumns];
-            ctypes[1] = new AttrType(AttrType.attrInteger);
-            for(int i = 0; i < numColumns; i++){
-                ctypes[i+2] = new AttrType(AttrType.attrInteger);
-            }
+}
 
-            short[] csizes = new short[0];
-            Tuple ct = new Tuple();
-            ct.setHdr((short) (1+numColumns), ctypes, csizes);
-            int s = ct.size();
+/**
+ * convert this class objcet to a byte array
+ * this is used when you want to write this object to a byte array
+ */
+public byte[] toByteArray()
+        throws java.io.IOException {
+    //    data = new byte[reclen];
+    Convert.setIntValue(ival, 0, data);
+    Convert.setFloValue(fval, 4, data);
+    Convert.setStrValue(name, 8, data);
+    return data;
+}
 
-            Tuple k = new Tuple(s);
-            k.setIntFld(1, numColumns);
-            for(int i = 0; i < numColumns; i++){
-                k.setIntFld(i+1, type[i].attrType);
-            }
-            Heapfile columnar = new Heapfile(_name);
-            columnar.insertRecord(k.returnTupleByteArray());
+/**
+ * get the integer value out of the byte array and set it to
+ * the int value of the DummyRecord object
+ */
+public void setIntRec(byte[] _data)
+        throws java.io.IOException {
+    ival = Convert.getIntValue(0, _data);
+}
 
-            //Create header file for columnar. This should have columnname and position
-            //Having this file just to store this information doesn't make sense,
-            //as column files can just be retrieved using get_file_entry(name+column_number);
-            AttrType[] htypes = new AttrType[2];
-            htypes[0] = new AttrType(AttrType.attrInteger);
-            htypes[1] = new AttrType(AttrType.attrString);
+/**
+ * get the float value out of the byte array and set it to
+ * the float value of the DummyRecord object
+ */
+public void setFloRec(byte[] _data)
+        throws java.io.IOException {
+    fval = Convert.getFloValue(4, _data);
+}
 
-            short[] hsizes = new short[1];
-            hsizes[0] = 20; //This means that the length of heap file names cannot be >20
-            Tuple ht = new Tuple();
-            ht.setHdr((short) 2, htypes, hsizes);
-            int size = ht.size();
-            Heapfile header = new Heapfile(getHeaderName());
+/**
+ * get the String value out of the byte array and set it to
+ * the float value of the HTDummyRecorHT object
+ */
+public void setStrRec(byte[] _data)
+        throws java.io.IOException {
+    // System.out.println("reclne= "+reclen);
+    // System.out.println("data size "+_data.size());
+    name = Convert.getStrValue(8, _data, reclen - 8);
+}
 
-            //Creating a heapfile for each column and inserting relevant data to header
-            for(int i = 0; i < numColumns; i++){
-                this.type[i] = new AttrType(type[i].attrType);
-                String columnName = _name+(i+1);
-                Tuple t = new Tuple(size);
-                t.setIntFld(1, i+1);
-                t.setStrFld(2, columnName);
-                header.insertRecord(t.returnTupleByteArray());
-                new Heapfile(columnName);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//Other access methods to the size of the String field and
+//the size of the record
+public void setRecLen(int size) {
+    reclen = size;
+}
 
-    }
-
-    void deleteColumnarFile(){
-
-    }
-    TID insertTuple(byte[] tuplePtr){
-        return null;
-    }
-    Tuple getTuple(TID tid){
-        return null;
-    }
-    ValueClass getValue(TID tid, int column){
-        return null;
-    }
-    int getTupleCnt(){
-        return -1;
-    }
-    //TupleScan openTupleScan();
-    Scan openColumnScan(int columnNo){
-        return null;
-    }
-    boolean updateTuple(TID tid, Tuple newtuple){
-        return false;
-    }
-    boolean updateColumnofTuple(TID tid, Tuple newtuple, int column){
-        return false;
-    }
-    boolean createBTreeIndex(int column){
-        return false;
-    }
-    boolean createBitMapIndex(int columnNo, ValueClass value){
-        return false;
-    }
-    boolean markTupleDeleted(TID tid){
-        return false;
-    }
-    boolean purgeAllDeletedTuples(){
-        return false;
-    }
-
-    private String getHeaderName(){
-        return _name+".hdr";
-    }
-
+public int getRecLength() {
+    return reclen;
+}
 }
