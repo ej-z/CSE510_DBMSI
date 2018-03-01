@@ -8,16 +8,19 @@ public class TID {
     int position;
     RID[] recordIDs;
 
-    TID(int numRIDs){
-        this.numRIDs = numRIDs;
+    TID(int n){
+        this.numRIDs = n;
     }
-    TID(int numRIDs, int position){
-        this(numRIDs);
-        this.position = position;
+    TID(int n, int p){
+        this(n);
+        this.position = p;
     }
-    TID(int numRIDs, int position, RID[] recordIDs){
-        this(numRIDs, position);
-        this.recordIDs = recordIDs;
+    TID(int n, int p, RID[] rids){
+        this(n, p);
+        for(int i=0;i<rids.length;i++){
+        	recordIDs = new RID[n];
+        	recordIDs[i].copyRid(rids[i]);
+        }
     }
 
     void copyTid(TID tid){
@@ -26,7 +29,7 @@ public class TID {
         position = tid.position;
         recordIDs = new RID[numRIDs];
         for(int i = 0; i< numRIDs; i++){
-            recordIDs[i] = tid.recordIDs[i];
+        	recordIDs[i].copyRid(tid.recordIDs[i]);
         }
     }
 
@@ -59,7 +62,7 @@ public class TID {
     void setRID(int column, RID recordID){
 
         if(column < numRIDs){
-            recordIDs[column] = recordID;
+            recordIDs[column].copyRid(recordID);
         }
     }
 }
