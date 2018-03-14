@@ -21,9 +21,8 @@ class HFDriver extends TestDriver implements GlobalConst {
 
     private final static boolean OK = true;
     private final static boolean FAIL = false;
-
-    private int choice;
     private final static int reclen = 32;
+    private int choice;
 
     public HFDriver() {
         super("hptest");
@@ -44,7 +43,7 @@ class HFDriver extends TestDriver implements GlobalConst {
         String newlogpath;
         String remove_logcmd;
         String remove_dbcmd;
-        String remove_cmd = isUnix()? "/bin/rm -rf " : "cmd /c del /f ";
+        String remove_cmd = isUnix() ? "/bin/rm -rf " : "cmd /c del /f ";
 
         newdbpath = dbpath;
         newlogpath = logpath;

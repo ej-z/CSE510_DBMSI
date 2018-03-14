@@ -1,11 +1,7 @@
 package tests;
 
-import columnar.Columnarfile;
-import com.sun.org.apache.xpath.internal.SourceTree;
-import global.AttrType;
 import global.SystemDefs;
 
-import javax.sound.midi.Soundbank;
 import java.io.IOException;
 
 import static global.GlobalConst.NUMBUF;
@@ -27,7 +23,7 @@ class ColumnarDriver extends TestDriver {
         String newlogpath;
         String remove_logcmd;
         String remove_dbcmd;
-        String remove_cmd = isUnix()? "/bin/rm -rf " : "cmd /c del /f ";
+        String remove_cmd = isUnix() ? "/bin/rm -rf " : "cmd /c del /f ";
 
         newdbpath = dbpath;
         newlogpath = logpath;
@@ -73,28 +69,32 @@ class ColumnarDriver extends TestDriver {
 
     }
 
+//    protected boolean test1() {
+//
+//        try {
+//            String name = "file1";
+//            int numColumns = 3;
+//            AttrType[] types = new AttrType[numColumns];
+//            types[0] = new AttrType(AttrType.attrInteger);
+//            types[1] = new AttrType(AttrType.attrInteger);
+//            types[2] = new AttrType(AttrType.attrInteger);
+//
+//            System.out.println("Creating columnar " + name);
+//            new Columnarfile(name, numColumns, types);
+//
+//            System.out.println("Opening columnar " + name);
+//            Columnarfile c = new Columnarfile(name);
+//            int n = c.getNumColumns();
+//            System.out.println("Column count :" + n);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return false;
+//        }
+//
+//        return true;
+//    }
+
     protected boolean test1() {
-
-        try {
-            String name = "file1";
-            int numColumns = 3;
-            AttrType[] types = new AttrType[numColumns];
-            types[0] = new AttrType(AttrType.attrInteger);
-            types[1] = new AttrType(AttrType.attrInteger);
-            types[2] = new AttrType(AttrType.attrInteger);
-
-            System.out.println("Creating columnar " + name);
-            new Columnarfile(name, numColumns, types);
-
-            System.out.println("Opening columnar " + name);
-            Columnarfile c = new Columnarfile(name);
-            int n = c.getNumColumns();
-            System.out.println("Column count :" + n);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-
         return true;
     }
 

@@ -133,12 +133,12 @@ class JoinsDriver implements GlobalConst {
         int numboats = 5;
         int numboats_attrs = 3;
 
-        String path = isUnix()? "/tmp" : "C:\\Windows\\Temp\\";
+        String path = isUnix() ? "/tmp" : "C:\\Windows\\Temp\\";
 
         String dbpath = path + System.getProperty("user.name") + ".minibase.jointestdb";
         String logpath = path + System.getProperty("user.name") + ".joinlog";
 
-        String remove_cmd = isUnix()? "/bin/rm -rf " : "cmd /c del /f ";
+        String remove_cmd = isUnix() ? "/bin/rm -rf " : "cmd /c del /f ";
         String remove_logcmd = remove_cmd + logpath;
         String remove_dbcmd = remove_cmd + dbpath;
         String remove_joincmd = remove_cmd + dbpath;

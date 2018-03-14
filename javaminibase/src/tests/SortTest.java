@@ -69,7 +69,7 @@ class SORTDriver extends TestDriver
         String newlogpath;
         String remove_logcmd;
         String remove_dbcmd;
-        String remove_cmd = isUnix()? "/bin/rm -rf " : "cmd /c del /f ";
+        String remove_cmd = isUnix() ? "/bin/rm -rf " : "cmd /c del /f ";
 
         newdbpath = dbpath;
         newlogpath = logpath;

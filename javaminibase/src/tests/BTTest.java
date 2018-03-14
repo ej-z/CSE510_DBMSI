@@ -24,10 +24,9 @@ class BTDriver implements GlobalConst {
     public int postfix = 0;
     public int keyType;
     public BTFileScan scan;
-
+    public int deleteFashion;
     protected String dbpath;
     protected String logpath;
-    public int deleteFashion;
 
     public void runTests() {
         Random random = new Random();
@@ -45,7 +44,7 @@ class BTDriver implements GlobalConst {
         String newlogpath;
         String remove_logcmd;
         String remove_dbcmd;
-        String remove_cmd = isUnix()? "/bin/rm -rf " : "cmd /c del /f ";
+        String remove_cmd = isUnix() ? "/bin/rm -rf " : "cmd /c del /f ";
 
         newdbpath = dbpath;
         newlogpath = logpath;
