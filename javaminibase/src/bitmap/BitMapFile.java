@@ -10,6 +10,7 @@ import global.AttrType;
 import global.GlobalConst;
 import global.PageId;
 import global.SystemDefs;
+import heap.HFBufMgrException;
 
 // TODO: Add void setCurPage_forGivenPosition(int Position) method
 public class BitMapFile implements GlobalConst {
@@ -120,7 +121,7 @@ public class BitMapFile implements GlobalConst {
     }
 
     public Boolean delete(int position) throws Exception {
-        if (headerPage != null) {
+        if (headerPage.get_rootId().pid != INVALID_PAGE) {
             int pageCounter = 1;
             while (position > BMPage.MAX_POSITION_IN_A_PAGE) {
                 pageCounter++;
@@ -132,7 +133,7 @@ public class BitMapFile implements GlobalConst {
             for (int i = 1; i < pageCounter; i++) {
                 bmPageId = bmPage.getNextPage();
                 if (bmPageId.pid == BMPage.INVALID_PAGE) {
-                    throw new Exception("Something went wrong");
+                    throw new Exception("Non existent position passed as input");
                 }
                 page = pinPage(bmPageId);
                 bmPage = new BMPage(page);
@@ -152,7 +153,7 @@ public class BitMapFile implements GlobalConst {
 
 
     public Boolean insert(int position) throws Exception {
-        if (headerPage != null) {
+        if (headerPage.get_rootId().pid != INVALID_PAGE) {
             int pageCounter = 1;
             while (position > BMPage.MAX_POSITION_IN_A_PAGE) {
                 pageCounter++;
@@ -164,7 +165,9 @@ public class BitMapFile implements GlobalConst {
             for (int i = 1; i < pageCounter; i++) {
                 bmPageId = bmPage.getNextPage();
                 if (bmPageId.pid == BMPage.INVALID_PAGE) {
-                    throw new Exception("Something went wrong");
+                    PageId newPageId = getNewBMPage();
+                    bmPage.setNextPage(newPageId);
+                    bmPageId = newPageId;
                 }
                 page = pinPage(bmPageId);
                 bmPage = new BMPage(page);
@@ -175,11 +178,22 @@ public class BitMapFile implements GlobalConst {
             if (bmPage.getCounter() < position) {
                 bmPage.updateCounter((short) position);
             }
-
-            return Boolean.TRUE;
+        } else {
+            PageId newPageId = getNewBMPage();
+            headerPage.set_rootId(newPageId);
+            insert(position);
         }
 
-        return Boolean.FALSE;
+        return Boolean.TRUE;
+    }
+
+    public PageId getNewBMPage() throws Exception {
+        Page apage = new Page();
+        PageId pageId = newPage(apage, 1);
+        BMPage bmPage = new BMPage();
+        bmPage.init(pageId, apage);
+
+        return pageId;
     }
 
     private PageId get_file_entry(String filename)
@@ -260,5 +274,20 @@ public class BitMapFile implements GlobalConst {
         header.set_rootId(firstPage);
         unpinPage(headerPageId, true /* = DIRTY */);
     }
+
+    private PageId newPage(Page page, int num)
+            throws HFBufMgrException {
+
+        PageId tmpId = new PageId();
+
+        try {
+            tmpId = SystemDefs.JavabaseBM.newPage(page, num);
+        } catch (Exception e) {
+            throw new HFBufMgrException(e, "Heapfile.java: newPage() failed");
+        }
+
+        return tmpId;
+
+    } // end of newPage
 
 }
