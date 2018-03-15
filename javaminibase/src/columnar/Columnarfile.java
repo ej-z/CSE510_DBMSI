@@ -15,6 +15,10 @@ public class Columnarfile {
     String fname = null;
     TID[] tids;
 
+    public String getColumnarFileName() {
+        return fname;
+    }
+
     /*Convention: hf[] => 0 for hdr file; the rest for tables. The implementation is modified from HFTest.java*/
     Columnarfile(java.lang.String name, int numcols, AttrType[] types) throws IOException {
         RID rid1 = new RID();
@@ -326,7 +330,7 @@ class DummyRecord {
      * constructor: translate a tuple to a DummyRecord object
      * it will make a copy of the data in the tuple
      *
-     * @param atuple: the input tuple
+     * @param _atuple: the input tuple
      */
     public DummyRecord(Tuple _atuple)
             throws java.io.IOException {

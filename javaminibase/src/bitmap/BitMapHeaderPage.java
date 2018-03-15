@@ -30,7 +30,7 @@ public class BitMapHeaderPage extends BMPage {
         Convert.setShortValue((short) attrType.attrType, ATTR_TYPE_POSITION, data);
     }
 
-    public void setColumnnarFileName(String columnnarFileName) throws Exception {
+    public void setColumnarFileName(String columnnarFileName) throws Exception {
         Convert.setStrValue(columnnarFileName, COLUMNNAR_FILE_NAME_POSITION, data);
     }
 
@@ -48,7 +48,7 @@ public class BitMapHeaderPage extends BMPage {
         return new AttrType(val);
     }
 
-    public String getColumnnarFileName() throws Exception {
+    public String getColumnarFileName() throws Exception {
         String val = Convert.getStrValue(COLUMNNAR_FILE_NAME_POSITION, data, COLUMNNAR_FILE_NAME_SIZE);
         return val.trim();
     }
@@ -119,10 +119,6 @@ public class BitMapHeaderPage extends BMPage {
     void set_rootId(PageId rootID)
             throws IOException {
         setNextPage(rootID);
-    }
-
-    void setColumnarFileName(String fileName) {
-
     }
 
 //    /**

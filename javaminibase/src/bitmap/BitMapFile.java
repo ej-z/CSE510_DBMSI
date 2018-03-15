@@ -1,5 +1,6 @@
 package bitmap;
 
+import btree.AddFileEntryException;
 import btree.GetFileEntryException;
 import columnar.Columnarfile;
 import columnar.ValueClass;
@@ -9,15 +10,10 @@ import global.AttrType;
 import global.GlobalConst;
 import global.PageId;
 import global.SystemDefs;
-import heap.HFBufMgrException;
-import heap.HFDiskMgrException;
-import heap.HFException;
-import heap.InvalidTupleSizeException;
 
-import java.io.IOException;
 
 public class BitMapFile implements GlobalConst {
-    // TODO: Check if any other fields are needed
+
     private String fileName;
     private BitMapHeaderPage headerPage;
     private PageId headerPageId;
@@ -66,7 +62,7 @@ public class BitMapFile implements GlobalConst {
         }
         headerPage = new BitMapHeaderPage(headerPageId);
 
-        columnarFileName = headerPage.getColumnnarFileName();
+        columnarFileName = headerPage.getColumnarFileName();
         columnNumber = headerPage.getColumnNumber();
         attrType = headerPage.getAttrType();
         if (attrType.attrType == AttrType.attrString) {
@@ -76,15 +72,33 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
-    // TODO: Complete the definition of constructor
-    public BitMapFile(String filename, Columnarfile columnfile, Integer columnNo, ValueClass value) throws
-            IOException, HFException, HFBufMgrException, HFDiskMgrException, InvalidTupleSizeException {
-
+    public BitMapFile(String filename, Columnarfile columnarFile, Integer columnNo, ValueClass value) throws Exception {
+        headerPageId = get_file_entry(filename);
+        if (headerPageId == null) //file not exist
+        {
+            headerPage = new BitMapHeaderPage();
+            headerPageId = headerPage.getPageId();
+            add_file_entry(filename, headerPageId);
+            headerPage.set_rootId(new PageId(INVALID_PAGE));
+            headerPage.setColumnarFileName(columnarFile.getColumnarFileName());
+            headerPage.setColumnNumber(columnNo);
+            if (value instanceof ValueInt) {
+                headerPage.setValue(((ValueInt) value).getValue().toString());
+                headerPage.setAttrType(new AttrType(AttrType.attrInteger));
+            } else {
+                headerPage.setValue(((ValueString) value).getValue());
+                headerPage.setAttrType(new AttrType(AttrType.attrString));
+            }
+        } else {
+            headerPage = new BitMapHeaderPage(headerPageId);
+        }
     }
-
-    // TODO: Complete code for closing the file
-    public void close() {
-
+    
+    public void close() throws Exception {
+        if (headerPage != null) {
+            SystemDefs.JavabaseBM.unpinPage(headerPageId, true);
+            headerPage = null;
+        }
     }
 
     // TODO: Complete code for destroying the file
@@ -109,6 +123,16 @@ public class BitMapFile implements GlobalConst {
         } catch (Exception e) {
             e.printStackTrace();
             throw new GetFileEntryException(e, "");
+        }
+    }
+
+    private void add_file_entry(String fileName, PageId pageno)
+            throws AddFileEntryException {
+        try {
+            SystemDefs.JavabaseDB.add_file_entry(fileName, pageno);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new AddFileEntryException(e, "");
         }
     }
 
