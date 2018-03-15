@@ -1,11 +1,11 @@
 package bitmap;
 
-import btree.AddFileEntryException;
-import btree.GetFileEntryException;
+import btree.*;
 import columnar.Columnarfile;
 import columnar.ValueClass;
 import columnar.ValueInt;
 import columnar.ValueString;
+import diskmgr.Page;
 import global.AttrType;
 import global.GlobalConst;
 import global.PageId;
@@ -93,17 +93,30 @@ public class BitMapFile implements GlobalConst {
             headerPage = new BitMapHeaderPage(headerPageId);
         }
     }
-    
+
     public void close() throws Exception {
         if (headerPage != null) {
             SystemDefs.JavabaseBM.unpinPage(headerPageId, true);
             headerPage = null;
         }
     }
-
-    // TODO: Complete code for destroying the file
-    public void destroyBitMapFile() {
-
+    
+    public void destroyBitMapFile() throws Exception {
+        if (headerPage != null) {
+            PageId pgId = headerPage.get_rootId();
+            BMPage bmPage;
+            while (pgId.pid != INVALID_PAGE) {
+                Page page = pinPage(pgId);
+                bmPage = new BMPage(page);
+                pgId = bmPage.getNextPage();
+                unpinPage(pgId);
+                freePage(pgId);
+            }
+            unpinPage(headerPageId);
+            freePage(headerPageId);
+            delete_file_entry(fileName);
+            headerPage = null;
+        }
     }
 
     // TODO: Complete code for delete operation
@@ -133,6 +146,49 @@ public class BitMapFile implements GlobalConst {
         } catch (Exception e) {
             e.printStackTrace();
             throw new AddFileEntryException(e, "");
+        }
+    }
+
+    private void delete_file_entry(String filename)
+            throws DeleteFileEntryException {
+        try {
+            SystemDefs.JavabaseDB.delete_file_entry(filename);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new DeleteFileEntryException(e, "");
+        }
+    }
+
+    private void unpinPage(PageId pageno)
+            throws UnpinPageException {
+        try {
+            SystemDefs.JavabaseBM.unpinPage(pageno, false /* = not DIRTY */);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new UnpinPageException(e, "");
+        }
+    }
+
+    private void freePage(PageId pageno)
+            throws FreePageException {
+        try {
+            SystemDefs.JavabaseBM.freePage(pageno);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new FreePageException(e, "");
+        }
+
+    }
+
+    private Page pinPage(PageId pageno)
+            throws PinPageException {
+        try {
+            Page page = new Page();
+            SystemDefs.JavabaseBM.pinPage(pageno, page, false/*Rdisk*/);
+            return page;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new PinPageException(e, "");
         }
     }
 
