@@ -58,33 +58,28 @@ public class BitMapFile implements GlobalConst {
         this.headerPage = headerPage;
     }
 
-    // TODO: Complete the definition of constructor
     public BitMapFile(String fileName) throws Exception {
         this.fileName = fileName;
-        String[] temp = fileName.split("-");
-        if (temp.length != 4) {
-            throw new Exception("Invalid BitMapFile name");
-        }
-        columnarFileName = temp[0];
-        columnNumber = Integer.parseInt(temp[1]);
-        attrType = new AttrType(Integer.parseInt(temp[2]));
-        if (attrType.attrType == AttrType.attrString) {
-            value = new ValueString(temp[3]);
-        } else {
-            value = new ValueInt(Integer.parseInt(temp[3]));
-        }
-
         headerPageId = get_file_entry(fileName);
         if (headerPageId == null) {
             throw new Exception("This index file (" + fileName + ") doesn't exist");
         }
         headerPage = new BitMapHeaderPage(headerPageId);
+
+        columnarFileName = headerPage.getColumnnarFileName();
+        columnNumber = headerPage.getColumnNumber();
+        attrType = headerPage.getAttrType();
+        if (attrType.attrType == AttrType.attrString) {
+            value = new ValueString(headerPage.getValue());
+        } else {
+            value = new ValueInt(Integer.parseInt(headerPage.getValue()));
+        }
     }
 
     // TODO: Complete the definition of constructor
     public BitMapFile(String filename, Columnarfile columnfile, Integer columnNo, ValueClass value) throws
             IOException, HFException, HFBufMgrException, HFDiskMgrException, InvalidTupleSizeException {
-        
+
     }
 
     // TODO: Complete code for closing the file
