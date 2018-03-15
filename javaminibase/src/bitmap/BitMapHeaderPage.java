@@ -8,7 +8,6 @@ import global.SystemDefs;
 import java.io.IOException;
 
 public class BitMapHeaderPage extends BMPage {
-    //TODO: Need to discuss this and complete
     /**
      * pin the page with pageno, and get the corresponding SortedPage
      */
@@ -57,24 +56,6 @@ public class BitMapHeaderPage extends BMPage {
     }
 
     /**
-     * get the magic0
-     */
-    int get_magic0()
-            throws IOException {
-        return getPrevPage().pid;
-    }
-
-    /**
-     * set the magic0
-     *
-     * @param magic magic0 will be set to be equal to magic
-     */
-    void set_magic0(int magic)
-            throws IOException {
-        setPrevPage(new PageId(magic));
-    }
-
-    /**
      * get the rootId
      */
     PageId get_rootId()
@@ -90,32 +71,50 @@ public class BitMapHeaderPage extends BMPage {
         setNextPage(rootID);
     }
 
-    /**
-     * get the key type
-     */
-    short get_keyType()
-            throws IOException {
-        return (short) getSlotLength(3);
-    }
+//    /**
+//     * get the magic0
+//     */
+//    int get_magic0()
+//            throws IOException {
+//        return getPrevPage().pid;
+//    }
+//
+//    /**
+//     * set the magic0
+//     *
+//     * @param magic magic0 will be set to be equal to magic
+//     */
+//    void set_magic0(int magic)
+//            throws IOException {
+//        setPrevPage(new PageId(magic));
+//    }
 
-    /**
-     * set the max keysize
-     */
-    int get_maxKeySize()
-            throws IOException {
-        return getSlotLength(1);
-    }
+//    /**
+//     * get the key type
+//     */
+//    short get_keyType()
+//            throws IOException {
+//        return (short) getSlotLength(3);
+//    }
+//
+//    /**
+//     * set the max keysize
+//     */
+//    int get_maxKeySize()
+//            throws IOException {
+//        return getSlotLength(1);
+//    }
+//
+//
+//    /**
+//     * get the delete fashion
+//     */
+//    int get_deleteFashion()
+//            throws IOException {
+//        return getSlotLength(2);
+//    }
 
-
-    /**
-     * get the delete fashion
-     */
-    int get_deleteFashion()
-            throws IOException {
-        return getSlotLength(2);
-    }
-
-     /* get the max keysize
+    /* get the max keysize
      */
 //    void set_maxKeySize(int key_size)
 //            throws IOException {
