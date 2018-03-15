@@ -7,6 +7,11 @@ import global.PageId;
 
 import java.io.IOException;
 
+interface ConstSlot {
+    int INVALID_SLOT = -1;
+    int EMPTY_SLOT = -1;
+}
+
 public class BMPage extends Page implements ConstSlot, GlobalConst {
 
     public static final int DPFIXED = 2 * 2 + 3 * 4;

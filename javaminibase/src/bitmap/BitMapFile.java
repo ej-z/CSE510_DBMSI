@@ -119,7 +119,6 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
-    // TODO: Complete code for delete operation
     public Boolean delete(int position) throws Exception {
         if (headerPage != null) {
             int pageCounter = 1;
@@ -141,6 +140,9 @@ public class BitMapFile implements GlobalConst {
             byte[] currentPageData = bmPage.getBMpageArray();
             currentPageData[position] = 0;
             bmPage.writeBMPageArray(currentPageData);
+            if (bmPage.getCounter() < position) {
+                bmPage.updateCounter((short) position);
+            }
 
             return Boolean.TRUE;
         }
@@ -148,7 +150,7 @@ public class BitMapFile implements GlobalConst {
         return Boolean.FALSE;
     }
 
-    // TODO: Complete code for insert operation
+
     public Boolean insert(int position) throws Exception {
         if (headerPage != null) {
             int pageCounter = 1;
