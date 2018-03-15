@@ -6,10 +6,11 @@ import global.AttrType;
 import global.Convert;
 import global.PageId;
 import global.SystemDefs;
+import heap.HFPage;
 
 import java.io.IOException;
 
-public class BitMapHeaderPage extends BMPage {
+public class BitMapHeaderPage extends HFPage {
 
     public static final int DPFIXED = 4 * 2 + 3 * 4;
     public static final int COLUMN_NUMBER_SIZE = 2;
@@ -120,70 +121,4 @@ public class BitMapHeaderPage extends BMPage {
             throws IOException {
         setNextPage(rootID);
     }
-
-//    /**
-//     * get the magic0
-//     */
-//    int get_magic0()
-//            throws IOException {
-//        return getPrevPage().pid;
-//    }
-//
-//    /**
-//     * set the magic0
-//     *
-//     * @param magic magic0 will be set to be equal to magic
-//     */
-//    void set_magic0(int magic)
-//            throws IOException {
-//        setPrevPage(new PageId(magic));
-//    }
-
-//    /**
-//     * get the key type
-//     */
-//    short get_keyType()
-//            throws IOException {
-//        return (short) getSlotLength(3);
-//    }
-//
-//    /**
-//     * set the max keysize
-//     */
-//    int get_maxKeySize()
-//            throws IOException {
-//        return getSlotLength(1);
-//    }
-//
-//
-//    /**
-//     * get the delete fashion
-//     */
-//    int get_deleteFashion()
-//            throws IOException {
-//        return getSlotLength(2);
-//    }
-
-    /* get the max keysize
-     */
-//    void set_maxKeySize(int key_size)
-//            throws IOException {
-//        setSlot(1, key_size, 0);
-//    }
-//
-//    /**
-//     * set the key type
-//     */
-//    void set_keyType(short key_type)
-//            throws IOException {
-//        setSlot(3, (int) key_type, 0);
-//    }
-//
-//    /**
-//     * set the delete fashion
-//     */
-//    void set_deleteFashion(int fashion)
-//            throws IOException {
-//        setSlot(2, fashion, 0);
-//    }
 }

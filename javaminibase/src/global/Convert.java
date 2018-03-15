@@ -94,6 +94,26 @@ public class Convert {
         return value;
     }
 
+    public static byte getByteValue(int position, byte[] data)
+            throws java.io.IOException {
+        InputStream in;
+        DataInputStream instr;
+        byte value;
+        byte tmp[] = new byte[1];
+
+        // copy the value from data array out to a tmp byte array
+        System.arraycopy(data, position, tmp, 0, 1);
+
+        /* creates a new data input stream to read data from the
+         * specified input stream
+         */
+        in = new ByteArrayInputStream(tmp);
+        instr = new DataInputStream(in);
+        value = instr.readByte();
+
+        return value;
+    }
+
     /**
      * reads a string that has been encoded using a modified UTF-8 format from
      * the given byte array at the specified position
@@ -239,6 +259,28 @@ public class Convert {
 
         // copies the first 2 bytes of this byte array into data[]
         System.arraycopy(B, 0, data, position, 2);
+
+    }
+
+    public static void setByteValue(byte value, int position, byte[] data)
+            throws java.io.IOException {
+        /* creates a new data output stream to write data to
+         * underlying output stream
+         */
+
+        OutputStream out = new ByteArrayOutputStream();
+        DataOutputStream outstr = new DataOutputStream(out);
+
+        // write the value to the output stream
+
+        outstr.writeShort(value);
+
+        // creates a byte array with this output stream size and the
+        // valid contents of the buffer have been copied into it
+        byte[] B = ((ByteArrayOutputStream) out).toByteArray();
+
+        // copies the first 2 bytes of this byte array into data[]
+        System.arraycopy(B, 0, data, position, 1);
 
     }
 

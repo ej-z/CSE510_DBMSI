@@ -100,7 +100,7 @@ public class BitMapFile implements GlobalConst {
             headerPage = null;
         }
     }
-    
+
     public void destroyBitMapFile() throws Exception {
         if (headerPage != null) {
             PageId pgId = headerPage.get_rootId();
@@ -169,6 +169,16 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    private void unpinPage(PageId pageno, boolean dirty)
+            throws UnpinPageException {
+        try {
+            SystemDefs.JavabaseBM.unpinPage(pageno, dirty);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new UnpinPageException(e, "");
+        }
+    }
+
     private void freePage(PageId pageno)
             throws FreePageException {
         try {
@@ -190,6 +200,12 @@ public class BitMapFile implements GlobalConst {
             e.printStackTrace();
             throw new PinPageException(e, "");
         }
+    }
+
+    private void updateHeader(PageId firstPage) throws Exception {
+        BitMapHeaderPage header = new BitMapHeaderPage(pinPage(headerPageId));
+        header.set_rootId(firstPage);
+        unpinPage(headerPageId, true /* = DIRTY */);
     }
 
 }
