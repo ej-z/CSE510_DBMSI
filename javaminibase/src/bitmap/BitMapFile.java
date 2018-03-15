@@ -4,12 +4,16 @@ import columnar.Columnarfile;
 import columnar.ValueClass;
 import global.GlobalConst;
 import global.PageId;
+import heap.*;
+
+import java.io.IOException;
 
 public class BitMapFile implements GlobalConst {
     // TODO: Check if any other fields are needed
     private String fileName;
     private BitMapHeaderPage headerPage;
     private PageId headerPageId;
+    private Heapfile heapfile;
 
     public String getFileName() {
         return fileName;
@@ -41,8 +45,14 @@ public class BitMapFile implements GlobalConst {
     }
 
     // TODO: Complete the definition of constructor
-    public BitMapFile(String filename, Columnarfile columnfile, Integer ColumnNo, ValueClass value) {
+    public BitMapFile(String filename, Columnarfile columnfile, Integer columnNo, ValueClass value) throws
+            IOException, HFException, HFBufMgrException, HFDiskMgrException, InvalidTupleSizeException {
 
+
+        heapfile = new Heapfile(filename + " " + columnNo);
+        Scan scan = heapfile.openScan();
+
+        
     }
 
     // TODO: Complete code for closing the file

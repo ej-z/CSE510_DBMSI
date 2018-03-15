@@ -175,8 +175,8 @@ public class BMPage extends Page
 
 
     /**
-     * Constructor of class HFPage
-     * open a existed hfpage
+     * Constructor of class BMPage
+     * open a existed bmpage
      *
      * @param apage a page in buffer pool
      */
@@ -253,8 +253,13 @@ public class BMPage extends Page
     }
 
 
-    void writeBMPageArray(byte[] data) {
 
+    public  byte[] getBMpageArray() {
+        return data;
+    }
+
+    void writeBMPageArray(byte[] givenData) throws IOException {
+        data = givenData;
     }
 
 

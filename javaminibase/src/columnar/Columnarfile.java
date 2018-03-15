@@ -201,7 +201,7 @@ public class Columnarfile {
             tempvalue = hf[column].getRecord(tids[i].recordIDs[column]);
             switch (atype[column].attrType) {
                 case 0:
-                    ValueStr result1 = new ValueStr(tempvalue.getStrFld(column));
+                    ValueString result1 = new ValueString(tempvalue.getStrFld(column));
                     return result1;
                 case 1:
                     //integer
