@@ -81,6 +81,18 @@ public class BMPage extends Page implements ConstSlot, GlobalConst {
 
         freeSpace = (short) (MAX_SPACE - DPFIXED);    // amount of space available
         Convert.setShortValue(freeSpace, FREE_SPACE, data);
+
+        for (int i = DPFIXED; i < MAX_SPACE; i++) {
+            Convert.setByteValue((byte) 0, i, data);
+        }
+    }
+
+    public Integer getCounter() throws Exception {
+        return (int) Convert.getShortValue(COUNTER, data);
+    }
+
+    public void updateCounter(Short value) throws Exception {
+        Convert.setShortValue(value, COUNTER, data);
     }
 
     public void openBMpage(Page apage) {
@@ -136,6 +148,6 @@ public class BMPage extends Page implements ConstSlot, GlobalConst {
         for (int i = 0; i < count; i++) {
             Convert.setByteValue(givenData[i], DPFIXED + i, data);
         }
-        Convert.setShortValue(counter, COUNTER, data);
+        Convert.setShortValue((short) count, COUNTER, data);
     }
 }

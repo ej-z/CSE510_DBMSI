@@ -17,7 +17,7 @@ import java.io.IOException;
  * The design assumes that records are kept compacted when
  * deletions are performed.
  */
-// TODO: Add void setCurPage_forGivenPosition(int Position) method
+
 interface ConstSlot {
     int INVALID_SLOT = -1;
     int EMPTY_SLOT = -1;
@@ -255,7 +255,6 @@ public class BMPageOld extends Page
         Convert.setIntValue(prevPage.pid, PREV_PAGE, data);
     }
 
-    // TODO: Get the bitmap portion of the page
     public byte[] getBMpageArray() {
         return data;
     }

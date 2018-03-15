@@ -11,7 +11,7 @@ import global.GlobalConst;
 import global.PageId;
 import global.SystemDefs;
 
-
+// TODO: Add void setCurPage_forGivenPosition(int Position) method
 public class BitMapFile implements GlobalConst {
 
     private String fileName;
@@ -120,13 +120,64 @@ public class BitMapFile implements GlobalConst {
     }
 
     // TODO: Complete code for delete operation
-    public Boolean delete(int position) {
-        return Boolean.TRUE;
+    public Boolean delete(int position) throws Exception {
+        if (headerPage != null) {
+            int pageCounter = 1;
+            while (position > BMPage.MAX_POSITION_IN_A_PAGE) {
+                pageCounter++;
+                position -= BMPage.MAX_POSITION_IN_A_PAGE;
+            }
+            PageId bmPageId = headerPage.get_rootId();
+            Page page = pinPage(bmPageId);
+            BMPage bmPage = new BMPage(page);
+            for (int i = 1; i < pageCounter; i++) {
+                bmPageId = bmPage.getNextPage();
+                if (bmPageId.pid == BMPage.INVALID_PAGE) {
+                    throw new Exception("Something went wrong");
+                }
+                page = pinPage(bmPageId);
+                bmPage = new BMPage(page);
+            }
+            byte[] currentPageData = bmPage.getBMpageArray();
+            currentPageData[position] = 0;
+            bmPage.writeBMPageArray(currentPageData);
+
+            return Boolean.TRUE;
+        }
+
+        return Boolean.FALSE;
     }
 
     // TODO: Complete code for insert operation
-    public Boolean insert(int position) {
-        return Boolean.TRUE;
+    public Boolean insert(int position) throws Exception {
+        if (headerPage != null) {
+            int pageCounter = 1;
+            while (position > BMPage.MAX_POSITION_IN_A_PAGE) {
+                pageCounter++;
+                position -= BMPage.MAX_POSITION_IN_A_PAGE;
+            }
+            PageId bmPageId = headerPage.get_rootId();
+            Page page = pinPage(bmPageId);
+            BMPage bmPage = new BMPage(page);
+            for (int i = 1; i < pageCounter; i++) {
+                bmPageId = bmPage.getNextPage();
+                if (bmPageId.pid == BMPage.INVALID_PAGE) {
+                    throw new Exception("Something went wrong");
+                }
+                page = pinPage(bmPageId);
+                bmPage = new BMPage(page);
+            }
+            byte[] currentPageData = bmPage.getBMpageArray();
+            currentPageData[position] = 1;
+            bmPage.writeBMPageArray(currentPageData);
+            if (bmPage.getCounter() < position) {
+                bmPage.updateCounter((short) position);
+            }
+
+            return Boolean.TRUE;
+        }
+
+        return Boolean.FALSE;
     }
 
     private PageId get_file_entry(String filename)
