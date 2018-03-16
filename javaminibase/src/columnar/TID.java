@@ -17,8 +17,8 @@ public class TID {
     }
     TID(int n, int p, RID[] rids){
         this(n, p);
+        recordIDs = new RID[n];
         for(int i=0;i<rids.length;i++){
-        	recordIDs = new RID[n];
         	recordIDs[i].copyRid(rids[i]);
         }
     }
