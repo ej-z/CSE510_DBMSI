@@ -325,11 +325,8 @@ public class Columnarfile {
 	}
 	TupleScan openTupleScan() throws InvalidTupleSizeException, IOException{
 		//must clarify with others
-		Scan[] scanobj=new Scan[numColumns];
-        for(int k=0;k<numColumns;k++){
-        	scanobj[k]=hf[k+1].openScan();
-        }
-		return null;		
+		TupleScan result=new TupleScan(this);
+		return result;		
 	}
 	Scan openColumnScan(int columnNo) throws Exception{
 		Scan scanobj=null;
