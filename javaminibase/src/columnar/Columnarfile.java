@@ -1,6 +1,15 @@
 package columnar;
 
+
+
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import global.AttrType;
 import global.Convert;
@@ -9,6 +18,7 @@ import heap.FieldNumberOutOfBoundException;
 import heap.FileAlreadyDeletedException;
 import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
+import heap.HFException;
 import heap.Heapfile;
 import heap.InvalidSlotNumberException;
 import heap.InvalidTupleSizeException;
@@ -22,7 +32,84 @@ public class Columnarfile {
 	short[] attrsizes;
 	Heapfile[] hf = null;  
     String fname = null;
-    TID[] tids; 
+    ArrayList<TID> tids;
+    //for fetching the file
+    Columnarfile(java.lang.String name) throws HFException, HFBufMgrException, HFDiskMgrException, IOException{
+    	Heapfile f = null;
+    	Scan scan = null;
+    	RID rid=null;
+    	
+    	
+    	try{
+            f=new Heapfile(name+".hdr");
+            scan = f.openScan();
+            rid = new RID();
+            //Tuple tuple;
+            boolean done=false;
+            fname = name;
+            int counter=0;
+            ArrayList<Integer> attrtypetemp = new ArrayList<Integer>();
+            while(!done){
+            	Tuple tuple = scan.getNext(rid);
+            	if(tuple!=null){
+            		done = true;
+            	}
+            	else{
+            		String data=tuple.getStrFld(0);
+            		String[] split_data=data.split("-");
+            		attrtypetemp.add(Integer.parseInt(split_data[1]));
+            		counter+=1;
+            	}
+            }
+            numColumns = (short) counter;
+            atype=new AttrType[numColumns];
+            attrsizes=new short[numColumns];
+            for(int k=0;k<numColumns;k++){
+            	atype[k].attrType = attrtypetemp.get(k);
+            	switch(atype[k].attrType){
+	            	case 0:
+	            		attrsizes[k]=25;
+	            		break;
+	            	case 1:
+	            		attrsizes[k]=4;
+	            		break;
+	            	case 2:
+	            		attrsizes[k]=4;
+	            		break;
+            	}
+            	hf[k+1]=new Heapfile(name+String.valueOf(k));
+            }
+            //till here all the member vars except tids<> is set
+            //for each entry in heapfile
+            Scan[] scanobj=new Scan[numColumns];
+            for(int k=0;k<numColumns;k++){
+            	scanobj[k]=hf[k+1].openScan();
+            }
+            done = false;
+            RID[] ridtemp=new RID[numColumns];
+            int postemp=0;
+            while(!done){
+            	Tuple[] tuparray=new Tuple[numColumns];
+            	for(int i=0;i<numColumns;i++){
+            		tuparray[i]=scanobj[i].getNext(ridtemp[i]);
+            		if(tuparray[i]==null){
+            			done=true;
+            			break;
+            		}
+            	}
+            	if(!done){
+            		//get rids of all the tuples
+            		tids.add(new TID(numColumns,postemp,ridtemp));
+            		postemp++;
+            		ridtemp=new RID[numColumns];
+            	}
+            }
+    	}
+    	catch(Exception e){
+    		e.printStackTrace();
+    	}
+    	
+    }
     /*Convention: hf[] => 0 for hdr file; the rest for tables. The implementation is modified from HFTest.java*/
 	Columnarfile(java.lang.String name, int numcols, AttrType[] types) throws IOException{
 		RID rid1 = new RID();
@@ -41,7 +128,8 @@ public class Columnarfile {
 			//initializing member variables
 			numColumns = (short)(numcols);	
 			this.fname = name;
-			tids = new TID[numColumns];
+			//tid?
+			//tids = new TID[numColumns];
 			//for TID
 			atype = new AttrType[numColumns];
 			attrsizes=new short[numColumns];
@@ -50,7 +138,7 @@ public class Columnarfile {
 				atype[i] = new AttrType(types[i].attrType);
 				switch(types[i].attrType){
 					case 0:
-						//assuming only numbers
+						attrsizes[i]=25;
 						break;
 					case 1:
 						attrsizes[i]=4;
@@ -69,13 +157,14 @@ public class Columnarfile {
 			System.out.println("Inserting "+numColumns+" records");
 			//.hdr file initialization hf[0]
 			for(int i=0;i<numColumns;i++){				
-	            //data = "name.colnumber" + type[i].attrType
+	            //data = "name.colnumber-" + type[i].attrType
 	            StringBuilder sb = new StringBuilder();
 	            sb.append(this.fname);
-	            sb.append(".");
+	            //sb.append('.');
 	            sb.append(String.valueOf(i));
-	            sb.append("--");
+	            sb.append('-');
 	            sb.append(String.valueOf(atype[i].attrType));
+	            sb.append('\n');
 	            String datastr = sb.toString();
 	            
 	            DummyRecord rec = new DummyRecord(datastr.getBytes());
@@ -90,8 +179,8 @@ public class Columnarfile {
 			}
 			//allocating memory for the others
 			try{
-				for(int i=1;i<numColumns;i++){
-					hf[i] = new Heapfile(name+String.valueOf(i));
+				for(int i=1;i<=numColumns;i++){
+					hf[i] = new Heapfile(name+String.valueOf(i-1));
 				}
 			}
 			catch(Exception e){
@@ -164,26 +253,27 @@ public class Columnarfile {
 		        	//do nothing
 			}
 		}
-		int last_index = tids.length;
-		tids[last_index]=new TID(numColumns, last_index, rids);
-		return tids[last_index];	
+		int last_index = tids.size();
+		tids.add(new TID(numColumns, last_index, rids));
+		//this should be added to the header file2
+		return tids.get(last_index);	
 	}
 	public Tuple getTuple(TID tidarg) throws Exception{
 		//fetch the columns from the heap file with the specified RIDs
 		int i;
-		for(i=0;i<tids.length;i++){
-			if(tids[i].equals(tidarg)){
+		for(i=0;i<tids.size();i++){
+			if(tids.get(i).equals(tidarg)){
 				break;
 			}
 		}
 		Tuple[] tempjoin=new Tuple[numColumns];
 		Tuple result;
-		if(i<tids.length){
+		if(i<tids.size()){
 			//means found the TID
 			int length = 0;
 			for(int j=1;j<numColumns+1;j++){
 				//assuming jth column corresponds to j+1th file
-				tempjoin[j-1] = hf[j].getRecord(tids[i].recordIDs[j-1]);
+				tempjoin[j-1] = hf[j].getRecord(tids.get(i).recordIDs[j-1]);
 				length += tempjoin[j-1].getLength();
 			}
 			byte[] datatobe = new byte[length];
@@ -201,15 +291,15 @@ public class Columnarfile {
 	}
 	public ValueClass getValue(TID tidarg, int column) throws Exception{
 		int i;
-		for(i=0;i<tids.length;i++){
-			if(tids[i].equals(tidarg)){
+		for(i=0;i<tids.size();i++){
+			if(tids.get(i).equals(tidarg)){
 				break;
 			}
 		}
 		
 		Tuple tempvalue;
-		if(i<tids.length){
-			tempvalue = hf[column].getRecord(tids[i].recordIDs[column]);
+		if(i<tids.size()){
+			tempvalue = hf[column+1].getRecord(tids.get(i).recordIDs[column]);
 			switch(atype[column].attrType){
 			case 0:
 				ValueStr result1 = new ValueStr(tempvalue.getStrFld(column));
@@ -230,17 +320,21 @@ public class Columnarfile {
 		return null;	
 	}
 	int getTupleCnt(){
-		int result = tids.length;
+		int result = tids.size();
 		return result;
 	}
-	TupleScan openTupleScan(){
+	TupleScan openTupleScan() throws InvalidTupleSizeException, IOException{
 		//must clarify with others
+		Scan[] scanobj=new Scan[numColumns];
+        for(int k=0;k<numColumns;k++){
+        	scanobj[k]=hf[k+1].openScan();
+        }
 		return null;		
 	}
 	Scan openColumnScan(int columnNo) throws Exception{
 		Scan scanobj=null;
 		if(columnNo < hf.length){
-			scanobj = new Scan(hf[columnNo]);
+			scanobj = new Scan(hf[columnNo+1]);
 		}
 		else{
 			
@@ -252,7 +346,7 @@ public class Columnarfile {
 	boolean updateTuple(TID tidarg, Tuple newtuple){
 		try{
 		Tuple old = getTuple(tidarg);
-		old = new Tuple(newtuple);
+		old.tupleCopy(newtuple);
 		RID[] ridargs=new RID[numColumns];
 		for(int i=0;i<numColumns;i++){
 			ridargs[i].copyRid(tidarg.recordIDs[i]);
@@ -265,19 +359,19 @@ public class Columnarfile {
 				//string
 				String firststr = old.getStrFld(i);
 				Tuple temp = new Tuple(firststr.getBytes(),0,firststr.length());
-				hf[i].updateRecord(ridargs[i], temp);
+				hf[i+1].updateRecord(ridargs[i], temp);
 				break;
 			case 1:
 				//integer
 				int firstint = old.getIntFld(i);
 				Tuple temp1 = new Tuple(String.valueOf(firstint).getBytes(),0,4);
-				hf[i].updateRecord(ridargs[i], temp1);
+				hf[i+1].updateRecord(ridargs[i], temp1);
 				break;
 			case 2:
 				//float
 				float firstfloat = old.getFloFld(i);
 				Tuple temp2 = new Tuple(String.valueOf(firstfloat).getBytes(),0,4);
-				hf[i].updateRecord(ridargs[i], temp2);
+				hf[i+1].updateRecord(ridargs[i], temp2);
 				break;
 			case 3:
 				//symbol
@@ -291,8 +385,46 @@ public class Columnarfile {
 		}
 		return false;
 	}
-	boolean  updateColumnofTuple(TID tid, Tuple newtuple, int column){
-		return false;	
+	boolean  updateColumnofTuple(TID tidarg, Tuple newtuple, int column){
+		try{
+			Tuple old = getTuple(tidarg);
+			old.tupleCopy(newtuple);
+			RID[] ridargs=new RID[numColumns];
+			for(int i=0;i<numColumns;i++){
+				ridargs[i].copyRid(tidarg.recordIDs[i]);
+			}
+			//insert it back to the corresponding position
+			//rid, newtuple
+			
+				switch(attrsizes[column]){
+				case 0:
+					//string
+					String firststr = old.getStrFld(column);
+					Tuple temp = new Tuple(firststr.getBytes(),0,firststr.length());
+					hf[column+1].updateRecord(ridargs[column], temp);
+					return true;
+				case 1:
+					//integer
+					int firstint = old.getIntFld(column);
+					Tuple temp1 = new Tuple(String.valueOf(firstint).getBytes(),0,4);
+					hf[column+1].updateRecord(ridargs[column], temp1);
+					return true;
+				case 2:
+					//float
+					float firstfloat = old.getFloFld(column);
+					Tuple temp2 = new Tuple(String.valueOf(firstfloat).getBytes(),0,4);
+					hf[column+1].updateRecord(ridargs[column], temp2);
+					return true;
+				case 3:
+					//symbol
+					return true;
+				}
+			
+			}
+			catch(Exception e){
+				e.printStackTrace();
+			}
+			return false;	
 	}
 }
 
