@@ -1,13 +1,7 @@
 package columnar;
 
 import java.io.IOException;
-
-import global.AttrType;
 import global.RID;
-import heap.HFBufMgrException;
-import heap.HFDiskMgrException;
-import heap.HFException;
-import heap.Heapfile;
 import heap.InvalidTupleSizeException;
 import heap.Scan;
 import heap.Tuple;
@@ -30,9 +24,12 @@ public class TupleScan {
 	}
 	Tuple getNext(TID tid) throws InvalidTupleSizeException, IOException{
 		Tuple[] temparray=new Tuple[sc.length];
+		RID[] rids = new RID[sc.length];
 		RID rid=new RID();
 		for(int i=0;i<sc.length;i++){
 			temparray[i]=sc[i].getNext(rid);
+			rids[i] = new RID();
+			rids[i].copyRid(rid);
 			rid=new RID();
 		}
 		//combine this array to a single tuple and send it
@@ -42,6 +39,9 @@ public class TupleScan {
 			System.arraycopy(temparray[j].returnTupleByteArray(), 0, datatobe, counter, temparray[j].getLength());
 			counter+=temparray[j].getLength();
 		}
+		tid.numRIDs = sc.length;
+		tid.recordIDs = rids;
+		//TODO: set TID position
 		Tuple result=new Tuple(datatobe,0,counter);
 		return result;
 	}
