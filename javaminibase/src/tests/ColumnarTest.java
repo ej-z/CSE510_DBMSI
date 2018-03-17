@@ -4,6 +4,7 @@ import columnar.Columnarfile;
 import columnar.TID;
 import columnar.TupleScan;
 import com.sun.org.apache.xpath.internal.SourceTree;
+import diskmgr.PCounter;
 import global.AttrType;
 import global.SystemDefs;
 import heap.Tuple;
@@ -104,6 +105,8 @@ class ColumnarDriver extends TestDriver {
                 cf.insertTuple(t.getTupleByteArray());
                 System.out.println(i+","+(i*1.1)+",A"+i);
             }
+            System.out.println("Reads: "+PCounter.rcounter);
+            System.out.println("Writes: "+PCounter.wcounter);
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -128,6 +131,8 @@ class ColumnarDriver extends TestDriver {
                 System.out.println(t.getIntFld(1)+","+t.getFloFld(2)+","+t.getStrFld(3));
                 t = scan.getNext(tid);
             }
+            System.out.println("Reads: "+PCounter.rcounter);
+            System.out.println("Writes: "+PCounter.wcounter);
 
         } catch (Exception e){
             e.printStackTrace();

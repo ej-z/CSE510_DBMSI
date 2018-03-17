@@ -106,7 +106,6 @@ public class Columnarfile {
 						break;
 				}
 			}
-			System.out.println("Inserting "+numColumns+" records");
 
             AttrType[] htypes = new AttrType[2+(numcols*2)];
             for(int i =0; i < htypes.length; i++) {
