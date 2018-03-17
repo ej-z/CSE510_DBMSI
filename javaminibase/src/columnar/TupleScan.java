@@ -1,51 +1,64 @@
 package columnar;
 
 import java.io.IOException;
+
+import global.AttrType;
 import global.RID;
 import heap.InvalidTupleSizeException;
+import heap.InvalidTypeException;
 import heap.Scan;
 import heap.Tuple;
 
 public class TupleScan {
+	private int counter = 0;
+	private Columnarfile file;
 	Scan[] sc;	
 	public TupleScan(){
 		
 	}
-	public TupleScan(Columnarfile fname) throws InvalidTupleSizeException, IOException{
-		sc=new Scan[fname.numColumns];
-		for(int i=0;i<fname.numColumns;i++){
-			sc[i] = fname.hf[i+1].openScan();
+	public TupleScan(Columnarfile f) throws InvalidTupleSizeException, IOException{
+		file = f;
+		sc=new Scan[file.numColumns];
+		for(int i=0;i<file.numColumns;i++){
+			sc[i] = file.hf[i+1].openScan();
 		}
 	}
-	void closetuplescan(){
+	public void closetuplescan(){
 		for(int i=0;i<sc.length;i++){
 			sc[i].closescan();
 		}	
 	}
-	Tuple getNext(TID tid) throws InvalidTupleSizeException, IOException{
-		Tuple[] temparray=new Tuple[sc.length];
+	public Tuple getNext(TID tid) throws InvalidTupleSizeException, IOException, InvalidTypeException {
+
+		int s = file.getTupleSize();
+		Tuple result = new Tuple(file.getTupleSize());
+		result.setHdr(file.numColumns, file.atype, file.getStrSize());
+		byte[] data = result.getTupleByteArray();
+		int offset = file.getOffset();
 		RID[] rids = new RID[sc.length];
 		RID rid=new RID();
-		for(int i=0;i<sc.length;i++){
-			temparray[i]=sc[i].getNext(rid);
+		for (int i = 0; i < file.numColumns; i++) {
+			Tuple t = sc[i].getNext(rid);
+
+			if(t == null)
+				return null;
+
 			rids[i] = new RID();
 			rids[i].copyRid(rid);
 			rid=new RID();
-		}
-		//combine this array to a single tuple and send it
-		byte[] datatobe = new byte[sc.length];
-		int counter=0;
-		for(int j = 0;j<sc.length;j++){
-			System.arraycopy(temparray[j].returnTupleByteArray(), 0, datatobe, counter, temparray[j].getLength());
-			counter+=temparray[j].getLength();
+			int size = file.asize[i]; //6 bytes for count and offset
+			System.arraycopy(t.getTupleByteArray(),6,data,offset,size);
+			offset += file.asize[i];
 		}
 		tid.numRIDs = sc.length;
 		tid.recordIDs = rids;
-		//TODO: set TID position
-		Tuple result=new Tuple(datatobe,0,counter);
+		tid.setPosition(counter++);
+		result.tupleInit(data, 0, data.length);
+
 		return result;
+
 	}
-	boolean position(TID tidarg){
+	public boolean position(TID tidarg){
 		RID[] ridstemp=new RID[tidarg.numRIDs];
 		for(int i=0;i<tidarg.numRIDs;i++){
 			ridstemp[i].copyRid(tidarg.recordIDs[i]);

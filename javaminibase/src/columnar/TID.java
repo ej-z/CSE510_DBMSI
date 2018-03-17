@@ -8,22 +8,24 @@ public class TID {
     int position;
     RID[] recordIDs;
 
-    TID(int n){
+    public TID(){}
+    public TID(int n){
         this.numRIDs = n;
     }
-    TID(int n, int p){
+    public TID(int n, int p){
         this(n);
         this.position = p;
     }
-    TID(int n, int p, RID[] rids){
+    public TID(int n, int p, RID[] rids){
         this(n, p);
         recordIDs = new RID[n];
         for(int i=0;i<rids.length;i++){
+            recordIDs[i] = new RID();
         	recordIDs[i].copyRid(rids[i]);
         }
     }
 
-    void copyTid(TID tid){
+    public void copyTid(TID tid){
 
         numRIDs = tid.numRIDs;
         position = tid.position;
@@ -33,7 +35,7 @@ public class TID {
         }
     }
 
-    boolean equals(TID tid){
+    public boolean equals(TID tid){
 
         if(numRIDs != tid.numRIDs) return false;
         if(position != tid.position) return false;
@@ -43,7 +45,7 @@ public class TID {
         return true;
     }
 
-    void writeToByteArray(byte[] array, int offset)throws java.io.IOException
+    public void writeToByteArray(byte[] array, int offset)throws java.io.IOException
     {
         Convert.setIntValue ( numRIDs, offset, array);
         Convert.setIntValue ( position, offset+4, array);
@@ -54,12 +56,12 @@ public class TID {
         }
     }
 
-    void setPosition(int position){
+    public void setPosition(int position){
 
         this.position = position; //is this it? not sure
     }
 
-    void setRID(int column, RID recordID){
+    public void setRID(int column, RID recordID){
 
         if(column < numRIDs){
             recordIDs[column].copyRid(recordID);

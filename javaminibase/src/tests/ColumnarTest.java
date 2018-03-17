@@ -1,9 +1,12 @@
 package tests;
 
 import columnar.Columnarfile;
+import columnar.TID;
+import columnar.TupleScan;
 import com.sun.org.apache.xpath.internal.SourceTree;
 import global.AttrType;
 import global.SystemDefs;
+import heap.Tuple;
 
 import javax.sound.midi.Soundbank;
 import java.io.IOException;
@@ -57,6 +60,7 @@ class ColumnarDriver extends TestDriver {
         //Run the tests. Return type different from C++
         boolean _pass = runAllTests();
 
+
         //Clean up again
         try {
             Runtime.getRuntime().exec(remove_logcmd);
@@ -73,23 +77,33 @@ class ColumnarDriver extends TestDriver {
 
     }
 
-    protected boolean test1() {
-
+    protected boolean test1(){
         try {
             String name = "file1";
             int numColumns = 3;
             AttrType[] types = new AttrType[numColumns];
             types[0] = new AttrType(AttrType.attrInteger);
-            types[1] = new AttrType(AttrType.attrInteger);
-            types[2] = new AttrType(AttrType.attrInteger);
-
+            types[1] = new AttrType(AttrType.attrReal);
+            types[2] = new AttrType(AttrType.attrString);
+            short[] sizes = new short[1];
+            sizes[0] = 20;
             System.out.println("Creating columnar " + name);
-            new Columnarfile(name, numColumns, types);
+            Columnarfile cf = new Columnarfile(name, numColumns, types, sizes);
 
-            System.out.println("Opening columnar " + name);
-            Columnarfile c = new Columnarfile(name);
-            int n = c.getNumColumns();
-            System.out.println("Column count :" + n);
+            System.out.println("Inserting columns..");
+            for(int i = 0; i < 20; i++){
+
+                Tuple t = new Tuple();
+                t.setHdr((short)3, types, sizes);
+                int s = t.size();
+                t = new Tuple(s);
+                t.setHdr((short)3, types, sizes);
+                t.setIntFld(1,i);
+                t.setFloFld(2, (float)(i*1.1));
+                t.setStrFld(3, "A"+i);
+                cf.insertTuple(t.getTupleByteArray());
+                System.out.println(i+","+(i*1.1)+",A"+i);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -99,6 +113,26 @@ class ColumnarDriver extends TestDriver {
     }
 
     protected boolean test2() {
+
+        String name = "file1";
+        System.out.println("Opening columnar " + name);
+
+        try {
+            Columnarfile cf = new Columnarfile(name);
+
+            TupleScan scan = cf.openTupleScan();
+
+            TID tid = new TID();
+            Tuple t = scan.getNext(tid);
+            while (t != null){
+                System.out.println(t.getIntFld(1)+","+t.getFloFld(2)+","+t.getStrFld(3));
+                t = scan.getNext(tid);
+            }
+
+        } catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
         return true;
     }
 
