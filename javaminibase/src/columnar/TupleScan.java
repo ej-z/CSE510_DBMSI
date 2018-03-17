@@ -30,7 +30,6 @@ public class TupleScan {
 	}
 	public Tuple getNext(TID tid) throws InvalidTupleSizeException, IOException, InvalidTypeException {
 
-		int s = file.getTupleSize();
 		Tuple result = new Tuple(file.getTupleSize());
 		result.setHdr(file.numColumns, file.atype, file.getStrSize());
 		byte[] data = result.getTupleByteArray();

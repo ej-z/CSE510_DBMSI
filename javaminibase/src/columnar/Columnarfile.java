@@ -234,87 +234,55 @@ public class Columnarfile {
 	}
 	public boolean updateTuple(TID tidarg, Tuple newtuple){
 		try{
-		Tuple old = getTuple(tidarg);
-		old.tupleCopy(newtuple);
-		RID[] ridargs=new RID[numColumns];
-		for(int i=0;i<numColumns;i++){
-			ridargs[i].copyRid(tidarg.recordIDs[i]);
-		}
-		//insert it back to the corresponding position
-		//rid, newtuple
-		for(int i=0;i<numColumns;i++){
-			switch(attrsizes[i]){
-			case 0:
-				//string
-				String firststr = old.getStrFld(i);
-				Tuple temp = new Tuple(firststr.getBytes(),0,firststr.length());
-				hf[i+1].updateRecord(ridargs[i], temp);
-				break;
-			case 1:
-				//integer
-				int firstint = old.getIntFld(i);
-				Tuple temp1 = new Tuple(String.valueOf(firstint).getBytes(),0,4);
-				hf[i+1].updateRecord(ridargs[i], temp1);
-				break;
-			case 2:
-				//float
-				float firstfloat = old.getFloFld(i);
-				Tuple temp2 = new Tuple(String.valueOf(firstfloat).getBytes(),0,4);
-				hf[i+1].updateRecord(ridargs[i], temp2);
-				break;
-			case 3:
-				//symbol
-				break;
-			}
-		}
-		return true;
+
+            int offset = getOffset();
+            byte[] tuplePtr = newtuple.getTupleByteArray();
+            for(int i =0; i<numColumns;i++){
+
+                int size = 6 + asize[i]; //6 bytes for count and offset
+
+                AttrType[] ttype = new AttrType[1];
+                ttype[0] = atype[i];
+                short[] tsize = new short[1];
+                tsize[0] = attrsizes[i];
+                Tuple t = new Tuple(size);
+                t.setHdr((short)1,ttype,tsize);
+                byte[] data = t.getTupleByteArray();
+                System.arraycopy(tuplePtr,offset,data,6,asize[i]);
+                t.tupleInit(data,0,data.length);
+                hf[i+1].updateRecord(tidarg.recordIDs[i], t);
+                offset += asize[i];
+            }
 		}
 		catch(Exception e){
 			e.printStackTrace();
+            return false;
 		}
-		return false;
+        return true;
 	}
-	public boolean  updateColumnofTuple(TID tidarg, Tuple newtuple, int column){
-		try{
-			Tuple old = getTuple(tidarg);
-			old.tupleCopy(newtuple);
-			RID[] ridargs=new RID[numColumns];
-			for(int i=0;i<numColumns;i++){
-				ridargs[i].copyRid(tidarg.recordIDs[i]);
-			}
-			//insert it back to the corresponding position
-			//rid, newtuple
-			
-				switch(attrsizes[column]){
-				case 0:
-					//string
-					String firststr = old.getStrFld(column);
-					Tuple temp = new Tuple(firststr.getBytes(),0,firststr.length());
-					hf[column+1].updateRecord(ridargs[column], temp);
-					return true;
-				case 1:
-					//integer
-					int firstint = old.getIntFld(column);
-					Tuple temp1 = new Tuple(String.valueOf(firstint).getBytes(),0,4);
-					hf[column+1].updateRecord(ridargs[column], temp1);
-					return true;
-				case 2:
-					//float
-					float firstfloat = old.getFloFld(column);
-					Tuple temp2 = new Tuple(String.valueOf(firstfloat).getBytes(),0,4);
-					hf[column+1].updateRecord(ridargs[column], temp2);
-					return true;
-				case 3:
-					//symbol
-					return true;
-				}
-			
-			}
-			catch(Exception e){
-				e.printStackTrace();
-			}
-			return false;	
-	}
+	public boolean  updateColumnofTuple(TID tidarg, Tuple newtuple, int column) {
+        try {
+            int offset = getOffset(column);
+            byte[] tuplePtr = newtuple.getTupleByteArray();
+
+            int size = 6 + asize[column]; //6 bytes for count and offset
+
+            AttrType[] ttype = new AttrType[1];
+            ttype[0] = atype[column];
+            short[] tsize = new short[1];
+            tsize[0] = attrsizes[column];
+            Tuple t = new Tuple(size);
+            t.setHdr((short) 1, ttype, tsize);
+            byte[] data = t.getTupleByteArray();
+            System.arraycopy(tuplePtr, offset, data, 6, asize[column]);
+            t.tupleInit(data, 0, data.length);
+            hf[column + 1].updateRecord(tidarg.recordIDs[column], t);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
 
 	public int getTupleSize(){
 
@@ -345,7 +313,14 @@ public class Columnarfile {
     }
 
     public int getOffset(){
-
         return 4 + (numColumns*2);
+    }
+
+    public int getOffset(int column){
+        int offset = 4 + (numColumns*2);
+        for(int i = 0; i < column; i++){
+            offset += asize[i];
+        }
+        return offset;
     }
 }

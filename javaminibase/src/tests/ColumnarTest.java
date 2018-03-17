@@ -129,8 +129,23 @@ class ColumnarDriver extends TestDriver {
             Tuple t = scan.getNext(tid);
             while (t != null){
                 System.out.println(t.getIntFld(1)+","+t.getFloFld(2)+","+t.getStrFld(3));
+                t.setIntFld(1, 99);
+                cf.updateTuple(tid, t);
+                t.setStrFld(3, "ABC");
+                cf.updateColumnofTuple(tid, t, 2);
                 t = scan.getNext(tid);
             }
+            scan.closetuplescan();
+
+            scan = cf.openTupleScan();
+
+            tid = new TID();
+            t = scan.getNext(tid);
+            while (t != null){
+                System.out.println(t.getIntFld(1)+","+t.getFloFld(2)+","+t.getStrFld(3));
+                t = scan.getNext(tid);
+            }
+            scan.closetuplescan();
             System.out.println("Reads: "+PCounter.rcounter);
             System.out.println("Writes: "+PCounter.wcounter);
 
