@@ -119,7 +119,7 @@ class ColumnarDriver extends TestDriver {
 
         try {
             Columnarfile cf = new Columnarfile(name);
-
+            System.out.println("File contains " + cf.getTupleCnt()+" tuples.");
             TupleScan scan = cf.openTupleScan();
 
             TID tid = new TID();
