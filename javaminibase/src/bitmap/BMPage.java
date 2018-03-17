@@ -7,12 +7,7 @@ import global.PageId;
 
 import java.io.IOException;
 
-interface ConstSlot {
-    int INVALID_SLOT = -1;
-    int EMPTY_SLOT = -1;
-}
-
-public class BMPage extends Page implements ConstSlot, GlobalConst {
+public class BMPage extends Page implements GlobalConst {
 
     public static final int DPFIXED = 2 * 2 + 3 * 4;
     public static final int MAX_POSITION_IN_A_PAGE = MAX_SPACE - DPFIXED;
@@ -24,7 +19,7 @@ public class BMPage extends Page implements ConstSlot, GlobalConst {
     public static final int CUR_PAGE = 12;
 
 
-    protected PageId curPage = new PageId();
+    private PageId curPage = new PageId();
     private short counter;
     private short freeSpace;
     private PageId prevPage = new PageId();
@@ -60,7 +55,7 @@ public class BMPage extends Page implements ConstSlot, GlobalConst {
         for (int i = 0; i < counter; i++) {
             Integer position = DPFIXED + i;
             Byte val = Convert.getByteValue(position, data);
-            System.out.println("position " + i + " value= " + val);
+            System.out.println("position=" + i + "  value=" + val);
         }
     }
 
@@ -75,7 +70,7 @@ public class BMPage extends Page implements ConstSlot, GlobalConst {
     public void init(PageId pageNo, Page apage) throws IOException {
         data = apage.getpage();
 
-        counter = (short) 0;                // no byte in use
+        counter = (short) 0;
         Convert.setShortValue(counter, COUNTER, data);
 
         curPage.pid = pageNo.pid;
@@ -141,18 +136,17 @@ public class BMPage extends Page implements ConstSlot, GlobalConst {
     }
 
     public byte[] getBMpageArray() throws Exception {
-        byte[] bitMapArray = new byte[counter];
-        for (int i = 0; i < counter; i++) {
+        byte[] bitMapArray = new byte[MAX_POSITION_IN_A_PAGE];
+        for (int i = 0; i < MAX_POSITION_IN_A_PAGE; i++) {
             bitMapArray[i] = Convert.getByteValue(DPFIXED + i, data);
         }
         return bitMapArray;
     }
 
-    void writeBMPageArray(byte[] givenData) throws IOException {
+    void writeBMPageArray(byte[] givenData) throws Exception {
         int count = givenData.length;
         for (int i = 0; i < count; i++) {
             Convert.setByteValue(givenData[i], DPFIXED + i, data);
         }
-        Convert.setShortValue((short) count, COUNTER, data);
     }
 }

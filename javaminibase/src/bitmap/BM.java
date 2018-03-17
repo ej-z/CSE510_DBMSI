@@ -16,6 +16,14 @@ public class BM implements GlobalConst {
             System.out.println("\n Empty Header!!!");
         } else {
             PageId bmPageId = header.get_rootId();
+            if (bmPageId.pid == INVALID_PAGE) {
+                System.out.println("Empty Bitmap File");
+                return;
+            }
+            System.out.println("Columnar File Name: " + header.getColumnarFileName());
+            System.out.println("Column Number: " + header.getColumnNumber());
+            System.out.println("Attribute Type: " + header.getAttrType());
+            System.out.println("Attribute Value: " + header.getValue());
             Page page = pinPage(bmPageId);
             BMPage bmPage = new BMPage(page);
             int position = 1;
@@ -30,7 +38,7 @@ public class BM implements GlobalConst {
                     break;
                 } else {
                     page = pinPage(bmPage.getNextPage());
-                    bmPage = new BMPage(page);
+                    bmPage.openBMpage(page);
                 }
             }
         }

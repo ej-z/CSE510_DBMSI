@@ -59,9 +59,6 @@ public class BitMapHeaderPage extends HFPage {
         return val.trim();
     }
 
-    /**
-     * pin the page with pageno, and get the corresponding SortedPage
-     */
     public BitMapHeaderPage(PageId pageno)
             throws ConstructPageException {
         super();
@@ -73,16 +70,10 @@ public class BitMapHeaderPage extends HFPage {
         }
     }
 
-    /**
-     * associate the SortedPage instance with the Page instance
-     */
     public BitMapHeaderPage(Page page) {
         super(page);
     }
 
-    /**
-     * new a page, and associate the SortedPage instance with the Page instance
-     */
     public BitMapHeaderPage() throws ConstructPageException {
         super();
         try {
@@ -106,17 +97,11 @@ public class BitMapHeaderPage extends HFPage {
         setCurPage(pageno);
     }
 
-    /**
-     * get the rootId
-     */
     PageId get_rootId()
             throws IOException {
         return getNextPage();
     }
 
-    /**
-     * set the rootId
-     */
     void set_rootId(PageId rootID)
             throws IOException {
         setNextPage(rootID);

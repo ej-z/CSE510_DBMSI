@@ -12,9 +12,13 @@ import global.PageId;
 import global.SystemDefs;
 import heap.HFBufMgrException;
 
-// TODO: Add void setCurPage_forGivenPosition(int Position) method
+// TODO: Add void setCurPage_forGivenPosition(int Position) method.
+// TODO: reorganise bitmap file when tuples are permanently removed.
+// TODO: createBitMapIndex in ColumnarFile.
+// TODO: Make sure the bitmaps are updated whenever there are inserts, deletes and updates.
+// TODO: Test the entire bitmap logic.
+// TODO: Check when pinning and unpinning operations should be used.
 public class BitMapFile implements GlobalConst {
-
     private String fileName;
     private BitMapHeaderPage headerPage;
     private PageId headerPageId;
@@ -75,7 +79,7 @@ public class BitMapFile implements GlobalConst {
 
     public BitMapFile(String filename, Columnarfile columnarFile, Integer columnNo, ValueClass value) throws Exception {
         headerPageId = get_file_entry(filename);
-        if (headerPageId == null) //file not exist
+        if (headerPageId == null) //file does not exist
         {
             headerPage = new BitMapHeaderPage();
             headerPageId = headerPage.getPageId();
@@ -105,10 +109,10 @@ public class BitMapFile implements GlobalConst {
     public void destroyBitMapFile() throws Exception {
         if (headerPage != null) {
             PageId pgId = headerPage.get_rootId();
-            BMPage bmPage;
+            BMPage bmPage = new BMPage();
             while (pgId.pid != INVALID_PAGE) {
                 Page page = pinPage(pgId);
-                bmPage = new BMPage(page);
+                bmPage.openBMpage(page);
                 pgId = bmPage.getNextPage();
                 unpinPage(pgId);
                 freePage(pgId);
@@ -121,6 +125,9 @@ public class BitMapFile implements GlobalConst {
     }
 
     public Boolean delete(int position) throws Exception {
+        if (headerPage == null) {
+            throw new Exception("Bitmap header page is null");
+        }
         if (headerPage.get_rootId().pid != INVALID_PAGE) {
             int pageCounter = 1;
             while (position > BMPage.MAX_POSITION_IN_A_PAGE) {
@@ -133,7 +140,7 @@ public class BitMapFile implements GlobalConst {
             for (int i = 1; i < pageCounter; i++) {
                 bmPageId = bmPage.getNextPage();
                 if (bmPageId.pid == BMPage.INVALID_PAGE) {
-                    throw new Exception("Non existent position passed as input");
+                    throw new Exception("Incorrect position passed as input");
                 }
                 page = pinPage(bmPageId);
                 bmPage = new BMPage(page);
@@ -153,6 +160,9 @@ public class BitMapFile implements GlobalConst {
 
 
     public Boolean insert(int position) throws Exception {
+        if (headerPage == null) {
+            throw new Exception("Bitmap header page is null");
+        }
         if (headerPage.get_rootId().pid != INVALID_PAGE) {
             int pageCounter = 1;
             while (position > BMPage.MAX_POSITION_IN_A_PAGE) {
@@ -165,7 +175,7 @@ public class BitMapFile implements GlobalConst {
             for (int i = 1; i < pageCounter; i++) {
                 bmPageId = bmPage.getNextPage();
                 if (bmPageId.pid == BMPage.INVALID_PAGE) {
-                    PageId newPageId = getNewBMPage();
+                    PageId newPageId = getNewBMPage(bmPageId);
                     bmPage.setNextPage(newPageId);
                     bmPageId = newPageId;
                 }
@@ -179,7 +189,7 @@ public class BitMapFile implements GlobalConst {
                 bmPage.updateCounter((short) position);
             }
         } else {
-            PageId newPageId = getNewBMPage();
+            PageId newPageId = getNewBMPage(headerPageId);
             headerPage.set_rootId(newPageId);
             insert(position);
         }
@@ -187,11 +197,12 @@ public class BitMapFile implements GlobalConst {
         return Boolean.TRUE;
     }
 
-    public PageId getNewBMPage() throws Exception {
+    public PageId getNewBMPage(PageId prevPageId) throws Exception {
         Page apage = new Page();
         PageId pageId = newPage(apage, 1);
         BMPage bmPage = new BMPage();
         bmPage.init(pageId, apage);
+        bmPage.setPrevPage(prevPageId);
 
         return pageId;
     }
@@ -267,12 +278,6 @@ public class BitMapFile implements GlobalConst {
             e.printStackTrace();
             throw new PinPageException(e, "");
         }
-    }
-
-    private void updateHeader(PageId firstPage) throws Exception {
-        BitMapHeaderPage header = new BitMapHeaderPage(pinPage(headerPageId));
-        header.set_rootId(firstPage);
-        unpinPage(headerPageId, true /* = DIRTY */);
     }
 
     private PageId newPage(Page page, int num)
