@@ -16,6 +16,8 @@ import static global.GlobalConst.NUMBUF;
 
 class ColumnarDriver extends TestDriver {
 
+    private  int numPages = 0;
+    //private boolean delete = true;
     public ColumnarDriver() {
         super("cmtest");
     }
@@ -24,7 +26,7 @@ class ColumnarDriver extends TestDriver {
 
         System.out.println("\n" + "Running " + testName() + " tests...." + "\n");
 
-        SystemDefs sysdef = new SystemDefs(dbpath, 1000, NUMBUF, "Clock");
+        SystemDefs sysdef = new SystemDefs(dbpath, numPages, NUMBUF, "Clock");
 
         // Kill anything that might be hanging around
         String newdbpath;
@@ -39,6 +41,7 @@ class ColumnarDriver extends TestDriver {
         remove_logcmd = remove_cmd + logpath;
         remove_dbcmd = remove_cmd + dbpath;
 
+        /*
         // Commands here is very machine dependent.  We assume
         // user are on UNIX system here
         try {
@@ -68,6 +71,14 @@ class ColumnarDriver extends TestDriver {
             Runtime.getRuntime().exec(remove_dbcmd);
         } catch (IOException e) {
             System.err.println("IO error: " + e);
+        }*/
+
+        boolean _pass = runAllTests();
+        try {
+            SystemDefs.JavabaseBM.flushAllPages();
+            SystemDefs.JavabaseDB.closeDB();
+        }catch (Exception e) {
+            System.err.println("error: " + e);
         }
 
         System.out.print("\n" + "..." + testName() + " tests ");
@@ -79,6 +90,8 @@ class ColumnarDriver extends TestDriver {
     }
 
     protected boolean test1(){
+        if(numPages == 0)
+            return true;
         try {
             String name = "file1";
             int numColumns = 3;
