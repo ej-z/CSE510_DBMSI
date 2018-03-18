@@ -184,8 +184,8 @@ public class Columnarfile {
         int offset = getOffset();
         for (int i = 0; i < numColumns; i++) {
             Tuple t = hf[i+1].getRecord(tidarg.recordIDs[i]);
-            System.arraycopy(t.getTupleByteArray(),6,data,offset,attrsizes[i]);
-            offset += attrsizes[i];
+            System.arraycopy(t.getTupleByteArray(),6,data,offset,asize[i]);
+            offset += asize[i];
         }
 
         result.tupleInit(data, 0, data.length);
@@ -194,23 +194,8 @@ public class Columnarfile {
     }
 	public ValueClass getValue(TID tidarg, int column) throws Exception {
 
-        Tuple tempvalue;
-        tempvalue = hf[column + 1].getRecord(tidarg.recordIDs[column]);
-        switch (atype[column].attrType) {
-            case 0:
-                ValueStr result1 = new ValueStr(tempvalue.getStrFld(column));
-                return result1;
-            case 1:
-                //integer
-                ValueInt result2 = new ValueInt(tempvalue.getIntFld(0));
-                return result2;
-            case 2:
-                //real
-                ValueFloat result3 = new ValueFloat(tempvalue.getFloFld(column));
-                return result3;
-        }
-
-        return null;
+        Tuple t = hf[column + 1].getRecord(tidarg.recordIDs[column]);
+        return ValueFactory.getValueClass(t, atype[column]);
     }
 	public int getTupleCnt(){
 		return tupleCnt;

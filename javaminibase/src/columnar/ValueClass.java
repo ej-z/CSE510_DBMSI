@@ -1,33 +1,32 @@
 package columnar;
 
-public abstract class ValueClass extends java.lang.Object{
-	
+public abstract class ValueClass<T> extends java.lang.Object{
+	protected T val;
+	public abstract T getValue();
 }
 
-class ValueInt extends ValueClass{
-	int obj;
-	ValueInt(){
-		
-	}	
-	ValueInt(int str){
-		obj = str;
+class ValueInt<Integer> extends ValueClass{
+	ValueInt(Integer v){
+		val = v;
+	}
+	public Integer getValue(){
+		return (Integer)val;
+	}
+
+}
+class ValueStr<String> extends ValueClass{
+	ValueStr(String v){
+		val = v;
+	}
+	public String getValue(){
+		return (String)val;
 	}
 }
-class ValueStr extends ValueClass{
-	String obj;
-	ValueStr(){
-		
+class ValueFlo<Float> extends ValueClass{
+	ValueFlo(Float v){
+		val = v;
 	}
-	ValueStr(String str){
-		obj = str;
-	}
-}
-class ValueFloat extends ValueClass{
-	float obj;
-	ValueFloat(){
-		
-	}
-	ValueFloat(float str){
-		obj = str;
+	public Float getValue(){
+		return (Float)val;
 	}
 }

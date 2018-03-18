@@ -3,6 +3,7 @@ package tests;
 import columnar.Columnarfile;
 import columnar.TID;
 import columnar.TupleScan;
+import columnar.ValueClass;
 import com.sun.org.apache.xpath.internal.SourceTree;
 import diskmgr.PCounter;
 import global.AttrType;
@@ -16,7 +17,7 @@ import static global.GlobalConst.NUMBUF;
 
 class ColumnarDriver extends TestDriver {
 
-    private  int numPages = 0;
+    private  int numPages = 1000;
     //private boolean delete = true;
     public ColumnarDriver() {
         super("cmtest");
@@ -115,8 +116,12 @@ class ColumnarDriver extends TestDriver {
                 t.setIntFld(1,i);
                 t.setFloFld(2, (float)(i*1.1));
                 t.setStrFld(3, "A"+i);
-                cf.insertTuple(t.getTupleByteArray());
+                TID tid =  cf.insertTuple(t.getTupleByteArray());
                 System.out.println(i+","+(i*1.1)+",A"+i);
+                t = cf.getTuple(tid);
+                System.out.println(i+","+(i*1.1)+",A"+i);
+                ValueClass v = cf.getValue(tid,2);
+                System.out.println(v.getValue());
             }
             System.out.println("Reads: "+PCounter.rcounter);
             System.out.println("Writes: "+PCounter.wcounter);
