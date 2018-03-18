@@ -5,9 +5,11 @@ import columnar.TID;
 import columnar.TupleScan;
 import columnar.ValueClass;
 import diskmgr.PCounter;
+import global.AttrOperator;
 import global.AttrType;
 import global.SystemDefs;
 import heap.Tuple;
+import iterator.*;
 
 import java.io.IOException;
 
@@ -40,7 +42,7 @@ class ColumnarDriver extends TestDriver {
         remove_logcmd = remove_cmd + logpath;
         remove_dbcmd = remove_cmd + dbpath;
 
-
+/*
         // Commands here is very machine dependent.  We assume
         // user are on UNIX system here
         try {
@@ -70,15 +72,15 @@ class ColumnarDriver extends TestDriver {
             Runtime.getRuntime().exec(remove_dbcmd);
         } catch (IOException e) {
             System.err.println("IO error: " + e);
-        }
-        /*
+        }*/
+
         boolean _pass = runAllTests();
         try {
             SystemDefs.JavabaseBM.flushAllPages();
             SystemDefs.JavabaseDB.closeDB();
         }catch (Exception e) {
             System.err.println("error: " + e);
-        }*/
+        }
 
         System.out.print("\n" + "..." + testName() + " tests ");
         System.out.print(_pass == OK ? "completely successfully" : "failed");
@@ -133,6 +135,8 @@ class ColumnarDriver extends TestDriver {
 
     protected boolean test2() {
 
+        if(numPages == 0)
+            return true;
         String name = "file1";
         System.out.println("Opening columnar " + name);
 
@@ -145,10 +149,10 @@ class ColumnarDriver extends TestDriver {
             Tuple t = scan.getNext(tid);
             while (t != null){
                 System.out.println(t.getIntFld(1)+","+t.getFloFld(2)+","+t.getStrFld(3));
-                t.setIntFld(1, 99);
-                cf.updateTuple(tid, t);
-                t.setStrFld(3, "ABC");
-                cf.updateColumnofTuple(tid, t, 2);
+                //t.setIntFld(1, 99);
+                //cf.updateTuple(tid, t);
+                //t.setStrFld(3, "ABC");
+                //cf.updateColumnofTuple(tid, t, 2);
                 t = scan.getNext(tid);
             }
             scan.closetuplescan();
@@ -173,6 +177,55 @@ class ColumnarDriver extends TestDriver {
     }
 
     protected boolean test3() {
+
+        try{
+
+            AttrType[] Stypes = new AttrType[3];
+            Stypes[0] = new AttrType(AttrType.attrInteger);
+            //Stypes[1] = new AttrType(AttrType.attrReal);
+            Stypes[1] = new AttrType(AttrType.attrString);
+
+            short[] Ssizes = new short[1];
+            Ssizes[0] = 20;
+
+            FldSpec[] Sprojection = new FldSpec[1];
+            Sprojection[0] = new FldSpec(new RelSpec(RelSpec.outer), 2);
+            //Sprojection[1] = new FldSpec(new RelSpec(RelSpec.outer), 1);
+
+
+            CondExpr[] expr = new CondExpr[2];
+            expr[0] = new CondExpr();
+            expr[0].op = new AttrOperator(AttrOperator.aopGT);
+            expr[0].next = null;
+            expr[0].type1 = new AttrType(AttrType.attrSymbol);
+            expr[0].type2 = new AttrType(AttrType.attrInteger);
+            expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), 1);
+            expr[0].operand2.integer = 10;
+            expr[1] = new CondExpr();
+            expr[1] = null;
+
+            short[] in_cols = new short[2];
+            in_cols[0] = 0;
+            in_cols[1] = 2;
+
+            ColumnarFileScan am = new ColumnarFileScan("file1", Stypes, Ssizes,
+                    (short) 2, (short) 1,
+                    Sprojection, expr, in_cols);
+
+            Tuple t = am.get_next();
+            while (t != null){
+                System.out.println(t.getStrFld(1));
+                t = am.get_next();
+            }
+            am.close();
+            System.out.println("Reads: "+PCounter.rcounter);
+            System.out.println("Writes: "+PCounter.wcounter);
+
+        } catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+
         return true;
     }
 

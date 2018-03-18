@@ -23,13 +23,39 @@ public class ColumnarFileScan extends Iterator {
     private CondExpr[]  OutputFilter;
     public FldSpec[] perm_mat;
 
-    ColumnarFileScan(java.lang.String file_name,
+    public ColumnarFileScan(java.lang.String file_name,
+                            AttrType[] in1,
+                            short[] s1_sizes,
+                            short len_in1,
+                            int n_out_flds,
+                            FldSpec[] proj_list,
+                            CondExpr[] outFilter) throws FileScanException, TupleUtilsException, IOException, InvalidRelation {
+
+        this(file_name,in1,s1_sizes,len_in1,n_out_flds,proj_list,outFilter,null);
+    }
+    /**
+     * constructor
+     *
+     * @param file_name  columnarfile to be opened
+     * @param in1[]      array showing what the attributes of the input fields are.
+     * @param s1_sizes[] shows the length of the string fields.
+     * @param len_in1    number of attributes in the input tuple
+     * @param n_out_flds number of fields in the out tuple
+     * @param proj_list  shows what input fields go where in the output tuple
+     * @param outFilter  select expressions
+     * @throws IOException         some I/O fault
+     * @throws FileScanException   exception from this class
+     * @throws TupleUtilsException exception from this class
+     * @throws InvalidRelation     invalid relation
+     */
+    public ColumnarFileScan(java.lang.String file_name,
                      AttrType[] in1,
                      short[] s1_sizes,
                      short len_in1,
                      int n_out_flds,
                      FldSpec[] proj_list,
-                     CondExpr[] outFilter) throws FileScanException, TupleUtilsException, IOException, InvalidRelation {
+                     CondExpr[] outFilter,
+                     short[] in_cols) throws FileScanException, TupleUtilsException, IOException, InvalidRelation {
 
         _in1 = in1;
         in1_len = len_in1;
@@ -57,11 +83,11 @@ public class ColumnarFileScan extends Iterator {
 
         }
         catch(Exception e) {
-            throw new FileScanException(e, "Create new heapfile failed");
+            throw new FileScanException(e, "Create new columnarfile failed");
         }
 
         try {
-            scan = f.openTupleScan();
+            scan = in_cols == null? f.openTupleScan() : f.openTupleScan(in_cols);
         }
         catch(Exception e){
             throw new FileScanException(e, "openScan() failed");

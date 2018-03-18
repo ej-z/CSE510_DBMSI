@@ -203,8 +203,13 @@ public class Columnarfile {
         return tupleCnt;
     }
     public TupleScan openTupleScan() throws InvalidTupleSizeException, IOException{
-        //must clarify with others
+
         TupleScan result=new TupleScan(this);
+        return result;
+    }
+    public TupleScan openTupleScan(short[] columns) throws InvalidTupleSizeException, IOException{
+
+        TupleScan result=new TupleScan(this, columns);
         return result;
     }
     public Scan openColumnScan(int columnNo) throws Exception{
