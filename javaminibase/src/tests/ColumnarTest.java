@@ -4,14 +4,10 @@ import columnar.Columnarfile;
 import columnar.TID;
 import columnar.TupleScan;
 import columnar.ValueClass;
-import com.sun.org.apache.xpath.internal.SourceTree;
 import diskmgr.PCounter;
 import global.AttrType;
 import global.SystemDefs;
 import heap.Tuple;
-
-import javax.sound.midi.Soundbank;
-import java.io.IOException;
 
 import static global.GlobalConst.NUMBUF;
 
@@ -202,5 +198,17 @@ public class ColumnarTest {
         ColumnarDriver cd = new ColumnarDriver();
 
         cd.runTests();
+    }
+
+    public static void main(String[] argvs) {
+
+        try {
+            ColumnarTest colTest = new ColumnarTest();
+            colTest.runTests();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Error encountered during buffer manager tests:\n");
+            Runtime.getRuntime().exit(1);
+        }
     }
 }

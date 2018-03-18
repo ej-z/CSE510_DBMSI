@@ -5,15 +5,7 @@ public abstract class ValueClass<T> extends java.lang.Object{
 	public abstract T getValue();
 }
 
-class ValueInt<Integer> extends ValueClass{
-	ValueInt(Integer v){
-		val = v;
-	}
-	public Integer getValue(){
-		return (Integer)val;
-	}
 
-}
 class ValueStr<String> extends ValueClass{
 	ValueStr(String v){
 		val = v;

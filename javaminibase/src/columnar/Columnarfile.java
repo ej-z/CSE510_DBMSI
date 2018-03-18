@@ -2,11 +2,13 @@ package columnar;
 
 
 
-import java.io.IOException;
-import java.util.ArrayList;
-
-import global.*;
+import global.AttrType;
+import global.PageId;
+import global.RID;
+import global.SystemDefs;
 import heap.*;
+
+import java.io.IOException;
 
 public class Columnarfile {
     short numColumns;
@@ -307,5 +309,9 @@ public class Columnarfile {
             offset += asize[i];
         }
         return offset;
+    }
+
+    public String getColumnarFileName() {
+        return fname;
     }
 }
