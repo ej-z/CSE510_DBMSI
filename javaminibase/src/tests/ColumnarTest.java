@@ -9,6 +9,8 @@ import global.AttrType;
 import global.SystemDefs;
 import heap.Tuple;
 
+import java.io.IOException;
+
 import static global.GlobalConst.NUMBUF;
 
 class ColumnarDriver extends TestDriver {
@@ -38,7 +40,7 @@ class ColumnarDriver extends TestDriver {
         remove_logcmd = remove_cmd + logpath;
         remove_dbcmd = remove_cmd + dbpath;
 
-        /*
+
         // Commands here is very machine dependent.  We assume
         // user are on UNIX system here
         try {
@@ -68,15 +70,15 @@ class ColumnarDriver extends TestDriver {
             Runtime.getRuntime().exec(remove_dbcmd);
         } catch (IOException e) {
             System.err.println("IO error: " + e);
-        }*/
-
+        }
+        /*
         boolean _pass = runAllTests();
         try {
             SystemDefs.JavabaseBM.flushAllPages();
             SystemDefs.JavabaseDB.closeDB();
         }catch (Exception e) {
             System.err.println("error: " + e);
-        }
+        }*/
 
         System.out.print("\n" + "..." + testName() + " tests ");
         System.out.print(_pass == OK ? "completely successfully" : "failed");

@@ -91,7 +91,7 @@ public class BitMapFile implements GlobalConst {
                 headerPage.setValue(((ValueInt) value).getValue().toString());
                 headerPage.setAttrType(new AttrType(AttrType.attrInteger));
             } else {
-                headerPage.setValue(((ValueString) value).getValue());
+                headerPage.setValue(((ValueString) value).getValue().toString());
                 headerPage.setAttrType(new AttrType(AttrType.attrString));
             }
         } else {

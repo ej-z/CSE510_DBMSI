@@ -1,3 +1,5 @@
+import tests.ColumnarTest;
+
 public class Main {
     public static void main(String[] args) {
         //BMTest.runTests();
@@ -8,7 +10,6 @@ public class Main {
         //JoinTest.runTests();
         //SortTest.runTests();
         //SM_JoinTest.runTests();
-        //ColumnarTest.runTests();
-        System.out.println("Hello World");
+        ColumnarTest.runTests();
     }
 }

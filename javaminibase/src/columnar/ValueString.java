@@ -1,17 +1,16 @@
 package columnar;
 
-public class ValueString extends ValueClass {
-    private String value;
+public class ValueString<String> extends ValueClass {
 
     public ValueString(String val) {
         value = val;
     }
 
     public String getValue() {
-        return value;
+        return (String) value;
     }
 
-    public String toString() {
-        return value;
+    public java.lang.String toString() {
+        return java.lang.String.valueOf(value);
     }
 }

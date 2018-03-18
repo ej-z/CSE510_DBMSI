@@ -1,14 +1,13 @@
 package columnar;
 
-public class ValueFloat extends ValueClass {
-    private Float value;
+public class ValueFloat<Float> extends ValueClass {
 
     public ValueFloat(Float val) {
         value = val;
     }
 
     public Float getValue() {
-        return value;
+        return (Float)value;
     }
 
     public String toString() {
