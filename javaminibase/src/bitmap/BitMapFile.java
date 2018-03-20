@@ -88,10 +88,10 @@ public class BitMapFile implements GlobalConst {
             headerPage.setColumnarFileName(columnarFile.getColumnarFileName());
             headerPage.setColumnNumber(columnNo);
             if (value instanceof ValueInt) {
-                headerPage.setValue(((ValueInt) value).getValue().toString());
+                headerPage.setValue(value.getValue().toString());
                 headerPage.setAttrType(new AttrType(AttrType.attrInteger));
             } else {
-                headerPage.setValue(((ValueString) value).getValue().toString());
+                headerPage.setValue(value.getValue().toString());
                 headerPage.setAttrType(new AttrType(AttrType.attrString));
             }
         } else {
