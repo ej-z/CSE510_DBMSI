@@ -728,7 +728,7 @@ public class DB implements GlobalConst {
 
     /** Set runsize bits starting from start to value specified
      */
-    private void set_bits( PageId start_page, int run_size, int bit )
+    private void  set_bits( PageId start_page, int run_size, int bit )
             throws InvalidPageNumberException,
             FileIOException,
             IOException,

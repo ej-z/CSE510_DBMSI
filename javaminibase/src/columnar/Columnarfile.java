@@ -19,7 +19,7 @@ public class Columnarfile {
     short[] asize;
     Heapfile[] hf = null;
     String fname = null;
-    int tupleCnt = 0;
+    //int tupleCnt = 0;
     Tuple hdr = null;
     RID hdrRid = null;
     //for fetching the file
@@ -44,7 +44,7 @@ public class Columnarfile {
             hdrRid = new RID();
             Tuple hdr = scan.getNext(hdrRid);
             this.numColumns = (short) hdr.getIntFld(1);
-            this.tupleCnt = hdr.getIntFld(2);
+            //this.tupleCnt = hdr.getIntFld(2);
             atype = new AttrType[numColumns];
             attrsizes = new short[numColumns];
             asize=new short[numColumns];
@@ -52,8 +52,8 @@ public class Columnarfile {
             hf[0] = f;
             int k = 0;
             for (int i = 0; i < numColumns; i++, k = k + 2) {
-                atype[i] = new AttrType(hdr.getIntFld(3 + k));
-                attrsizes[i] = (short)hdr.getIntFld(4 + k);
+                atype[i] = new AttrType(hdr.getIntFld(2 + k));
+                attrsizes[i] = (short)hdr.getIntFld(3 + k);
                 asize[i] = attrsizes[i];
                 if(atype[i].attrType == AttrType.attrString)
                     asize[i] += 2;
@@ -121,11 +121,11 @@ public class Columnarfile {
             hdr = new Tuple(size);
             hdr.setHdr((short)htypes.length, htypes, hsizes);
             hdr.setIntFld(1, numcols);
-            hdr.setIntFld(2, tupleCnt);
+            //hdr.setIntFld(2, tupleCnt);
             int j = 0;
             for(int i = 0; i < numcols; i++,j=j+2){
-                hdr.setIntFld(3+j, atype[i].attrType);
-                hdr.setIntFld(4+j, attrsizes[i]);
+                hdr.setIntFld(2+j, atype[i].attrType);
+                hdr.setIntFld(3+j, attrsizes[i]);
             }
             hdrRid = hf[0].insertRecord(hdr.returnTupleByteArray());
 
@@ -172,9 +172,8 @@ public class Columnarfile {
             rids[i] = hf[i+1].insertRecord(t.getTupleByteArray());
             offset += asize[i];
         }
-        TID tid = new TID(numColumns, tupleCnt, rids);
-        tupleCnt++;
-        hdr.setIntFld(2,tupleCnt);
+        int position = hf[1].positionOfRecord(rids[0]);
+        TID tid = new TID(numColumns, position, rids);
         hf[0].updateRecord(hdrRid, hdr);
         return tid;
     }
@@ -199,8 +198,8 @@ public class Columnarfile {
         Tuple t = hf[column + 1].getRecord(tidarg.recordIDs[column]);
         return ValueFactory.getValueClass(t, atype[column]);
     }
-    public int getTupleCnt(){
-        return tupleCnt;
+    public int getTupleCnt() throws HFBufMgrException, IOException, HFDiskMgrException, InvalidSlotNumberException, InvalidTupleSizeException {
+        return hf[1].getRecCnt();
     }
     public TupleScan openTupleScan() throws InvalidTupleSizeException, IOException{
 
