@@ -35,7 +35,7 @@ public class Columnarfile {
                 throw new Exception("Columnar with the name: " + name + ".hdr doesn't exists");
             }
 
-            f = new Heapfile(name + ".hdr");
+            f = new Heapfile(name + ".hdr") ;
 
             //Header tuple is organized this way
             //NumColumns, AttrType1, AttrSize1, AttrType2, AttrSize2,
