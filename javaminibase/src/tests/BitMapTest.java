@@ -52,7 +52,7 @@ class BitMapDriver extends TestDriver {
             sizes[0] = 20;
             Columnarfile cf = new Columnarfile(name, numColumns, types, sizes);
 
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 2000; i++) {
                 Tuple t = new Tuple();
                 t.setHdr((short) 3, types, sizes);
                 int s = t.size();
@@ -73,7 +73,7 @@ class BitMapDriver extends TestDriver {
                 if (t.getIntFld(1) == 4) {
                     bitMapFile.insert(count);
                 } else {
-                    bitMapFile.delete(0);
+                    bitMapFile.delete(count);
                 }
                 count++;
                 t = scan.getNext(tid);

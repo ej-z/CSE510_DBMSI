@@ -140,13 +140,15 @@ public class BitMapFile implements GlobalConst {
             for (int i = 1; i < pageCounter; i++) {
                 bmPageId = bmPage.getNextPage();
                 if (bmPageId.pid == BMPage.INVALID_PAGE) {
-                    throw new Exception("Incorrect position passed as input");
+                    PageId newPageId = getNewBMPage(bmPageId);
+                    bmPage.setNextPage(newPageId);
+                    bmPageId = newPageId;
                 }
                 page = pinPage(bmPageId);
                 bmPage = new BMPage(page);
             }
             byte[] currentPageData = bmPage.getBMpageArray();
-            currentPageData[position] = 0;
+            currentPageData[position - 1] = 0;
             bmPage.writeBMPageArray(currentPageData);
             if (bmPage.getCounter() < position) {
                 bmPage.updateCounter((short) position);
@@ -183,7 +185,7 @@ public class BitMapFile implements GlobalConst {
                 bmPage = new BMPage(page);
             }
             byte[] currentPageData = bmPage.getBMpageArray();
-            currentPageData[position] = 1;
+            currentPageData[position - 1] = 1;
             bmPage.writeBMPageArray(currentPageData);
             if (bmPage.getCounter() < position) {
                 bmPage.updateCounter((short) position);
