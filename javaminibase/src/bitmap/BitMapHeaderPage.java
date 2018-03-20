@@ -23,6 +23,14 @@ public class BitMapHeaderPage extends HFPage {
     public static final int COLUMNNAR_FILE_NAME_POSITION = ATTR_TYPE_POSITION + ATTR_TYPE_SIZE;
     public static final int VALUE_POSITION = COLUMNNAR_FILE_NAME_POSITION + COLUMNNAR_FILE_NAME_SIZE;
 
+    public void dumpHeaderPage() throws Exception {
+        System.out.println("Dump Header Page");
+        System.out.println("Colmnnar File Name= " + getColumnarFileName());
+        System.out.println("Column Number= " + getColumnNumber().toString());
+        System.out.println("Attribute Type= " + getAttrType().toString());
+        System.out.println("Value= " + getValue());
+    }
+
     public void setColumnNumber(int columnNumber) throws Exception {
         Convert.setShortValue((short) columnNumber, COLUMN_NUMBER_POSITION, data);
     }
