@@ -19,7 +19,6 @@ import java.util.List;
 // TODO: createBitMapIndex, markTupleDeleted and purge in ColumnarFile. Need to discuss this with Ejaz, Archana and Jithin.
 // TODO: Make sure the bitmaps are updated whenever there are inserts, deletes and updates. Need to discuss this with Ejaz and Archana.
 // TODO: Test the entire bitmap logic.
-// TODO: Check when pinning and unpinning operations should be used.
 public class BitMapFile implements GlobalConst {
     private String fileName;
     private BitMapHeaderPage headerPage;
