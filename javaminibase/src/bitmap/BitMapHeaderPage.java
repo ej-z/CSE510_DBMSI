@@ -88,7 +88,7 @@ public class BitMapHeaderPage extends HFPage {
         }
     }
 
-    PageId getPageId() throws IOException {
+    public PageId getPageId() throws IOException {
         return getCurPage();
     }
 

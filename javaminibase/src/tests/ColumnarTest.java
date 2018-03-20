@@ -1,17 +1,18 @@
 package tests;
 
-import columnar.Columnarfile;
-import columnar.TID;
-import columnar.TupleScan;
-import columnar.ValueClass;
+import bitmap.BitMapFile;
+import columnar.*;
 import diskmgr.PCounter;
 import global.AttrOperator;
 import global.AttrType;
+import global.IndexType;
 import global.SystemDefs;
 import heap.Tuple;
-import iterator.*;
-
-import java.io.IOException;
+import index.ColumnIndexScan;
+import iterator.ColumnarFileScan;
+import iterator.CondExpr;
+import iterator.FldSpec;
+import iterator.RelSpec;
 
 import static global.GlobalConst.NUMBUF;
 
@@ -229,10 +230,65 @@ class ColumnarDriver extends TestDriver {
         return true;
     }
 
-    protected boolean test4() {
+    protected boolean test4()  {
+
+        Columnarfile cf;
+
+        try {
+            String name = "file2";
+            int numColumns = 3;
+            AttrType[] types = new AttrType[numColumns];
+            types[0] = new AttrType(AttrType.attrInteger);
+            types[1] = new AttrType(AttrType.attrInteger);
+            types[2] = new AttrType(AttrType.attrInteger);
+            short[] sizes = new short[1];
+            sizes[0] = 20;
+            System.out.println("Creating columnar " + name);
+            cf = new Columnarfile(name, numColumns, types, sizes);
+
+            System.out.println("Inserting columns..");
+            for(int i = 0; i < 25; i++){
+
+                Tuple t = new Tuple();
+                t.setHdr((short)3, types, sizes);
+                int s = t.size();
+                t = new Tuple(s);
+                t.setHdr((short)3, types, sizes);
+                if(i%2 == 0) {
+                    t.setIntFld(1, 10);
+                    t.setIntFld(2, 10);
+                    t.setIntFld(3, 10);
+                } else {
+                    t.setIntFld(1, i);
+                    t.setIntFld(2, i);
+                    t.setIntFld(3, i);
+                }
+
+                TID tid =  cf.insertTuple(t.getTupleByteArray());
+                t = cf.getTuple(tid);
+                ValueClass v = cf.getValue(tid,2);
+                System.out.println(v.getValue());
+            }
+            System.out.println("Reads: "+PCounter.rcounter);
+            System.out.println("Writes: "+PCounter.wcounter);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
+
+        short[] targetedCols = new short[1];
+        targetedCols[0] = 1;
+        IndexType indexType = new IndexType(3);
+        try {
+            BitMapFile bitMapFile = new BitMapFile("file1.A.10", cf, 2, new ValueInt<>(10));
+            ColumnIndexScan file2 = new ColumnIndexScan(indexType, "file2",
+                    "file1.A.10", null, (short) 1, null, true, targetedCols);
+        } catch (Exception e) {
+            return false;
+        }
         return true;
     }
-
     protected boolean test5() {
         return true;
     }
