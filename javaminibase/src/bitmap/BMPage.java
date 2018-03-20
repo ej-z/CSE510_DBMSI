@@ -93,6 +93,7 @@ public class BMPage extends Page implements GlobalConst {
 
     public void updateCounter(Short value) throws Exception {
         Convert.setShortValue(value, COUNTER, data);
+        Convert.setShortValue((short) (MAX_SPACE - DPFIXED - value), FREE_SPACE, data);
     }
 
     public void openBMpage(Page apage) {

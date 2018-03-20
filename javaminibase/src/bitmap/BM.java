@@ -1,6 +1,8 @@
 package bitmap;
 
+import btree.GetFileEntryException;
 import btree.PinPageException;
+import columnar.ValueClass;
 import diskmgr.Page;
 import global.GlobalConst;
 import global.PageId;
@@ -41,6 +43,33 @@ public class BM implements GlobalConst {
                     bmPage.openBMpage(page);
                 }
             }
+        }
+    }
+
+    public Boolean checkIfBitMapFileExists(String columnnarFileName, Integer columnPosition, ValueClass value) throws Exception {
+        String bitmapFileName = columnnarFileName + "-" + columnPosition.toString() + "-" + value.toString();
+        PageId pageId = get_file_entry(bitmapFileName);
+        if (pageId == null) {
+            return Boolean.FALSE;
+        } else {
+            return Boolean.TRUE;
+        }
+    }
+
+    public PageId getBitMapHeaderPage(String columnnarFileName, Integer columnPosition, ValueClass value) throws Exception {
+        String bitmapFileName = columnnarFileName + "-" + columnPosition.toString() + "-" + value.toString();
+        PageId pageId = get_file_entry(bitmapFileName);
+
+        return pageId;
+    }
+
+    private PageId get_file_entry(String filename)
+            throws GetFileEntryException {
+        try {
+            return SystemDefs.JavabaseDB.get_file_entry(filename);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new GetFileEntryException(e, "");
         }
     }
 
