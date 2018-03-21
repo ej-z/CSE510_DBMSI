@@ -24,7 +24,7 @@ class DataPageInfo implements GlobalConst {
      * auxiliary fields of DataPageInfo
      */
 
-    public static final int size = 12;// size of DataPageInfo object in bytes
+    public static final int size = 16;// size of DataPageInfo object in bytes
     /**
      * HFPage returns int for avail space, so we use int here
      */
@@ -37,6 +37,10 @@ class DataPageInfo implements GlobalConst {
      * obvious: id of this particular data page (a HFPage)
      */
     PageId pageId = new PageId();
+    /**
+     * slot count for efficient implementation of position
+     */
+    int slotCnt;
     private byte[] data;  // a data buffer
 
     private int offset;
@@ -54,11 +58,12 @@ class DataPageInfo implements GlobalConst {
      * Default constructor
      */
     public DataPageInfo() {
-        data = new byte[12]; // size of datapageinfo
-        int availspace = 0;
+        data = new byte[16]; // size of datapageinfo
+        availspace = 0;
         recct = 0;
         pageId.pid = INVALID_PAGE;
         offset = 0;
+        slotCnt = 0;
     }
 
     /**
@@ -81,7 +86,7 @@ class DataPageInfo implements GlobalConst {
     public DataPageInfo(Tuple _atuple)
             throws InvalidTupleSizeException, IOException {
         // need check _atuple size == this.size ?otherwise, throw new exception
-        if (_atuple.getLength() != 12) {
+        if (_atuple.getLength() != 16) {
             throw new InvalidTupleSizeException(null, "HEAPFILE: TUPLE SIZE ERROR");
         } else {
             data = _atuple.returnTupleByteArray();
@@ -91,6 +96,7 @@ class DataPageInfo implements GlobalConst {
             recct = Convert.getIntValue(offset + 4, data);
             pageId = new PageId();
             pageId.pid = Convert.getIntValue(offset + 8, data);
+            slotCnt = Convert.getIntValue(offset + 12, data);
 
         }
     }
@@ -109,6 +115,7 @@ class DataPageInfo implements GlobalConst {
         Convert.setIntValue(availspace, offset, data);
         Convert.setIntValue(recct, offset + 4, data);
         Convert.setIntValue(pageId.pid, offset + 8, data);
+        Convert.setIntValue(slotCnt, offset + 12, data);
 
 
         // 2) creat a Tuple object using this array
@@ -129,7 +136,7 @@ class DataPageInfo implements GlobalConst {
         Convert.setIntValue(availspace, offset, data);
         Convert.setIntValue(recct, offset + 4, data);
         Convert.setIntValue(pageId.pid, offset + 8, data);
-
+        Convert.setIntValue(slotCnt, offset + 12, data);
         // here we assume data[] already points to buffer pool
 
     }

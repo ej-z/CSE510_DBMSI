@@ -161,7 +161,7 @@ public class Heapfile implements Filetype, GlobalConst {
         dpinfop.pageId.pid = pageId.pid;
         dpinfop.recct = 0;
         dpinfop.availspace = hfpage.available_space();
-
+        dpinfop.slotCnt = hfpage.getSlotCnt();
         return hfpage;
 
     } // end of _newDatapage
@@ -552,8 +552,7 @@ public class Heapfile implements Filetype, GlobalConst {
 
         dpinfo.recct++;
         dpinfo.availspace = currentDataPage.available_space();
-
-
+        dpinfo.slotCnt = currentDataPage.getSlotCnt();
         unpinPage(dpinfo.pageId, true /* = DIRTY */);
 
         // DataPage is now released
@@ -564,6 +563,7 @@ public class Heapfile implements Filetype, GlobalConst {
         dpinfo_ondirpage.availspace = dpinfo.availspace;
         dpinfo_ondirpage.recct = dpinfo.recct;
         dpinfo_ondirpage.pageId.pid = dpinfo.pageId.pid;
+        dpinfo_ondirpage.slotCnt = dpinfo.slotCnt;
         dpinfo_ondirpage.flushToTuple();
 
 
@@ -924,11 +924,11 @@ public class Heapfile implements Filetype, GlobalConst {
                 atuple = currentDirPage.getRecord(rid);
                 DataPageInfo dpinfo = new DataPageInfo(atuple);
 
-                if(cnt + dpinfo.recct >= position){
+                if(cnt + dpinfo.slotCnt >= position){
                     unpinPage(currentDirPageId, false /*undirty*/);
                     return new RID(dpinfo.pageId,position - cnt);
                 }
-                cnt += dpinfo.recct;
+                cnt += dpinfo.slotCnt;
 
             }
 
@@ -971,7 +971,7 @@ public class Heapfile implements Filetype, GlobalConst {
                     unpinPage(currentDirPageId, false /*undirty*/);
                     return position+r.slotNo;
                 }
-                position += dpinfo.recct;
+                position += dpinfo.slotCnt;
 
             }
 
