@@ -1,5 +1,6 @@
 package tests;
 
+import bitmap.BM;
 import bitmap.BitMapFile;
 import columnar.*;
 import diskmgr.PCounter;
@@ -232,61 +233,67 @@ class ColumnarDriver extends TestDriver {
 
     protected boolean test4()  {
 
-        Columnarfile cf;
-
         try {
-            String name = "file2";
+            String name = "file3";
             int numColumns = 3;
             AttrType[] types = new AttrType[numColumns];
             types[0] = new AttrType(AttrType.attrInteger);
-            types[1] = new AttrType(AttrType.attrInteger);
-            types[2] = new AttrType(AttrType.attrInteger);
+            types[1] = new AttrType(AttrType.attrReal);
+            types[2] = new AttrType(AttrType.attrString);
             short[] sizes = new short[1];
             sizes[0] = 20;
-            System.out.println("Creating columnar " + name);
-            cf = new Columnarfile(name, numColumns, types, sizes);
+            Columnarfile cf = new Columnarfile(name, numColumns, types, sizes);
 
-            System.out.println("Inserting columns..");
-            for(int i = 0; i < 25; i++){
-
+            for (int i = 0; i < 5; i++) {
                 Tuple t = new Tuple();
-                t.setHdr((short)3, types, sizes);
+                t.setHdr((short) 3, types, sizes);
                 int s = t.size();
                 t = new Tuple(s);
-                t.setHdr((short)3, types, sizes);
-                if(i%2 == 0) {
-                    t.setIntFld(1, 10);
-                    t.setIntFld(2, 10);
-                    t.setIntFld(3, 10);
-                } else {
-                    t.setIntFld(1, i);
-                    t.setIntFld(2, i);
-                    t.setIntFld(3, i);
-                }
-
-                TID tid =  cf.insertTuple(t.getTupleByteArray());
-                t = cf.getTuple(tid);
-                ValueClass v = cf.getValue(tid,2);
-                System.out.println(v.getValue());
+                t.setHdr((short) 3, types, sizes);
+                t.setIntFld(1, 4);
+                t.setFloFld(2, (float) (i * 1.1));
+                t.setStrFld(3, "A" + i);
+                cf.insertTuple(t.getTupleByteArray());
             }
-            System.out.println("Reads: "+PCounter.rcounter);
-            System.out.println("Writes: "+PCounter.wcounter);
+
+            BitMapFile bitMapFile = new BitMapFile("bitmap_file1", cf, 1, new ValueInt(4));
+            TupleScan scan = cf.openTupleScan();
+            TID tid = new TID();
+            Tuple t = scan.getNext(tid);
+            Integer count = 1;
+            while (t != null) {
+                if (t.getIntFld(1) == 4) {
+                    bitMapFile.insert(count);
+                } else {
+                    bitMapFile.delete(count);
+                }
+                count++;
+                t = scan.getNext(tid);
+            }
+            scan.closetuplescan();
+            BM bm = new BM();
+            bm.printBitMap(bitMapFile.getHeaderPage());
+
+            short[] targetedCols = new short[1];
+            targetedCols[0] = 1;
+            IndexType indexType = new IndexType(3);
+
+            ColumnIndexScan columnIndexScan = new ColumnIndexScan(indexType, "file3",
+                    "bitmap_file1", null, (short) 1, null, true, targetedCols);
+
+            Tuple tuple = columnIndexScan.get_next();
+
+            while (tuple != null){
+                System.out.println(tuple.getStrFld(1));
+                tuple = columnIndexScan.get_next();
+            }
+            columnIndexScan.close();
+
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
 
-
-        short[] targetedCols = new short[1];
-        targetedCols[0] = 1;
-        IndexType indexType = new IndexType(3);
-        try {
-            BitMapFile bitMapFile = new BitMapFile("file1.A.10", cf, 2, new ValueInt<>(10));
-            ColumnIndexScan file2 = new ColumnIndexScan(indexType, "file2",
-                    "file1.A.10", null, (short) 1, null, true, targetedCols);
-        } catch (Exception e) {
-            return false;
-        }
         return true;
     }
     protected boolean test5() {
