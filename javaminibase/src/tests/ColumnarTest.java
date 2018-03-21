@@ -235,24 +235,32 @@ class ColumnarDriver extends TestDriver {
 
         try {
             String name = "file3";
-            int numColumns = 3;
+            int numColumns = 4;
             AttrType[] types = new AttrType[numColumns];
             types[0] = new AttrType(AttrType.attrInteger);
             types[1] = new AttrType(AttrType.attrReal);
             types[2] = new AttrType(AttrType.attrString);
-            short[] sizes = new short[1];
+            types[3] = new AttrType(AttrType.attrString);
+            short[] sizes = new short[2];
             sizes[0] = 20;
+            sizes[1] = 20;
             Columnarfile cf = new Columnarfile(name, numColumns, types, sizes);
 
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 50; i++) {
                 Tuple t = new Tuple();
-                t.setHdr((short) 3, types, sizes);
+                t.setHdr((short) 4, types, sizes);
                 int s = t.size();
                 t = new Tuple(s);
-                t.setHdr((short) 3, types, sizes);
-                t.setIntFld(1, 4);
+                t.setHdr((short) 4, types, sizes);
+                if(i%2 == 0) {
+                    t.setIntFld(1, 4);
+                } else {
+                    t.setIntFld(1, 5);
+                }
+
                 t.setFloFld(2, (float) (i * 1.1));
                 t.setStrFld(3, "A" + i);
+                t.setStrFld(4, "B" + i);
                 cf.insertTuple(t.getTupleByteArray());
             }
 
@@ -275,12 +283,13 @@ class ColumnarDriver extends TestDriver {
             bm.printBitMap(bitMapFile.getHeaderPage());
 
             short[] targetedCols = new short[1];
-            targetedCols[0] = 1;
+            targetedCols[0] = 3;
             IndexType indexType = new IndexType(3);
 
             ColumnIndexScan columnIndexScan = new ColumnIndexScan(indexType, "file3",
                     "bitmap_file1", null, (short) 1, null, true, targetedCols);
 
+            System.out.println("Starting Index Scan");
             Tuple tuple = columnIndexScan.get_next();
 
             while (tuple != null){

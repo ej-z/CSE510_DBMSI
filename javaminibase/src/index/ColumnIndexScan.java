@@ -5,13 +5,9 @@ import bitmap.BitMapFile;
 import btree.PinPageException;
 import bufmgr.PageNotReadException;
 import columnar.Columnarfile;
-import columnar.TID;
 import columnar.TupleScan;
 import diskmgr.Page;
-import global.AttrType;
-import global.IndexType;
-import global.PageId;
-import global.SystemDefs;
+import global.*;
 import heap.Heapfile;
 import heap.InvalidTupleSizeException;
 import heap.InvalidTypeException;
@@ -25,7 +21,7 @@ import java.io.IOException;
  * Created by dixith on 3/18/18.
  */
 
-public class ColumnIndexScan extends Iterator {
+public class ColumnIndexScan extends Iterator implements GlobalConst {
     private final BitMapFile indFile;
     private final PageId rootId;
     private final CondExpr[] given_selects;
@@ -36,6 +32,8 @@ public class ColumnIndexScan extends Iterator {
     int counter;
     int scanCounter = 0;
     TupleScan scan;
+    Heapfile[] targetHeapFiles = null;
+
 
     public ColumnIndexScan(IndexType index,
                            String relName,
@@ -50,6 +48,7 @@ public class ColumnIndexScan extends Iterator {
 
         try {
             f = new Heapfile(relName);
+            targetHeapFiles = new Heapfile[targetedCols.length];
         } catch (Exception e) {
             throw new IndexException(e, "IndexScan.java: Heapfile not created");
         }
@@ -64,8 +63,11 @@ public class ColumnIndexScan extends Iterator {
                     bitMaps = new BMPage(pinPage(rootId)).getBMpageArray();
 
                     columnarfile = new Columnarfile(relName);
-                    scan = columnarfile.openTupleScan(targetedCols);
 
+                    for(int i=0; i < targetedCols.length; i++) {
+                        targetHeapFiles[i] = new Heapfile(relName + Short.toString(targetedCols[i]));
+                    }
+                    
                 } catch (Exception e) {
                     throw new IndexException(e, "IndexScan.java: BTreeFile exceptions caught from BTreeFile constructor");
                 }
@@ -86,7 +88,7 @@ public class ColumnIndexScan extends Iterator {
         while (true) {
             if(scanCounter > counter) {
                 PageId nextPage = currentBMPage.getNextPage();
-                if(nextPage!=null) {
+                if(nextPage.pid !=INVALID_PAGE) {
                     currentBMPage = new BMPage(pinPage(nextPage));
                     counter = currentBMPage.getCounter();
                     bitMaps = new BMPage(pinPage(rootId)).getBMpageArray();
@@ -96,9 +98,12 @@ public class ColumnIndexScan extends Iterator {
             } else {
 
                 if (bitMaps[scanCounter] == 1) {
-                    Tuple next = scan.getNext(new TID());
+                    for(Heapfile f: targetHeapFiles) {
+                        RID rid = f.recordAtPosition(scanCounter);
+                        scanCounter++;
+                        return f.getRecord(rid);
+                    }
                     scanCounter++;
-                    return next;
                 } else {
                     scanCounter++;
                 }
