@@ -12,12 +12,13 @@ import global.PageId;
 import global.SystemDefs;
 import heap.HFBufMgrException;
 
-// TODO: Add void setCurPage_forGivenPosition(int Position) method.
-// TODO: reorganise bitmap file when tuples are permanently removed.
-// TODO: createBitMapIndex in ColumnarFile.
-// TODO: Make sure the bitmaps are updated whenever there are inserts, deletes and updates.
+import java.util.ArrayList;
+import java.util.List;
+
+// TODO: reorganise bitmap file when tuples are permanently removed. Need to discuss this with Ejaz and Archana.
+// TODO: createBitMapIndex, markTupleDeleted and purge in ColumnarFile. Need to discuss this with Ejaz, Archana and Jithin.
+// TODO: Make sure the bitmaps are updated whenever there are inserts, deletes and updates. Need to discuss this with Ejaz and Archana.
 // TODO: Test the entire bitmap logic.
-// TODO: Check when pinning and unpinning operations should be used.
 public class BitMapFile implements GlobalConst {
     private String fileName;
     private BitMapHeaderPage headerPage;
@@ -124,7 +125,8 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
-    public Boolean delete(int position) throws Exception {
+    private void setValueAtPosition(byte value, int position) throws Exception {
+        List<PageId> pinnedPages = new ArrayList<>();
         if (headerPage == null) {
             throw new Exception("Bitmap header page is null");
         }
@@ -136,46 +138,13 @@ public class BitMapFile implements GlobalConst {
             }
             PageId bmPageId = headerPage.get_rootId();
             Page page = pinPage(bmPageId);
+            pinnedPages.add(bmPageId);
             BMPage bmPage = new BMPage(page);
             for (int i = 1; i < pageCounter; i++) {
                 bmPageId = bmPage.getNextPage();
                 if (bmPageId.pid == BMPage.INVALID_PAGE) {
-                    throw new Exception("Incorrect position passed as input");
-                }
-                page = pinPage(bmPageId);
-                bmPage = new BMPage(page);
-            }
-            byte[] currentPageData = bmPage.getBMpageArray();
-            currentPageData[position] = 0;
-            bmPage.writeBMPageArray(currentPageData);
-            if (bmPage.getCounter() < position) {
-                bmPage.updateCounter((short) position);
-            }
-
-            return Boolean.TRUE;
-        }
-
-        return Boolean.FALSE;
-    }
-
-
-    public Boolean insert(int position) throws Exception {
-        if (headerPage == null) {
-            throw new Exception("Bitmap header page is null");
-        }
-        if (headerPage.get_rootId().pid != INVALID_PAGE) {
-            int pageCounter = 1;
-            while (position > BMPage.MAX_POSITION_IN_A_PAGE) {
-                pageCounter++;
-                position -= BMPage.MAX_POSITION_IN_A_PAGE;
-            }
-            PageId bmPageId = headerPage.get_rootId();
-            Page page = pinPage(bmPageId);
-            BMPage bmPage = new BMPage(page);
-            for (int i = 1; i < pageCounter; i++) {
-                bmPageId = bmPage.getNextPage();
-                if (bmPageId.pid == BMPage.INVALID_PAGE) {
-                    PageId newPageId = getNewBMPage(bmPageId);
+                    PageId newPageId = getNewBMPage(bmPage.getCurPage());
+                    pinnedPages.add(newPageId);
                     bmPage.setNextPage(newPageId);
                     bmPageId = newPageId;
                 }
@@ -183,21 +152,34 @@ public class BitMapFile implements GlobalConst {
                 bmPage = new BMPage(page);
             }
             byte[] currentPageData = bmPage.getBMpageArray();
-            currentPageData[position] = 1;
+            currentPageData[position - 1] = value;
             bmPage.writeBMPageArray(currentPageData);
             if (bmPage.getCounter() < position) {
                 bmPage.updateCounter((short) position);
             }
         } else {
             PageId newPageId = getNewBMPage(headerPageId);
+            pinnedPages.add(newPageId);
             headerPage.set_rootId(newPageId);
-            insert(position);
+            setValueAtPosition(value, position);
         }
+        for (PageId pinnedPage : pinnedPages) {
+            unpinPage(pinnedPage, true);
+        }
+    }
 
+    public Boolean delete(int position) throws Exception {
+        setValueAtPosition((byte) 0, position);
         return Boolean.TRUE;
     }
 
-    public PageId getNewBMPage(PageId prevPageId) throws Exception {
+
+    public Boolean insert(int position) throws Exception {
+        setValueAtPosition((byte) 1, position);
+        return Boolean.TRUE;
+    }
+
+    private PageId getNewBMPage(PageId prevPageId) throws Exception {
         Page apage = new Page();
         PageId pageId = newPage(apage, 1);
         BMPage bmPage = new BMPage();

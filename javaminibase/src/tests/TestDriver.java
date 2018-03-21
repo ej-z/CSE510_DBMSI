@@ -55,7 +55,7 @@ public class TestDriver {
         //still work well because this feature is not meant to be UNIX
         //dependent.
 
-        String path = isUnix() ? "/tmp" : "C:\\Windows\\Temp\\";
+        String path = isUnix() ? "/tmp/" : "C:\\Windows\\Temp\\";
 
         dbpath = path + nameRoot + System.getProperty("user.name") + ".minibase-db";
         logpath = path + nameRoot + System.getProperty("user.name") + ".minibase-log";

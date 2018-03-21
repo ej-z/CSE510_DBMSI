@@ -1,13 +1,13 @@
 package columnar;
 
-import java.io.IOException;
-
 import global.AttrType;
 import global.RID;
 import heap.InvalidTupleSizeException;
 import heap.InvalidTypeException;
 import heap.Scan;
 import heap.Tuple;
+
+import java.io.IOException;
 
 public class TupleScan {
 	private int counter = 0;

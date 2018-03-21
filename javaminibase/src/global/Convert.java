@@ -273,7 +273,7 @@ public class Convert {
 
         // write the value to the output stream
 
-        outstr.writeShort(value);
+        outstr.writeByte(value);
 
         // creates a byte array with this output stream size and the
         // valid contents of the buffer have been copied into it
