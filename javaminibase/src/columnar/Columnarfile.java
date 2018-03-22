@@ -319,3 +319,46 @@ public class Columnarfile {
         return fname;
     }
 }
+
+public boolean markTupleDeleted(TID tidarg){
+	   	 Heapfile f = null;
+	   	 String name="markedTupleDeleted";
+	   	 try{
+	   		f = new Heapfile(name) ;
+	   		int pos=tidarg.position;
+	   		byte [] byte_pos = ByteBuffer.allocate(4).putInt(pos).array();
+	   		RID rid=f.insertRecord(byte_pos);
+	   		/*
+	   		 code for bitmap implementation logic
+	   		 */
+	       }catch(Exception e){
+	           e.printStackTrace();
+	           return false;
+	   	}
+	   	return true;
+    }
+    /*public boolean purgeAllDeletedTuples(){
+    	byte marked_rec[];
+    	int pos_marked;
+    	RID rid;
+    	boolean status;
+    	try{
+    		Heapfile f=new Heapfile("markedTupleDeleted");
+    		for(int i=0;i<f.getRecCnt();i++){
+    			//marked_rec=f.getNextrecord();
+    			//pos_marked=bytetoint(marked_rec);
+    			for(int j=1;j<=numColumns;j++){
+    				rid=hf[i].recordAtPosition(pos_marked);
+    				status=hf[i].deleteRecord(rid);
+    			}
+    		}
+    		
+    		
+    	}
+    	catch(Exception e){
+	           e.printStackTrace();
+	           return false;
+    	}
+    	return true;
+    }*/
+}
