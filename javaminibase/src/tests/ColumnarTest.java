@@ -15,6 +15,8 @@ import iterator.CondExpr;
 import iterator.FldSpec;
 import iterator.RelSpec;
 
+import java.util.List;
+
 import static global.GlobalConst.NUMBUF;
 
 class ColumnarDriver extends TestDriver {
@@ -282,19 +284,23 @@ class ColumnarDriver extends TestDriver {
             BM bm = new BM();
             bm.printBitMap(bitMapFile.getHeaderPage());
 
-            short[] targetedCols = new short[1];
-            targetedCols[0] = 3;
+            short[] targetedCols = new short[2];
+            targetedCols[0] = 2;
+            targetedCols[1] = 3;
             IndexType indexType = new IndexType(3);
 
             ColumnIndexScan columnIndexScan = new ColumnIndexScan(indexType, "file3",
                     "bitmap_file1", null, (short) 1, null, true, targetedCols);
 
-            System.out.println("Starting Index Scan");
-            Tuple tuple = columnIndexScan.get_next();
 
-            while (tuple != null){
-                System.out.println(tuple.getStrFld(1));
-                tuple = columnIndexScan.get_next();
+            System.out.println("Starting Index Scan");
+            List<Tuple> tuples = columnIndexScan.get_next();
+
+            while (tuples != null){
+                for(Tuple e: tuples) {
+                    System.out.println(e.getStrFld(1));
+                }
+                tuples = columnIndexScan.get_next();
             }
             columnIndexScan.close();
 
