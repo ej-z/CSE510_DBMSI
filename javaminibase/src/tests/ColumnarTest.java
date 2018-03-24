@@ -4,10 +4,8 @@ import bitmap.BM;
 import bitmap.BitMapFile;
 import columnar.*;
 import diskmgr.PCounter;
-import global.AttrOperator;
-import global.AttrType;
-import global.IndexType;
-import global.SystemDefs;
+import global.*;
+import heap.Scan;
 import heap.Tuple;
 import index.ColumnIndexScan;
 import iterator.ColumnarFileScan;
@@ -126,6 +124,7 @@ class ColumnarDriver extends TestDriver {
                 ValueClass v = cf.getValue(tid,2);
                 System.out.println(v.getValue());
             }
+
             System.out.println("Reads: "+PCounter.rcounter);
             System.out.println("Writes: "+PCounter.wcounter);
         } catch (Exception e) {
@@ -256,7 +255,7 @@ class ColumnarDriver extends TestDriver {
             String[] attrNames = {"Attr1", "Attr2","Attr3","Attr4", "Attr5"};
             Columnarfile cf = new Columnarfile(name, numColumns, types, sizes, attrNames);
 
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 50; i++) {
                 Tuple t = new Tuple();
                 t.setHdr((short) 5, types, sizes);
                 int s = t.size();
@@ -276,9 +275,9 @@ class ColumnarDriver extends TestDriver {
             }
 
             BitMapFile bitMapFile = new BitMapFile("bitmap_file4", cf, 1, new ValueInt(4));
-            TupleScan scan = cf.openTupleScan();
-            TID tid = new TID();
-            Tuple t = scan.getNext(tid);
+            Scan scan = cf.openColumnScan(1);
+            RID rid = new RID();
+            Tuple t = scan.getNext(rid);
             Integer count = 1;
             while (t != null) {
                 if (t.getIntFld(1) == 4) {
@@ -287,9 +286,9 @@ class ColumnarDriver extends TestDriver {
                     bitMapFile.delete(count);
                 }
                 count++;
-                t = scan.getNext(tid);
+                t = scan.getNext(rid);
             }
-            scan.closetuplescan();
+            scan.closescan();
             BM bm = new BM();
             bm.printBitMap(bitMapFile.getHeaderPage());
 

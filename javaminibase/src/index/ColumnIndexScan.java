@@ -3,12 +3,15 @@ package index;
 import bitmap.BMPage;
 import bitmap.BitMapFile;
 import btree.PinPageException;
-import bufmgr.PageNotReadException;
 import columnar.Columnarfile;
+import columnar.TID;
 import diskmgr.Page;
 import global.*;
 import heap.*;
-import iterator.*;
+import iterator.CondExpr;
+import iterator.Iterator;
+import iterator.JoinsException;
+import iterator.SortException;
 
 import java.io.IOException;
 
@@ -191,6 +194,70 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
         return null;
     }
 
+
+    public Tuple get_next(TID tid) {
+
+        try {
+            while (true) {
+                // if the scanCounter is greater than the current BM Page counter then scan
+                // the next BMPage else close the iterator
+                if (scanCounter > counter) {
+                    PageId nextPage = currentBMPage.getNextPage();
+                    if (nextPage.pid != INVALID_PAGE) {
+                        currentBMPage = new BMPage(pinPage(nextPage));
+                        counter = currentBMPage.getCounter();
+                        bitMaps = new BMPage(pinPage(rootId)).getBMpageArray();
+                    } else {
+                        close();
+                        break;
+                    }
+                } else {
+
+                    // tuple that needs to sent
+                    Tuple JTuple = new Tuple();
+                    // set the header which attribute types of the targeted columns
+                    JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+                    // for every bit 1 in the bitmap file, get the record at the position in the targeted columns
+                    // extract the data element and set it to the tuple based on the attribute type
+
+                    if (bitMaps[scanCounter] == 1) {
+
+                        for (int i = 0; i < targetHeapFiles.length; i++) {
+
+                            RID rid = targetHeapFiles[i].recordAtPosition(scanCounter);
+                            //construct TID from RID's
+                            tid.setRID(i, rid);
+                            tid.setPosition(scanCounter);
+                            Tuple record = targetHeapFiles[i].getRecord(rid);
+                            switch (targetAttrTypes[i].attrType) {
+                                case AttrType.attrInteger:
+                                    // Assumed that col heap page will have only one entry
+                                    JTuple.setIntFld(i + 1, record.getIntFld(1));
+                                    break;
+                                case AttrType.attrString:
+                                    JTuple.setStrFld(i + 1, record.getStrFld(1));
+                                    break;
+                                default:
+                                    throw new Exception("Attribute indexAttrType not supported");
+                            }
+                        }
+                        // increment the scan counter on every get_next() call
+                        scanCounter++;
+                        // return the Tuple built by scanning the targeted columns
+                        return JTuple;
+                    } else {
+                        scanCounter++;
+                    }
+                }
+            }
+        }
+        catch (Exception e){
+            System.err.println(scanCounter);
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public void close() throws IOException, JoinsException, SortException, IndexException, HFBufMgrException {
         if (!closeFlag) {
             closeFlag = true;
@@ -214,7 +281,6 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
     /**
      * short cut to access the unpinPage function in bufmgr package.
      *
-     * @see bufmgr.unpinPage
      */
     private void unpinPage(PageId pageno, boolean dirty)
             throws HFBufMgrException {
