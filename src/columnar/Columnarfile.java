@@ -2,7 +2,6 @@ package columnar;
 
 import bitmap.BitMapFile;
 import global.AttrType;
-import global.Convert;
 import global.PageId;
 import global.RID;
 import global.SystemDefs;
@@ -12,9 +11,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class Columnarfile {
-    private static final boolean OK = false;
-	private static final boolean FAIL = false;
-	short numColumns;
+    short numColumns;
     AttrType[] atype = null;
     short[] attrsizes;
 
@@ -363,83 +360,49 @@ public class Columnarfile {
         return true;
     }
 
-    public boolean markTupleDeleted(TID tidarg){
-	   	 Heapfile f = null;
-	   	 String name=getColumnarFileName() + "-markedTupleDeleted";
-	   	 try{
-	   		f = new Heapfile(name) ;
-	   		Integer pos=tidarg.position;
-	   		//byte[] byteArray = new byte[4],bt;
-	   		//byteArray=pos.byteValue();
-	   		byte [] byte_pos = ByteBuffer.allocate(4).putInt(pos).array();
-	   		RID rid=f.insertRecord(byte_pos);
-	   		/*
-	   		 bitmap index
-	   		 btree index
+    public boolean markTupleDeleted(TID tidarg) {
+        Heapfile f = null;
+        String name = "markedTupleDeleted";
+        try {
+            f = new Heapfile(name);
+            int pos = tidarg.position;
+            byte[] byte_pos = ByteBuffer.allocate(4).putInt(pos).array();
+            RID rid = f.insertRecord(byte_pos);
+               /*
+	   		 code for bitmap implementation logic
 	   		 */
-	   		
-	       }catch(Exception e){
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    /*public boolean purgeAllDeletedTuples(){
+    	byte marked_rec[];
+    	int pos_marked;
+    	RID rid;
+    	boolean status;
+    	try{
+    		Heapfile f=new Heapfile("markedTupleDeleted");
+    		for(int i=0;i<f.getRecCnt();i++){
+    			//marked_rec=f.getNextrecord();
+    			//pos_marked=bytetoint(marked_rec);
+    			for(int j=1;j<=numColumns;j++){
+    				rid=hf[i].recordAtPosition(pos_marked);
+    				status=hf[i].deleteRecord(rid);
+    			}
+    		}
+
+
+    	}
+    	catch(Exception e){
 	           e.printStackTrace();
 	           return false;
-	   	}
-	   	return true;
-   }
-   public boolean purgeAllDeletedTuples(){
-       boolean status = OK;
-       Scan scan = null;
-       RID rid = new RID();
-       Heapfile f = null;
-   	byte marked_rec[];
-   	int pos_marked;
-   	boolean done=false;
-   	   try {
-              f = new Heapfile(getColumnarFileName() + "-markedTupleDeleted");
-          } catch (Exception e) {
-              status = FAIL;
-              System.err.println(" Could not open heapfile");
-              e.printStackTrace();
-          }
+    	}
+    	return true;
+    }*/
 
-          if (status == OK) {
-              try {
-                  scan = f.openScan();
-              } catch (Exception e) {
-                  status = FAIL;
-                  System.err.println("*** Error opening scan\n");
-                  e.printStackTrace();
-              }
-          }
-
-          if (status == OK) {
-              int len, i = 0;
-              Tuple tuple = new Tuple();
- 
-              while (!done) {
-                  try {
-                      tuple = scan.getNext(rid);
-                  
-                      if (tuple == null)
-                          {
-                    	  done = true;
-                          return true;
-                          }
-                      
-                   	   pos_marked=Convert.getIntValue(0,tuple.getTupleByteArray());
-                      
-                       for(int j=1;j<=numColumns;j++){
-                       	rid=hf[i].recordAtPosition(pos_marked);
-                       	status=hf[i].deleteRecord(rid);
-                       }
-              //destroy th file
-                   
-              	}catch(Exception e){
-        	           e.printStackTrace();
-        	           return false;
-                      }
-          }   
-   	
- }return true;
-   }
     public AttrType[] getAttributes() {
         return atype;
     }
@@ -449,3 +412,4 @@ public class Columnarfile {
     }
 
 }
+
