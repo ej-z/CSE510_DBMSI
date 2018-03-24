@@ -7,6 +7,10 @@ import diskmgr.FileIOException;
 import diskmgr.InvalidPageNumberException;
 import global.*;
 import heap.*;
+import iterator.FileScanException;
+import iterator.InvalidRelation;
+import iterator.SortException;
+import iterator.TupleUtilsException;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -255,13 +259,13 @@ public class Columnarfile {
         return hf[1].getRecCnt();
     }
 
-    public TupleScan openTupleScan() throws InvalidTupleSizeException, IOException {
+    public TupleScan openTupleScan() throws Exception {
 
         TupleScan result = new TupleScan(this);
         return result;
     }
 
-    public TupleScan openTupleScan(short[] columns) throws InvalidTupleSizeException, IOException {
+    public TupleScan openTupleScan(short[] columns) throws InvalidTupleSizeException, IOException, FileScanException, TupleUtilsException, FileIOException, SortException, InvalidPageNumberException, InvalidRelation, DiskMgrException {
 
         TupleScan result = new TupleScan(this, columns);
         return result;
@@ -432,11 +436,16 @@ public class Columnarfile {
         try {
             f = new Heapfile(name);
             Integer pos = tidarg.position;
-            //byte[] byteArray = new byte[4],bt;
-            //byteArray=pos.byteValue();
-            byte[] byte_pos = ByteBuffer.allocate(4).putInt(pos).array();
-            RID rid = f.insertRecord(byte_pos);
+            AttrType[] types = new AttrType[1];
+            types[0] = new AttrType(AttrType.attrInteger);
+            short[] sizes = new short[0];
+            Tuple t = new Tuple(10);
+            t.setHdr((short)1,types, sizes);
+            t.setIntFld(1, pos);
+            //byte[] byte_pos = ByteBuffer.allocate(4).putInt(pos).array();
+            f.insertRecord(t.getTupleByteArray());
 	   		/*
+	   		TODO:
 	   		 bitmap index
 	   		 btree index
 	   		 */
@@ -487,7 +496,7 @@ public class Columnarfile {
                         return true;
                     }
 
-                    pos_marked = Convert.getIntValue(0, tuple.getTupleByteArray());
+                    pos_marked = Convert.getIntValue(6, tuple.getTupleByteArray());
 
                     for (int j = 1; j <= numColumns; j++) {
                         rid = hf[i].recordAtPosition(pos_marked);

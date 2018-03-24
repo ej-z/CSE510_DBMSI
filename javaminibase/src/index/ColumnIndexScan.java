@@ -97,75 +97,81 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
 
     // TODO think about unpinning the pages
     @Override
-    public Tuple get_next() throws IOException, JoinsException, IndexException, InvalidTupleSizeException, InvalidTypeException, PageNotReadException, TupleUtilsException, PredEvalException, SortException, LowMemException, UnknowAttrType, UnknownKeyTypeException, Exception {
+    public Tuple get_next() {
 
-        if(isIndexOnlyQuery) {
-            if(bitMaps[scanCounter] == 1) {
-                AttrType[] types = new AttrType[1];
-                types[0] = indexAttrType;
-                short[] sizes = new short[1];
-                sizes[0] = 200;
-                Tuple JTuple = new Tuple();
-                JTuple.setHdr((short) 1, types, sizes);
-
-                String value = indName.split("-")[2];
-                switch (indexAttrType.attrType) {
-                    case AttrType.attrInteger:
-                        // why 1 as it col heap file will have one field
-                        JTuple.setIntFld(1, Integer.parseInt(value));
-                        break;
-                    case AttrType.attrString:
-                        JTuple.setStrFld(1, value);
-                        break;
-                    default:
-                        throw new Exception("Attribute indexAttrType not supported");
-                }
-                scanCounter++;
-                return JTuple;
-            } else {
-                scanCounter++;
-            }
-
-        } else {
-            while (true) {
-                if(scanCounter > counter) {
-                    PageId nextPage = currentBMPage.getNextPage();
-                    if(nextPage.pid !=INVALID_PAGE) {
-                        currentBMPage = new BMPage(pinPage(nextPage));
-                        counter = currentBMPage.getCounter();
-                        bitMaps = new BMPage(pinPage(rootId)).getBMpageArray();
-                    } else {
-                        close();
-                        break;
-                    }
-                } else {
-
+        try {
+            if (isIndexOnlyQuery) {
+                if (bitMaps[scanCounter] == 1) {
+                    AttrType[] types = new AttrType[1];
+                    types[0] = indexAttrType;
+                    short[] sizes = new short[1];
+                    sizes[0] = 200;
                     Tuple JTuple = new Tuple();
-                    JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
-                    if (bitMaps[scanCounter] == 1) {
-                        for(int i =0 ; i < targetHeapFiles.length; i++) {
-                            RID rid = targetHeapFiles[i].recordAtPosition(scanCounter);
-                            Tuple record = targetHeapFiles[i].getRecord(rid);
-                            switch (targetAttrTypes[i].attrType) {
-                                case AttrType.attrInteger:
-                                    // why 1 as it col heap file will have one field
-                                    JTuple.setIntFld(i+1, record.getIntFld(1));
-                                    break;
-                                case AttrType.attrString:
-                                    JTuple.setStrFld(i+1, record.getStrFld(1));
-                                    break;
-                                default:
-                                    throw new Exception("Attribute indexAttrType not supported");
-                            }
+                    JTuple.setHdr((short) 1, types, sizes);
+
+                    String value = indName.split("-")[2];
+                    switch (indexAttrType.attrType) {
+                        case AttrType.attrInteger:
+                            // why 1 as it col heap file will have one field
+                            JTuple.setIntFld(1, Integer.parseInt(value));
+                            break;
+                        case AttrType.attrString:
+                            JTuple.setStrFld(1, value);
+                            break;
+                        default:
+                            throw new Exception("Attribute indexAttrType not supported");
+                    }
+                    scanCounter++;
+                    return JTuple;
+                } else {
+                    scanCounter++;
+                }
+
+            } else {
+                while (true) {
+                    if (scanCounter > counter) {
+                        PageId nextPage = currentBMPage.getNextPage();
+                        if (nextPage.pid != INVALID_PAGE) {
+                            currentBMPage = new BMPage(pinPage(nextPage));
+                            counter = currentBMPage.getCounter();
+                            bitMaps = new BMPage(pinPage(rootId)).getBMpageArray();
+                        } else {
+                            close();
+                            break;
                         }
-                        scanCounter++;
-                        return JTuple;
                     } else {
-                        scanCounter++;
+
+                        Tuple JTuple = new Tuple();
+                        JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+                        if (bitMaps[scanCounter] == 1) {
+                            for (int i = 0; i < targetHeapFiles.length; i++) {
+                                RID rid = targetHeapFiles[i].recordAtPosition(scanCounter);
+                                Tuple record = targetHeapFiles[i].getRecord(rid);
+                                switch (targetAttrTypes[i].attrType) {
+                                    case AttrType.attrInteger:
+                                        // why 1 as it col heap file will have one field
+                                        JTuple.setIntFld(i + 1, record.getIntFld(1));
+                                        break;
+                                    case AttrType.attrString:
+                                        JTuple.setStrFld(i + 1, record.getStrFld(1));
+                                        break;
+                                    default:
+                                        throw new Exception("Attribute indexAttrType not supported");
+                                }
+                            }
+                            scanCounter++;
+                            return JTuple;
+                        } else {
+                            scanCounter++;
+                        }
                     }
                 }
-            }
 
+            }
+        }
+        catch (Exception e){
+            System.err.println(scanCounter);
+            e.printStackTrace();
         }
         return null;
     }

@@ -179,6 +179,10 @@ public class Scan implements GlobalConst {
         return bst;
     }
 
+    public int positionOfRecord(RID rid) throws Exception {
+        return _hf.positionOfRecord(rid);
+    }
+
 
     /** Do all the constructor work
      *

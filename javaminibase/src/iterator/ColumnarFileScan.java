@@ -115,16 +115,7 @@ public class ColumnarFileScan extends Iterator {
      *@exception WrongPermat exception for wrong FldSpec argument
      */
     public Tuple get_next()
-            throws JoinsException,
-            IOException,
-            InvalidTupleSizeException,
-            InvalidTypeException,
-            PageNotReadException,
-            PredEvalException,
-            UnknowAttrType,
-            FieldNumberOutOfBoundException,
-            WrongPermat
-    {
+            throws Exception {
         TID tid = new TID();
 
         while(true) {
