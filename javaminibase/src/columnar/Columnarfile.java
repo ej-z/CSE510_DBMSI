@@ -1,5 +1,6 @@
 package columnar;
 
+import bitmap.BitMapFile;
 import global.AttrType;
 import global.PageId;
 import global.RID;
@@ -316,6 +317,40 @@ public class Columnarfile {
 
     public String getColumnarFileName() {
         return fname;
+    }
+
+    public boolean createBitMapIndex(int columnNo, ValueClass value) throws Exception {
+        Scan columnScan = openColumnScan(columnNo);
+        BitMapFile bitMapFile = new BitMapFile(getColumnarFileName() + "-" + Integer.toString(columnNo) + "-" + value.toString(), this, columnNo, value);
+        RID rid = new RID();
+        Tuple tuple;
+        int position = 1;
+        while (true) {
+            tuple = columnScan.getNext(rid);
+            if (tuple == null) {
+                break;
+            }
+            ValueClass valueClass;
+            if (value instanceof ValueInt) {
+                valueClass = new ValueInt(tuple.getIntFld(1));
+                if (valueClass.getValue() == value.getValue()) {
+                    bitMapFile.insert(position);
+                } else {
+                    bitMapFile.delete(position);
+                }
+            } else {
+                valueClass = new ValueString(tuple.getStrFld(1));
+                if (valueClass.toString().equals(value.toString())) {
+                    bitMapFile.insert(position);
+                } else {
+                    bitMapFile.delete(position);
+                }
+            }
+            position++;
+        }
+        columnScan.closescan();
+
+        return true;
     }
 
     public boolean markTupleDeleted(TID tidarg){
