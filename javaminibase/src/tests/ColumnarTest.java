@@ -147,9 +147,7 @@ class ColumnarDriver extends TestDriver {
             Columnarfile cf = new Columnarfile(name);
             System.out.println("File contains " + cf.getTupleCnt()+" tuples.");
             TupleScan scan = cf.openTupleScan();
-            int pos1 = cf.getAttributePosition("Attr1");
-            int pos2 = cf.getAttributePosition("Attr2");
-            int pos3 = cf.getAttributePosition("Attr3");
+
             TID tid = new TID();
             Tuple t = scan.getNext(tid);
             while (t != null){
@@ -234,28 +232,36 @@ class ColumnarDriver extends TestDriver {
         return true;
     }
 
+    // equality search using bitMaps
     protected boolean test4()  {
 
+        System.out.println("####################################");
+        System.out.println("#### T E S T 4 ####################");
+        System.out.println("####################################");
+
         try {
-            String name = "file3";
-            int numColumns = 4;
+            String name = "file4";
+            int numColumns = 5;
             AttrType[] types = new AttrType[numColumns];
             types[0] = new AttrType(AttrType.attrInteger);
             types[1] = new AttrType(AttrType.attrInteger);
             types[2] = new AttrType(AttrType.attrString);
             types[3] = new AttrType(AttrType.attrString);
-            short[] sizes = new short[2];
+            types[4] = new AttrType(AttrType.attrString);
+
+            short[] sizes = new short[3];
             sizes[0] = 20;
             sizes[1] = 20;
+            sizes[2] = 20;
             String[] attrNames = {"Attr1", "Attr2","Attr3","Attr4"};
             Columnarfile cf = new Columnarfile(name, numColumns, types, sizes, attrNames);
 
-            for (int i = 0; i < 50; i++) {
+            for (int i = 0; i < 100; i++) {
                 Tuple t = new Tuple();
-                t.setHdr((short) 4, types, sizes);
+                t.setHdr((short) 5, types, sizes);
                 int s = t.size();
                 t = new Tuple(s);
-                t.setHdr((short) 4, types, sizes);
+                t.setHdr((short) 5, types, sizes);
                 if(i%2 == 0) {
                     t.setIntFld(1, 4);
                 } else {
@@ -265,10 +271,11 @@ class ColumnarDriver extends TestDriver {
                 t.setIntFld(2, 6);
                 t.setStrFld(3, "A" + i);
                 t.setStrFld(4, "B" + i);
+                t.setStrFld(5, "C" + i);
                 cf.insertTuple(t.getTupleByteArray());
             }
 
-            BitMapFile bitMapFile = new BitMapFile("bitmap_file1", cf, 1, new ValueInt(4));
+            BitMapFile bitMapFile = new BitMapFile("bitmap_file4", cf, 1, new ValueInt(4));
             TupleScan scan = cf.openTupleScan();
             TID tid = new TID();
             Tuple t = scan.getNext(tid);
@@ -288,13 +295,14 @@ class ColumnarDriver extends TestDriver {
 
             short[] targetedCols = new short[3];
 
-            targetedCols[0] = 2;
-            targetedCols[1] = 3;
-            targetedCols[2] = 1;
+            targetedCols[0] = 1;
+            targetedCols[1] = 2;
+            targetedCols[2] = 3;
 
             IndexType indexType = new IndexType(3);
-            ColumnIndexScan columnIndexScan = new ColumnIndexScan(indexType, "file3",
-                    "bitmap_file1", null, (short) 1, null, true, targetedCols);
+
+            ColumnIndexScan columnIndexScan = new ColumnIndexScan(indexType, "file4",
+                    "bitmap_file4", null, (short) 1, null, false, targetedCols);
 
 
             System.out.println("Starting Index Scan");
@@ -302,23 +310,114 @@ class ColumnarDriver extends TestDriver {
 
 
             while (tuples != null){
-
-                System.out.println(tuples.getStrFld(1));
+                System.out.println(tuples.getIntFld(1));
                 System.out.println(tuples.getStrFld(2));
-                System.out.println(tuples.getIntFld(3));
-//                }
+                System.out.println(tuples.getStrFld(3));
                 tuples = columnIndexScan.get_next();
             }
             columnIndexScan.close();
-
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
 
+        System.out.println("Reads: "+  PCounter.rcounter);
+        System.out.println("Writes: "+ PCounter.wcounter);
         return true;
     }
+
     protected boolean test5() {
+
+        System.out.println("####################################");
+        System.out.println("#### T E S T 5 ####################");
+        System.out.println("####################################");
+        try {
+            String name = "file5";
+            int numColumns = 5;
+            AttrType[] types = new AttrType[numColumns];
+            types[0] = new AttrType(AttrType.attrInteger);
+            types[1] = new AttrType(AttrType.attrInteger);
+            types[2] = new AttrType(AttrType.attrString);
+            types[3] = new AttrType(AttrType.attrString);
+            types[4] = new AttrType(AttrType.attrString);
+
+            short[] sizes = new short[3];
+            sizes[0] = 20;
+            sizes[1] = 20;
+            sizes[2] = 20;
+            Columnarfile cf = new Columnarfile(name, numColumns, types, sizes);
+
+            for (int i = 0; i < 100; i++) {
+                Tuple t = new Tuple();
+                t.setHdr((short) 5, types, sizes);
+                int s = t.size();
+                t = new Tuple(s);
+                t.setHdr((short) 5, types, sizes);
+                if(i%2 == 0) {
+                    t.setIntFld(1, 4);
+                } else {
+                    t.setIntFld(1, 5);
+                }
+
+                t.setIntFld(2, 6);
+                t.setStrFld(3, "A" + i);
+                t.setStrFld(4, "B" + i);
+                t.setStrFld(5, "C" + i);
+                cf.insertTuple(t.getTupleByteArray());
+            }
+
+            BitMapFile bitMapFile = new BitMapFile("bitmap-file-5", cf, 1, new ValueInt(4));
+            TupleScan scan = cf.openTupleScan();
+            TID tid = new TID();
+            Tuple t = scan.getNext(tid);
+            Integer count = 1;
+            while (t != null) {
+                if (t.getIntFld(1) == 4) {
+                    bitMapFile.insert(count);
+                } else {
+                    bitMapFile.delete(count);
+                }
+                count++;
+                t = scan.getNext(tid);
+            }
+            scan.closetuplescan();
+
+            short[] targetedCols = new short[3];
+
+            targetedCols[0] = 1;
+            targetedCols[1] = 2;
+            targetedCols[2] = 3;
+
+            IndexType indexType = new IndexType(3);
+
+            AttrType[] attrTypes = new AttrType[1];
+            attrTypes[0] = new AttrType(AttrType.attrInteger);
+            ColumnIndexScan columnIndexScan = new ColumnIndexScan(indexType,
+                    "file5",
+                    "bitmap-file-5",
+                    new AttrType(AttrType.attrInteger),
+                    (short) 1,
+                    null,
+                    true,
+                     targetedCols);
+
+
+            System.out.println("Starting Index Scan");
+            Tuple tuples = columnIndexScan.get_next();
+
+            while (tuples != null){
+                System.out.println(tuples.getIntFld(1));
+                tuples = columnIndexScan.get_next();
+            }
+
+            columnIndexScan.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        System.out.println("Reads: "+  PCounter.rcounter);
+        System.out.println("Writes: "+ PCounter.wcounter);
         return true;
     }
 
