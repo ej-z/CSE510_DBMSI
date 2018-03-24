@@ -468,8 +468,9 @@ public class Columnarfile {
             f.insertRecord(t.getTupleByteArray());
 	   		/*
 	   		TODO:
-	   		 bitmap index
-	   		 btree index
+	   		 get the corresponding records from the individual columns
+	   		 update bitmap index
+	   		 update btree index
 	   		 */
 
         } catch (Exception e) {
