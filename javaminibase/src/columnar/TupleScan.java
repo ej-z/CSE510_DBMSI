@@ -137,9 +137,12 @@ public class TupleScan {
 						Tuple dtuple = deletedTuples.get_next();
 						if(dtuple != null)
 							currDeletePos = dtuple.getIntFld(1);
-						continue;
+						break;
 					}
 				}
+
+				if(canContinue)
+				    continue;
 
 				if (t == null)
 					return null;

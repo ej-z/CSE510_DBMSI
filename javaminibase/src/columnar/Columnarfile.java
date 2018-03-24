@@ -227,7 +227,7 @@ public class Columnarfile {
                 BMMap.get(bmIndexname).insert(position);
             }
         }
-        position = hf[0].positionOfRecord(rids[0]);
+        position = hf[1].positionOfRecord(rids[0]);
         TID tid = new TID(numColumns, position, rids);
         return tid;
     }
