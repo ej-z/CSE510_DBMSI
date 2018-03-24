@@ -1,7 +1,10 @@
 package columnar;
 
 import bitmap.BitMapFile;
-import btree.BTreeFile;
+import btree.*;
+import diskmgr.DiskMgrException;
+import diskmgr.FileIOException;
+import diskmgr.InvalidPageNumberException;
 import global.*;
 import heap.*;
 
@@ -187,6 +190,7 @@ public class Columnarfile {
 
         int offset = getOffset();
         RID[] rids = new RID[numColumns];
+        int position = 0;
         for (int i = 0; i < numColumns; i++) {
 
             int size = 6 + asize[i]; //6 bytes for count and offset
@@ -202,10 +206,25 @@ public class Columnarfile {
             t.tupleInit(data, 0, data.length);
             rids[i] = hf[i + 1].insertRecord(t.getTupleByteArray());
             offset += asize[i];
+
+            String btIndexname = getBTName(i);
+            String bmIndexname = getBMName(i, ValueFactory.getValueClass(t, atype[i]));
+            if(BTMap == null || !BTNames.contains(btIndexname)){
+                setBTFile(btIndexname);
+            }
+            if(BMMap == null || !BMNames.contains(bmIndexname)){
+                setBMFile(bmIndexname);
+            }
+            if (BTMap != null && BTMap.containsKey(btIndexname)) {
+                BTMap.get(btIndexname).insert(KeyFactory.getKeyClass(t, atype[i]), rids[i]);
+            }
+            if (BMMap != null && BMMap.containsKey(bmIndexname)) {
+                position = hf[i + 1].positionOfRecord(rids[i]);
+                BMMap.get(bmIndexname).insert(position);
+            }
         }
-        int position = hf[1].positionOfRecord(rids[0]);
+        position = hf[0].positionOfRecord(rids[0]);
         TID tid = new TID(numColumns, position, rids);
-        hf[0].updateRecord(hdrRid, hdr);
         return tid;
     }
 
@@ -500,11 +519,11 @@ public class Columnarfile {
     }
 
     public String getBTName(int columnNo){
-        return fname+columnNo;
+        return "BT"+fname+columnNo;
     }
 
     public String getBMName(int columnNo, ValueClass value){
-        return fname+columnNo+value.toString();
+        return "BM"+fname+columnNo+value.toString();
     }
 
     public String getDeletedFileName(){
@@ -540,5 +559,25 @@ public class Columnarfile {
             return false;
         }
         return true;
+    }
+
+    private void setBTFile(String name) throws Exception{
+
+        PageId pid = SystemDefs.JavabaseDB.get_file_entry(name);
+        if (pid == null) {
+            return;
+        }
+
+        BTMap.put(name, new BTreeFile(name));
+    }
+
+    private void setBMFile(String name) throws Exception {
+
+        PageId pid = SystemDefs.JavabaseDB.get_file_entry(name);
+        if (pid == null) {
+            return;
+        }
+
+        BMMap.put(name, new BitMapFile(name));
     }
 }
