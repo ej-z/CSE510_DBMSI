@@ -2,6 +2,7 @@ package columnar;
 
 import bitmap.BitMapFile;
 import global.AttrType;
+import global.Convert;
 import global.PageId;
 import global.RID;
 import global.SystemDefs;
@@ -11,7 +12,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class Columnarfile {
-    short numColumns;
+    private static final boolean OK = false;
+	private static final boolean FAIL = false;
+	short numColumns;
     AttrType[] atype = null;
     short[] attrsizes;
 
@@ -366,11 +369,14 @@ public class Columnarfile {
 	   	 try{
 	   		f = new Heapfile(name) ;
 	   		Integer pos=tidarg.position;
-	   		byte[] byteArray = new byte[4];
-	   		byteArray=pos.byteValue();
+	   		//byte[] byteArray = new byte[4],bt;
+	   		//byteArray=pos.byteValue();
 	   		byte [] byte_pos = ByteBuffer.allocate(4).putInt(pos).array();
 	   		RID rid=f.insertRecord(byte_pos);
-	   		
+	   		/*
+	   		 bitmap index
+	   		 btree index
+	   		 */
 	   		
 	       }catch(Exception e){
 	           e.printStackTrace();
@@ -385,7 +391,6 @@ public class Columnarfile {
        Heapfile f = null;
    	byte marked_rec[];
    	int pos_marked;
-   	RID rid;
    	boolean done=false;
    	   try {
               f = new Heapfile(getColumnarFileName() + "-markedTupleDeleted");
@@ -406,33 +411,34 @@ public class Columnarfile {
           }
 
           if (status == OK) {
-              int len, i = 0,pos_marked;
+              int len, i = 0;
               Tuple tuple = new Tuple();
-              boolean done = false;
+ 
               while (!done) {
                   try {
                       tuple = scan.getNext(rid);
+                  
                       if (tuple == null)
-                          done = true;
-                      else{
-                   	   
+                          {
+                    	  done = true;
+                          return true;
+                          }
+                      
                    	   pos_marked=Convert.getIntValue(0,tuple.getTupleByteArray());
-                      }
+                      
                        for(int j=1;j<=numColumns;j++){
                        	rid=hf[i].recordAtPosition(pos_marked);
                        	status=hf[i].deleteRecord(rid);
-           	   }
+                       }
               //destroy th file
                    
-              }
-   		
-   		
-   	}
-   	catch(Exception e){
-	           e.printStackTrace();
-	           return false;
-   	}
-   	return true;
+              	}catch(Exception e){
+        	           e.printStackTrace();
+        	           return false;
+                      }
+          }   
+   	
+ }return true;
    }
     public AttrType[] getAttributes() {
         return atype;
