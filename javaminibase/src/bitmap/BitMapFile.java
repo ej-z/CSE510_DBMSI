@@ -15,8 +15,6 @@ import heap.HFBufMgrException;
 import java.util.ArrayList;
 import java.util.List;
 
-// TODO: createBTreeIndex
-// TODO: markTupleDeleted and purge in ColumnarFile.
 // TODO: Naming conventions
 public class BitMapFile implements GlobalConst {
     private String fileName;

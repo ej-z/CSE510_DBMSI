@@ -1,10 +1,7 @@
 package columnar;
 
 import bitmap.BitMapFile;
-import btree.BTreeFile;
-import btree.IntegerKey;
-import btree.KeyFactory;
-import btree.StringKey;
+import btree.*;
 import diskmgr.DiskMgrException;
 import diskmgr.FileIOException;
 import diskmgr.InvalidPageNumberException;
@@ -384,12 +381,8 @@ public class Columnarfile {
     boolean createBTreeIndex(int columnNo) throws Exception {
         String indexName = getBTName(columnNo);
 
-        //TODO: Implement the actual code
-        /*
-        code to get the keytype and keysize of the column
-         */
-        int keyType = AttrType.attrInteger;
-        int keySize = 4;
+        int keyType = atype[columnNo - 1].attrType;
+        int keySize = asize[columnNo - 1];
         int deleteFashion = 0;
         BTreeFile bTreeFile = new BTreeFile(indexName, keyType, keySize, deleteFashion);
         Scan columnScan = openColumnScan(columnNo);
@@ -464,15 +457,32 @@ public class Columnarfile {
             Tuple t = new Tuple(10);
             t.setHdr((short)1,types, sizes);
             t.setIntFld(1, pos);
-            //byte[] byte_pos = ByteBuffer.allocate(4).putInt(pos).array();
             f.insertRecord(t.getTupleByteArray());
-	   		/*
-	   		TODO:
-	   		 get the corresponding records from the individual columns
-	   		 update bitmap index
-	   		 update btree index
-	   		 */
 
+            for (int i = 0; i < tidarg.numRIDs; i++) {
+                RID rid = hf[i + 1].recordAtPosition(tidarg.position);
+                Tuple tuple = hf[i + 1].getRecord(rid);
+                ValueClass valueClass;
+                KeyClass keyClass;
+                if (atype[i + 1].attrType == AttrType.attrInteger) {
+                    valueClass = new ValueInt(tuple.getIntFld(1));
+                    keyClass = new IntegerKey(tuple.getIntFld(1));
+                } else {
+                    valueClass = new ValueString(tuple.getStrFld(1));
+                    keyClass = new StringKey(tuple.getStrFld(1));
+                }
+
+                String bTreeFileName = getBTName(i + 1);
+                String bitMapFileName = getBMName(i + 1, valueClass);
+                if (BTNames.contains(bTreeFileName)) {
+                    BTreeFile bTreeFile = BTMap.get(bTreeFileName);
+                    bTreeFile.Delete(keyClass, tidarg.recordIDs[i]);
+                }
+                if (BMNames.contains(bitMapFileName)) {
+                    BitMapFile bitMapFile = BMMap.get(bitMapFileName);
+                    bitMapFile.delete(tidarg.position);
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -485,7 +495,6 @@ public class Columnarfile {
         Scan scan = null;
         RID rid = new RID();
         Heapfile f = null;
-        byte marked_rec[];
         int pos_marked;
         boolean done = false;
         try {
@@ -507,33 +516,28 @@ public class Columnarfile {
         }
 
         if (status == OK) {
-            int len, i = 0;
-            Tuple tuple = new Tuple();
-
+            int i = 0;
+            Tuple tuple;
             while (!done) {
                 try {
                     tuple = scan.getNext(rid);
-
                     if (tuple == null) {
                         done = true;
                         return true;
                     }
-
                     pos_marked = Convert.getIntValue(6, tuple.getTupleByteArray());
-
                     for (int j = 1; j <= numColumns; j++) {
                         rid = hf[i].recordAtPosition(pos_marked);
                         status = hf[i].deleteRecord(rid);
                     }
                     //destroy th file
-                    //f.deleteFile();
+                    f.deleteFile();
 
                 } catch (Exception e) {
                     e.printStackTrace();
                     return false;
                 }
             }
-
         }
         return true;
     }

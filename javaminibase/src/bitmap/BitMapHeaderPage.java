@@ -29,6 +29,8 @@ public class BitMapHeaderPage extends HFPage {
         System.out.println("Column Number= " + getColumnNumber().toString());
         System.out.println("Attribute Type= " + getAttrType().toString());
         System.out.println("Value= " + getValue());
+        System.out.println("First BMPage PageId= " + get_rootId());
+        System.out.println("Header Page Id= " + getPageId());
     }
 
     public void setColumnNumber(int columnNumber) throws Exception {
