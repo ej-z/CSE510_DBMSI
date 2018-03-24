@@ -50,7 +50,8 @@ class BitMapDriver extends TestDriver {
             types[2] = new AttrType(AttrType.attrString);
             short[] sizes = new short[1];
             sizes[0] = 20;
-            Columnarfile cf = new Columnarfile(name, numColumns, types, sizes);
+            String[] attrNames = {"Attr1", "Attr2","Attr3"};
+            Columnarfile cf = new Columnarfile(name, numColumns, types, sizes, attrNames);
 
             for (int i = 0; i < 2000; i++) {
                 Tuple t = new Tuple();

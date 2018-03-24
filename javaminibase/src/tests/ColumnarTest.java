@@ -105,7 +105,8 @@ class ColumnarDriver extends TestDriver {
             short[] sizes = new short[1];
             sizes[0] = 20;
             System.out.println("Creating columnar " + name);
-            Columnarfile cf = new Columnarfile(name, numColumns, types, sizes);
+            String[] attrNames = {"Attr1", "Attr2","Attr3"};
+            Columnarfile cf = new Columnarfile(name, numColumns, types, sizes, attrNames);
 
             System.out.println("Inserting columns..");
             for(int i = 0; i < 20; i++){
@@ -146,7 +147,9 @@ class ColumnarDriver extends TestDriver {
             Columnarfile cf = new Columnarfile(name);
             System.out.println("File contains " + cf.getTupleCnt()+" tuples.");
             TupleScan scan = cf.openTupleScan();
-
+            int pos1 = cf.getAttributePosition("Attr1");
+            int pos2 = cf.getAttributePosition("Attr2");
+            int pos3 = cf.getAttributePosition("Attr3");
             TID tid = new TID();
             Tuple t = scan.getNext(tid);
             while (t != null){
@@ -244,7 +247,8 @@ class ColumnarDriver extends TestDriver {
             short[] sizes = new short[2];
             sizes[0] = 20;
             sizes[1] = 20;
-            Columnarfile cf = new Columnarfile(name, numColumns, types, sizes);
+            String[] attrNames = {"Attr1", "Attr2","Attr3","Attr4"};
+            Columnarfile cf = new Columnarfile(name, numColumns, types, sizes, attrNames);
 
             for (int i = 0; i < 50; i++) {
                 Tuple t = new Tuple();

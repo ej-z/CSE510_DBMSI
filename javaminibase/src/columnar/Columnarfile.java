@@ -1,14 +1,15 @@
 package columnar;
 
 import bitmap.BitMapFile;
-import global.AttrType;
-import global.PageId;
-import global.RID;
-import global.SystemDefs;
+import global.*;
 import heap.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+
+import static tests.TestDriver.FAIL;
+import static tests.TestDriver.OK;
 
 public class Columnarfile {
     short numColumns;
@@ -22,6 +23,7 @@ public class Columnarfile {
     //int tupleCnt = 0;
     Tuple hdr = null;
     RID hdrRid = null;
+    HashMap<String, Integer> columnMap;
 
     //for fetching the file
     public Columnarfile(java.lang.String name) throws HFException, HFBufMgrException, HFDiskMgrException, IOException {
@@ -29,7 +31,7 @@ public class Columnarfile {
         Scan scan = null;
         RID rid = null;
         fname = name;
-
+        columnMap = new HashMap<>();
         try {
             PageId pid = SystemDefs.JavabaseDB.get_file_entry(name + ".hdr");
             if (pid == null) {
@@ -39,7 +41,7 @@ public class Columnarfile {
             f = new Heapfile(name + ".hdr");
 
             //Header tuple is organized this way
-            //NumColumns, AttrType1, AttrSize1, AttrType2, AttrSize2,
+            //NumColumns, AttrType1, AttrSize1, AttrName1, AttrType2, AttrSize2, AttrName3...
 
             scan = f.openScan();
             hdrRid = new RID();
@@ -52,9 +54,11 @@ public class Columnarfile {
             hf = new Heapfile[numColumns + 1];
             hf[0] = f;
             int k = 0;
-            for (int i = 0; i < numColumns; i++, k = k + 2) {
+            for (int i = 0; i < numColumns; i++, k = k + 3) {
                 atype[i] = new AttrType(hdr.getIntFld(2 + k));
                 attrsizes[i] = (short) hdr.getIntFld(3 + k);
+                String colName = hdr.getStrFld(4 + k);
+                columnMap.put(colName, i);
                 asize[i] = attrsizes[i];
                 if (atype[i].attrType == AttrType.attrString)
                     asize[i] += 2;
@@ -66,9 +70,10 @@ public class Columnarfile {
     }
 
     /*Convention: hf[] => 0 for hdr file; the rest for tables. The implementation is modified from HFTest.java*/
-    public Columnarfile(java.lang.String name, int numcols, AttrType[] types, short[] attrSizes) throws IOException, InvalidTupleSizeException, InvalidTypeException, FieldNumberOutOfBoundException, SpaceNotAvailableException, HFException, HFBufMgrException, InvalidSlotNumberException, HFDiskMgrException {
+    public Columnarfile(java.lang.String name, int numcols, AttrType[] types, short[] attrSizes, String[] colnames) throws IOException, InvalidTupleSizeException, InvalidTypeException, FieldNumberOutOfBoundException, SpaceNotAvailableException, HFException, HFBufMgrException, InvalidSlotNumberException, HFDiskMgrException {
         RID rid1 = new RID();
         boolean status = true;
+        columnMap = new HashMap<>();
         try {
             hf = new Heapfile[numcols + 1];
             //hf[0] for header file by default
@@ -78,13 +83,9 @@ public class Columnarfile {
             status = false;
             e.printStackTrace();
         }
-            if (status == true) {
-            //initializing member variables
+        if (status == true) {
             numColumns = (short) (numcols);
             this.fname = name;
-            //tid?
-            //tids = new TID[numColumns];
-            //for TID
             atype = new AttrType[numColumns];
             attrsizes = new short[numColumns];
             asize = new short[numColumns];
@@ -110,11 +111,18 @@ public class Columnarfile {
                 }
             }
 
-            AttrType[] htypes = new AttrType[2 + (numcols * 2)];
-            for (int i = 0; i < htypes.length; i++) {
+            AttrType[] htypes = new AttrType[2 + (numcols * 3)];
+            htypes[0] = new AttrType(AttrType.attrInteger);
+            for (int i = 1; i < htypes.length-1; i = i + 3) {
                 htypes[i] = new AttrType(AttrType.attrInteger);
+                htypes[i + 1] = new AttrType(AttrType.attrInteger);
+                htypes[i + 2] = new AttrType(AttrType.attrString);
             }
-            short[] hsizes = new short[0];
+            htypes[htypes.length - 1] = new AttrType(AttrType.attrInteger);
+            short[] hsizes = new short[numcols];
+            for (int i = 0; i < numcols; i++) {
+                hsizes[i] = 20; //column name can't be more than 20 chars
+            }
             hdr = new Tuple();
             hdr.setHdr((short) htypes.length, htypes, hsizes);
             int size = hdr.size();
@@ -122,11 +130,12 @@ public class Columnarfile {
             hdr = new Tuple(size);
             hdr.setHdr((short) htypes.length, htypes, hsizes);
             hdr.setIntFld(1, numcols);
-            //hdr.setIntFld(2, tupleCnt);
             int j = 0;
-            for (int i = 0; i < numcols; i++, j = j + 2) {
+            for (int i = 0; i < numcols; i++, j = j + 3) {
                 hdr.setIntFld(2 + j, atype[i].attrType);
                 hdr.setIntFld(3 + j, attrsizes[i]);
+                hdr.setStrFld(4 + j, colnames[i]);
+                columnMap.put(colnames[i], i);
             }
             hdrRid = hf[0].insertRecord(hdr.returnTupleByteArray());
 
@@ -360,84 +369,84 @@ public class Columnarfile {
         return true;
     }
 
-    public boolean markTupleDeleted(TID tidarg){
-	   	 Heapfile f = null;
-	   	 String name=getColumnarFileName() + "-markedTupleDeleted";
-	   	 try{
-	   		f = new Heapfile(name) ;
-	   		Integer pos=tidarg.position;
-	   		//byte[] byteArray = new byte[4],bt;
-	   		//byteArray=pos.byteValue();
-	   		byte [] byte_pos = ByteBuffer.allocate(4).putInt(pos).array();
-	   		RID rid=f.insertRecord(byte_pos);
+    public boolean markTupleDeleted(TID tidarg) {
+        Heapfile f = null;
+        String name = getColumnarFileName() + "-markedTupleDeleted";
+        try {
+            f = new Heapfile(name);
+            Integer pos = tidarg.position;
+            //byte[] byteArray = new byte[4],bt;
+            //byteArray=pos.byteValue();
+            byte[] byte_pos = ByteBuffer.allocate(4).putInt(pos).array();
+            RID rid = f.insertRecord(byte_pos);
 	   		/*
 	   		 bitmap index
 	   		 btree index
 	   		 */
-	   		
-	       }catch(Exception e){
-	           e.printStackTrace();
-	           return false;
-	   	}
-	   	return true;
-   }
-   public boolean purgeAllDeletedTuples(){
-       boolean status = OK;
-       Scan scan = null;
-       RID rid = new RID();
-       Heapfile f = null;
-   	byte marked_rec[];
-   	int pos_marked;
-   	boolean done=false;
-   	   try {
-              f = new Heapfile(getColumnarFileName() + "-markedTupleDeleted");
-          } catch (Exception e) {
-              status = FAIL;
-              System.err.println(" Could not open heapfile");
-              e.printStackTrace();
-          }
 
-          if (status == OK) {
-              try {
-                  scan = f.openScan();
-              } catch (Exception e) {
-                  status = FAIL;
-                  System.err.println("*** Error opening scan\n");
-                  e.printStackTrace();
-              }
-          }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
 
-          if (status == OK) {
-              int len, i = 0;
-              Tuple tuple = new Tuple();
- 
-              while (!done) {
-                  try {
-                      tuple = scan.getNext(rid);
-                  
-                      if (tuple == null)
-                          {
-                    	  done = true;
-                          return true;
-                          }
-                      
-                   	   pos_marked=Convert.getIntValue(0,tuple.getTupleByteArray());
-                      
-                       for(int j=1;j<=numColumns;j++){
-                       	rid=hf[i].recordAtPosition(pos_marked);
-                       	status=hf[i].deleteRecord(rid);
-                       }
-              //destroy th file
-                   
-              	}catch(Exception e){
-        	           e.printStackTrace();
-        	           return false;
-                      }
-          }   
-   	
- }return true;
-   }
+    public boolean purgeAllDeletedTuples() {
+        boolean status = OK;
+        Scan scan = null;
+        RID rid = new RID();
+        Heapfile f = null;
+        byte marked_rec[];
+        int pos_marked;
+        boolean done = false;
+        try {
+            f = new Heapfile(getColumnarFileName() + "-markedTupleDeleted");
+        } catch (Exception e) {
+            status = FAIL;
+            System.err.println(" Could not open heapfile");
+            e.printStackTrace();
+        }
 
+        if (status == OK) {
+            try {
+                scan = f.openScan();
+            } catch (Exception e) {
+                status = FAIL;
+                System.err.println("*** Error opening scan\n");
+                e.printStackTrace();
+            }
+        }
+
+        if (status == OK) {
+            int len, i = 0;
+            Tuple tuple = new Tuple();
+
+            while (!done) {
+                try {
+                    tuple = scan.getNext(rid);
+
+                    if (tuple == null) {
+                        done = true;
+                        return true;
+                    }
+
+                    pos_marked = Convert.getIntValue(0, tuple.getTupleByteArray());
+
+                    for (int j = 1; j <= numColumns; j++) {
+                        rid = hf[i].recordAtPosition(pos_marked);
+                        status = hf[i].deleteRecord(rid);
+                    }
+                    //destroy th file
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+
+        }
+        return true;
+    }
 
 
     public AttrType[] getAttributes() {
@@ -448,4 +457,7 @@ public class Columnarfile {
         return attrsizes;
     }
 
+    public int getAttributePosition(String name){
+        return columnMap.get(name);
+    }
 }
