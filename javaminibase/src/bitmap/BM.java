@@ -10,9 +10,18 @@ import global.SystemDefs;
 
 public class BM implements GlobalConst {
 
+    /**
+     * Default constructor
+     */
     public BM() {
     }
 
+    /**
+     * Pretty print the bitmap
+     *
+     * @param header
+     * @throws Exception
+     */
     public void printBitMap(BitMapHeaderPage header) throws Exception {
         if (header == null) {
             System.out.println("\n Empty Header!!!");
@@ -46,6 +55,14 @@ public class BM implements GlobalConst {
         }
     }
 
+    /***
+     * checks if a bitmap file exists or not
+     * @param columnnarFileName
+     * @param columnPosition
+     * @param value
+     * @return Boolean
+     * @throws Exception
+     */
     public Boolean checkIfBitMapFileExists(String columnnarFileName, Integer columnPosition, ValueClass value) throws Exception {
         String bitmapFileName = columnnarFileName + "-" + columnPosition.toString() + "-" + value.toString();
         PageId pageId = get_file_entry(bitmapFileName);
@@ -56,6 +73,14 @@ public class BM implements GlobalConst {
         }
     }
 
+    /***
+     * Get the header page Id of the bitmap
+     * @param columnnarFileName
+     * @param columnPosition
+     * @param value
+     * @return PageId
+     * @throws Exception
+     */
     public PageId getBitMapHeaderPage(String columnnarFileName, Integer columnPosition, ValueClass value) throws Exception {
         String bitmapFileName = columnnarFileName + "-" + columnPosition.toString() + "-" + value.toString();
         PageId pageId = get_file_entry(bitmapFileName);

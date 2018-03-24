@@ -17,6 +17,7 @@ import java.util.List;
 
 // TODO: createBTreeIndex
 // TODO: markTupleDeleted and purge in ColumnarFile.
+// TODO: Naming conventions
 public class BitMapFile implements GlobalConst {
     private String fileName;
     private BitMapHeaderPage headerPage;
@@ -26,6 +27,10 @@ public class BitMapFile implements GlobalConst {
     private AttrType attrType;
     private ValueClass value;
 
+    /***
+     * Get
+     * @return
+     */
     public Integer getColumnNumber() {
         return columnNumber;
     }

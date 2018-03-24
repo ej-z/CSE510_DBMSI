@@ -40,6 +40,7 @@ class BitMapDriver extends TestDriver {
 
     protected boolean test1() {
         try {
+            System.out.println("Tests covered: printing bitmap, creating bitmap");
             String name = "file1";
             int numColumns = 3;
             AttrType[] types = new AttrType[numColumns];
@@ -67,6 +68,8 @@ class BitMapDriver extends TestDriver {
             BitMapFile bitMapFile = new BitMapFile("BMfile114");
             BM bm = new BM();
             bm.printBitMap(bitMapFile.getHeaderPage());
+
+
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -76,6 +79,13 @@ class BitMapDriver extends TestDriver {
     }
 
     protected boolean test2() {
+        try {
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
         return true;
     }
 

@@ -1,7 +1,10 @@
 package columnar;
 
 import bitmap.BitMapFile;
-import btree.*;
+import btree.BTreeFile;
+import btree.IntegerKey;
+import btree.KeyFactory;
+import btree.StringKey;
 import diskmgr.DiskMgrException;
 import diskmgr.FileIOException;
 import diskmgr.InvalidPageNumberException;
@@ -13,7 +16,6 @@ import iterator.SortException;
 import iterator.TupleUtilsException;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -379,11 +381,32 @@ public class Columnarfile {
         return fname;
     }
 
-    boolean createBTreeIndex(int column) throws Exception{
-
-        String indexName = getBTName(column);
+    boolean createBTreeIndex(int columnNo) throws Exception {
+        String indexName = getBTName(columnNo);
 
         //TODO: Implement the actual code
+        /*
+        code to get the keytype and keysize of the column
+         */
+        int keyType = AttrType.attrInteger;
+        int keySize = 4;
+        int deleteFashion = 0;
+        BTreeFile bTreeFile = new BTreeFile(indexName, keyType, keySize, deleteFashion);
+        Scan columnScan = openColumnScan(columnNo);
+        RID rid = new RID();
+        Tuple tuple;
+        while (true) {
+            tuple = columnScan.getNext(rid);
+            if (tuple == null) {
+                break;
+            }
+            if (keyType == AttrType.attrInteger) {
+                bTreeFile.insert(new IntegerKey(tuple.getIntFld(1)), rid);
+            } else {
+                bTreeFile.insert(new StringKey(tuple.getStrFld(1)), rid);
+            }
+        }
+        columnScan.closescan();
 
         addIndexToColumnar(0, indexName);
         BTNames.add(indexName);
@@ -431,10 +454,9 @@ public class Columnarfile {
     }
 
     public boolean markTupleDeleted(TID tidarg) {
-        Heapfile f = null;
         String name = getDeletedFileName();
         try {
-            f = new Heapfile(name);
+            Heapfile f = new Heapfile(name);
             Integer pos = tidarg.position;
             AttrType[] types = new AttrType[1];
             types[0] = new AttrType(AttrType.attrInteger);
