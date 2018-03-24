@@ -1,12 +1,14 @@
 package columnar;
 
 import bitmap.BitMapFile;
+import btree.BTreeFile;
 import global.*;
 import heap.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import static tests.TestDriver.FAIL;
 import static tests.TestDriver.OK;
@@ -24,6 +26,10 @@ public class Columnarfile {
     Tuple hdr = null;
     RID hdrRid = null;
     HashMap<String, Integer> columnMap;
+    HashSet<String> BTNames;
+    HashSet<String> BMNames;
+    HashMap<String, BTreeFile> BTMap;
+    HashMap<String, BitMapFile> BMMap;
 
     //for fetching the file
     public Columnarfile(java.lang.String name) throws HFException, HFBufMgrException, HFDiskMgrException, IOException {
@@ -47,7 +53,6 @@ public class Columnarfile {
             hdrRid = new RID();
             Tuple hdr = scan.getNext(hdrRid);
             this.numColumns = (short) hdr.getIntFld(1);
-            //this.tupleCnt = hdr.getIntFld(2);
             atype = new AttrType[numColumns];
             attrsizes = new short[numColumns];
             asize = new short[numColumns];
@@ -63,6 +68,22 @@ public class Columnarfile {
                 if (atype[i].attrType == AttrType.attrString)
                     asize[i] += 2;
                 hf[i + 1] = new Heapfile(name + String.valueOf(i));
+            }
+
+            pid = SystemDefs.JavabaseDB.get_file_entry(name + ".idx");
+            if (pid != null) {
+                f = new Heapfile(name + ".idx");
+                BTNames = new HashSet<>();
+                BMNames = new HashSet<>();
+                scan = f.openScan();
+                Tuple t = f.getRecord(null);
+                while (t != null){
+                    int indexType = t.getIntFld(1);
+                    if(indexType == 0)
+                        BTNames.add(t.getStrFld(2));
+                    else if(indexType == 1)
+                        BMNames.add(t.getStrFld(2));
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -335,9 +356,23 @@ public class Columnarfile {
         return fname;
     }
 
+    boolean createBTreeIndex(int column) throws Exception{
+
+        String indexName = getBTName(column);
+
+        //TODO: Implement the actual code
+
+        addIndexToColumnar(0, indexName);
+        BTNames.add(indexName);
+
+        return true;
+    }
+
+
     public boolean createBitMapIndex(int columnNo, ValueClass value) throws Exception {
         Scan columnScan = openColumnScan(columnNo);
-        BitMapFile bitMapFile = new BitMapFile(getColumnarFileName() + "-" + Integer.toString(columnNo) + "-" + value.toString(), this, columnNo, value);
+        String indexName = getBMName(columnNo, value);
+        BitMapFile bitMapFile = new BitMapFile(indexName, this, columnNo, value);
         RID rid = new RID();
         Tuple tuple;
         int position = 1;
@@ -366,12 +401,15 @@ public class Columnarfile {
         }
         columnScan.closescan();
 
+        addIndexToColumnar(1, indexName);
+        BMNames.add(indexName);
+
         return true;
     }
 
     public boolean markTupleDeleted(TID tidarg) {
         Heapfile f = null;
-        String name = getColumnarFileName() + "-markedTupleDeleted";
+        String name = getDeletedFileName();
         try {
             f = new Heapfile(name);
             Integer pos = tidarg.position;
@@ -400,7 +438,7 @@ public class Columnarfile {
         int pos_marked;
         boolean done = false;
         try {
-            f = new Heapfile(getColumnarFileName() + "-markedTupleDeleted");
+            f = new Heapfile(getDeletedFileName());
         } catch (Exception e) {
             status = FAIL;
             System.err.println(" Could not open heapfile");
@@ -459,5 +497,48 @@ public class Columnarfile {
 
     public int getAttributePosition(String name){
         return columnMap.get(name);
+    }
+
+    public String getBTName(int columnNo){
+        return fname+columnNo;
+    }
+
+    public String getBMName(int columnNo, ValueClass value){
+        return fname+columnNo+value.toString();
+    }
+
+    public String getDeletedFileName(){
+        return fname+"-markedTupleDeleted";
+    }
+
+    private boolean addIndexToColumnar(int indexType, String indexName){
+
+        try {
+            AttrType[] itypes = new AttrType[2];
+            itypes[0] = new AttrType(AttrType.attrInteger);
+            itypes[1] = new AttrType(AttrType.attrString);
+            short[] isizes = new short[1];
+            isizes[0] = 20; //index name can't be more than 20 chars
+            Tuple t = new Tuple();
+            t.setHdr((short) 2, itypes, isizes);
+            int size = t.size();
+            t = new Tuple(size);
+            t.setHdr((short) 2, itypes, isizes);
+            t.setIntFld(1, indexType);
+            t.setStrFld(2, indexName);
+            Heapfile f = new Heapfile(indexName);
+            f.insertRecord(t.getTupleByteArray());
+
+            if(indexType == 0 && BTNames == null){
+                BTNames = new HashSet<>();
+            }
+            else if(indexType == 1 && BMNames == null){
+                BMNames = new HashSet<>();
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 }
