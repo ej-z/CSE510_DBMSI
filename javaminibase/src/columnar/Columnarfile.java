@@ -1,7 +1,5 @@
 package columnar;
 
-
-
 import global.AttrType;
 import global.PageId;
 import global.RID;
@@ -9,6 +7,7 @@ import global.SystemDefs;
 import heap.*;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class Columnarfile {
     short numColumns;
@@ -318,25 +317,25 @@ public class Columnarfile {
     public String getColumnarFileName() {
         return fname;
     }
-}
 
-public boolean markTupleDeleted(TID tidarg){
-	   	 Heapfile f = null;
-	   	 String name="markedTupleDeleted";
-	   	 try{
-	   		f = new Heapfile(name) ;
-	   		int pos=tidarg.position;
-	   		byte [] byte_pos = ByteBuffer.allocate(4).putInt(pos).array();
-	   		RID rid=f.insertRecord(byte_pos);
+    public boolean markTupleDeleted(TID tidarg){
+        Heapfile f = null;
+        String name="markedTupleDeleted";
+        try{
+            f = new Heapfile(name) ;
+            int pos=tidarg.position;
+            byte [] byte_pos = ByteBuffer.allocate(4).putInt(pos).array();
+            RID rid=f.insertRecord(byte_pos);
 	   		/*
 	   		 code for bitmap implementation logic
 	   		 */
-	       }catch(Exception e){
-	           e.printStackTrace();
-	           return false;
-	   	}
-	   	return true;
+        }catch(Exception e){
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
+
     /*public boolean purgeAllDeletedTuples(){
     	byte marked_rec[];
     	int pos_marked;
@@ -352,8 +351,8 @@ public boolean markTupleDeleted(TID tidarg){
     				status=hf[i].deleteRecord(rid);
     			}
     		}
-    		
-    		
+
+
     	}
     	catch(Exception e){
 	           e.printStackTrace();
