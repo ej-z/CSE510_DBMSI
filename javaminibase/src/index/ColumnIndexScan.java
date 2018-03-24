@@ -63,7 +63,8 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
 
                     if(indexOnly) {
                         isIndexOnlyQuery = true;
-                        // no need to open the other column heap files
+                        // if the query is index only, we can use the index to answer the queries
+                        // no other heap files are opened except the bitmap file
                         indFile = new BitMapFile(indName);
                         rootId = indFile.getHeaderPage().get_rootId();
                         currentBMPage = new BMPage(pinPage(rootId));
@@ -83,6 +84,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                         setTargetColuumStringSizes(targetedCols);
                     }
                 } catch (Exception e) {
+                    // any exception is swalled into a Index Exception
                     throw new IndexException(e, "IndexScan.java: BTreeFile exceptions caught from BTreeFile constructor");
                 }
 
@@ -107,9 +109,12 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                     short[] sizes = new short[1];
                     sizes[0] = 200;
                     Tuple JTuple = new Tuple();
+                    // set the tuple header to contain only one value as it is index only query
                     JTuple.setHdr((short) 1, types, sizes);
 
+                    // return the value class on which the bitmap was built
                     String value = indName.split("-")[2];
+
                     switch (indexAttrType.attrType) {
                         case AttrType.attrInteger:
                             // why 1 as it col heap file will have one field
@@ -121,6 +126,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                         default:
                             throw new Exception("Attribute indexAttrType not supported");
                     }
+                    // increment the scan counter on every get_next() call
                     scanCounter++;
                     return JTuple;
                 } else {
@@ -129,6 +135,8 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
 
             } else {
                 while (true) {
+                    // if the scanCounter is greater than the current BM Page counter then scan
+                    // the next BMPage else close the iterator
                     if (scanCounter > counter) {
                         PageId nextPage = currentBMPage.getNextPage();
                         if (nextPage.pid != INVALID_PAGE) {
@@ -141,15 +149,20 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                         }
                     } else {
 
+                        // tuple that needs to sent
                         Tuple JTuple = new Tuple();
+                        // set the header which attribute types of the targeted columns
                         JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+                        // for every bit 1 in the bitmap file, get the record at the position in the targeted columns
+                        // extract the data element and set it to the tuple based on the attribute type
+
                         if (bitMaps[scanCounter] == 1) {
                             for (int i = 0; i < targetHeapFiles.length; i++) {
                                 RID rid = targetHeapFiles[i].recordAtPosition(scanCounter);
                                 Tuple record = targetHeapFiles[i].getRecord(rid);
                                 switch (targetAttrTypes[i].attrType) {
                                     case AttrType.attrInteger:
-                                        // why 1 as it col heap file will have one field
+                                        // Assumed that col heap page will have only one entry
                                         JTuple.setIntFld(i + 1, record.getIntFld(1));
                                         break;
                                     case AttrType.attrString:
@@ -159,7 +172,9 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                                         throw new Exception("Attribute indexAttrType not supported");
                                 }
                             }
+                            // increment the scan counter on every get_next() call
                             scanCounter++;
+                            // return the Tuple built by scanning the targeted columns
                             return JTuple;
                         } else {
                             scanCounter++;
@@ -212,6 +227,10 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
 
     }
 
+    /*
+    * Gets the attribute string sizes from the coulumar file
+    * and required for the seting the tuple header for the projection
+    * */
     private void setTargetColuumStringSizes(short[] targetedCols) {
         short[] attributeStringSizes = columnarfile.getStringSizes();
 
@@ -220,6 +239,11 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
         }
     }
 
+    /*
+    * Gets the attribute types of the target columns for the columnar file
+    * Is used while setting the Tuple header for the projection
+    *
+    * */
     private void setTargetColumnAttributeTypes(short[] targetedCols) {
         AttrType[] attributes = columnarfile.getAttributes();
 
@@ -228,6 +252,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
         }
     }
 
+    // open the targeted column heap files and store those reference for scanning
     private void setTargetHeapFiles(String relName, short[] targetedCols) throws HFException, HFBufMgrException, HFDiskMgrException, IOException {
         for(int i=0; i < targetedCols.length; i++) {
             targetHeapFiles[i] = new Heapfile(relName + Short.toString(targetedCols[i]));
