@@ -526,6 +526,7 @@ public class Columnarfile {
                         status = hf[i].deleteRecord(rid);
                     }
                     //destroy th file
+                    //f.deleteFile();
 
                 } catch (Exception e) {
                     e.printStackTrace();
