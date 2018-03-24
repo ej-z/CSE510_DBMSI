@@ -5,6 +5,7 @@ import diskmgr.Page;
 import global.Flags;
 import global.PageId;
 import global.SystemDefs;
+import heap.HFBufMgrException;
 import heap.InvalidTupleSizeException;
 import heap.InvalidTypeException;
 import heap.Tuple;
@@ -69,7 +70,7 @@ public abstract class Iterator implements Flags {
             throws IOException,
             JoinsException,
             SortException,
-            IndexException;
+            IndexException, HFBufMgrException;
 
     /**
      * tries to get n_pages of buffer space

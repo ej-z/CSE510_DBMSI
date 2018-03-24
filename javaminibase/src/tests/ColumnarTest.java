@@ -15,8 +15,6 @@ import iterator.CondExpr;
 import iterator.FldSpec;
 import iterator.RelSpec;
 
-import java.util.List;
-
 import static global.GlobalConst.NUMBUF;
 
 class ColumnarDriver extends TestDriver {
@@ -240,7 +238,7 @@ class ColumnarDriver extends TestDriver {
             int numColumns = 4;
             AttrType[] types = new AttrType[numColumns];
             types[0] = new AttrType(AttrType.attrInteger);
-            types[1] = new AttrType(AttrType.attrReal);
+            types[1] = new AttrType(AttrType.attrInteger);
             types[2] = new AttrType(AttrType.attrString);
             types[3] = new AttrType(AttrType.attrString);
             short[] sizes = new short[2];
@@ -260,7 +258,7 @@ class ColumnarDriver extends TestDriver {
                     t.setIntFld(1, 5);
                 }
 
-                t.setFloFld(2, (float) (i * 1.1));
+                t.setIntFld(2, 6);
                 t.setStrFld(3, "A" + i);
                 t.setStrFld(4, "B" + i);
                 cf.insertTuple(t.getTupleByteArray());
@@ -284,22 +282,27 @@ class ColumnarDriver extends TestDriver {
             BM bm = new BM();
             bm.printBitMap(bitMapFile.getHeaderPage());
 
-            short[] targetedCols = new short[2];
+            short[] targetedCols = new short[3];
+
             targetedCols[0] = 2;
             targetedCols[1] = 3;
-            IndexType indexType = new IndexType(3);
+            targetedCols[2] = 1;
 
+            IndexType indexType = new IndexType(3);
             ColumnIndexScan columnIndexScan = new ColumnIndexScan(indexType, "file3",
                     "bitmap_file1", null, (short) 1, null, true, targetedCols);
 
 
             System.out.println("Starting Index Scan");
-            List<Tuple> tuples = columnIndexScan.get_next();
+            Tuple tuples = columnIndexScan.get_next();
+
 
             while (tuples != null){
-                for(Tuple e: tuples) {
-                    System.out.println(e.getStrFld(1));
-                }
+
+                System.out.println(tuples.getStrFld(1));
+                System.out.println(tuples.getStrFld(2));
+                System.out.println(tuples.getIntFld(3));
+//                }
                 tuples = columnIndexScan.get_next();
             }
             columnIndexScan.close();
