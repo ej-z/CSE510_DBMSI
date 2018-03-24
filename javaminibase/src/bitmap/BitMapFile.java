@@ -15,10 +15,8 @@ import heap.HFBufMgrException;
 import java.util.ArrayList;
 import java.util.List;
 
-// TODO: reorganise bitmap file when tuples are permanently removed. Need to discuss this with Ejaz and Archana.
-// TODO: createBitMapIndex, markTupleDeleted and purge in ColumnarFile. Need to discuss this with Ejaz, Archana and Jithin.
-// TODO: Make sure the bitmaps are updated whenever there are inserts, deletes and updates. Need to discuss this with Ejaz and Archana.
-// TODO: Test the entire bitmap logic.
+// TODO: createBTreeIndex
+// TODO: markTupleDeleted and purge in ColumnarFile.
 public class BitMapFile implements GlobalConst {
     private String fileName;
     private BitMapHeaderPage headerPage;

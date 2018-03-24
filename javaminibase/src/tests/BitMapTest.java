@@ -3,8 +3,6 @@ package tests;
 import bitmap.BM;
 import bitmap.BitMapFile;
 import columnar.Columnarfile;
-import columnar.TID;
-import columnar.TupleScan;
 import columnar.ValueInt;
 import global.AttrType;
 import global.SystemDefs;
@@ -65,21 +63,8 @@ class BitMapDriver extends TestDriver {
                 cf.insertTuple(t.getTupleByteArray());
             }
 
-            BitMapFile bitMapFile = new BitMapFile("bitmap_file1", cf, 1, new ValueInt(4));
-            TupleScan scan = cf.openTupleScan();
-            TID tid = new TID();
-            Tuple t = scan.getNext(tid);
-            Integer count = 1;
-            while (t != null) {
-                if (t.getIntFld(1) == 4) {
-                    bitMapFile.insert(count);
-                } else {
-                    bitMapFile.delete(count);
-                }
-                count++;
-                t = scan.getNext(tid);
-            }
-            scan.closetuplescan();
+            cf.createBitMapIndex(1, new ValueInt(4));
+            BitMapFile bitMapFile = new BitMapFile("BMfile114");
             BM bm = new BM();
             bm.printBitMap(bitMapFile.getHeaderPage());
         } catch (Exception e) {
