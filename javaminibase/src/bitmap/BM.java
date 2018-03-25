@@ -63,7 +63,7 @@ public class BM implements GlobalConst {
         }
     }
 
-    private void unpinPage(PageId pageno)
+    private static void unpinPage(PageId pageno)
             throws UnpinPageException {
         try {
             SystemDefs.JavabaseBM.unpinPage(pageno, false /* = not DIRTY */);

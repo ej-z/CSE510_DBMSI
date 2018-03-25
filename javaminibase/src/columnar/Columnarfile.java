@@ -378,7 +378,7 @@ public class Columnarfile {
         return fname;
     }
 
-    boolean createBTreeIndex(int columnNo) throws Exception {
+    public boolean createBTreeIndex(int columnNo) throws Exception {
         String indexName = getBTName(columnNo);
 
         int keyType = atype[columnNo - 1].attrType;
