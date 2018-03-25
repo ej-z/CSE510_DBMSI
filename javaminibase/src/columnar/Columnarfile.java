@@ -224,7 +224,7 @@ public class Columnarfile {
                 getBMIndex(bmIndexname).insert(position);
             }
         }
-        position = getColumn(1).positionOfRecord(rids[0]);
+        position = getColumn(0).positionOfRecord(rids[0]);
         TID tid = new TID(numColumns, position, rids);
         return tid;
     }

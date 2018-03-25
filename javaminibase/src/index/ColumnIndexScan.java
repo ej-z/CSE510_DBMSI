@@ -54,31 +54,28 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                            boolean indexOnly,
                            short[] targetedCols) throws IndexException, UnknownIndexTypeException {
 
-        try {
-            targetHeapFiles = new Heapfile[targetedCols.length];
-            targetAttrTypes = new AttrType[targetedCols.length];
-            targetShortSizes = new short[targetedCols.length];
-            givenTargetedCols = targetedCols;
-            this.indName = indName;
-            this.indexAttrType = indexAttrType;
-            this.str_sizes = str_sizes;
 
-        } catch (Exception e) {
-            throw new IndexException(e, "IndexScan.java: Heapfile not created");
-        }
+        targetHeapFiles = new Heapfile[targetedCols.length];
+        targetAttrTypes = new AttrType[targetedCols.length];
+        targetShortSizes = new short[targetedCols.length];
+        givenTargetedCols = targetedCols;
+        this.indName = indName;
+        this.indexAttrType = indexAttrType;
+        this.str_sizes = str_sizes;
+        indexType = index;
+        _selects = selects;
+        index_only = indexOnly;
 
         try {
-            indexType = index;
+
             columnarfile = new Columnarfile(relName);
             setTargetHeapFiles(relName, targetedCols);
             setTargetColumnAttributeTypes(targetedCols);
             setTargetColuumStringSizes(targetedCols);
-            _selects = selects;
-            index_only = indexOnly;
-        }catch (Exception e) {
-                e.printStackTrace();
-                return;
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
 
         switch (index.indexType) {
             case IndexType.B_Index:
@@ -90,7 +87,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
 
                 try {
                     btIndScan = IndexUtils.BTree_scan(selects, btIndFile);
-                    int columnNo = Integer.parseInt(indName.substring(columnarfile.getColumnarFileName().length()+2));
+                    int columnNo = Integer.parseInt(indName.substring(columnarfile.getColumnarFileName().length() + 2));
                     columnFile = columnarfile.getColumn(columnNo);
                 } catch (Exception e) {
                     throw new IndexException(e, "IndexScan.java: BTreeFile exceptions caught from IndexUtils.BTree_scan().");
@@ -141,36 +138,25 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
 
         if (nextentry == null)
             return null;
+        Tuple JTuple = null;
+        try {
+            JTuple = new Tuple();
+            JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+            JTuple = new Tuple(JTuple.size());
+            JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+
         if (index_only) {
-            // only need to return the key
-
-            AttrType[] attrType = new AttrType[1];
-            short[] s_sizes = new short[1];
-            Tuple JTuple = new Tuple();
             if (indexAttrType.attrType == AttrType.attrInteger) {
-                attrType[0] = new AttrType(AttrType.attrInteger);
-                try {
-                    JTuple.setHdr((short) 1, attrType, s_sizes);
-                } catch (Exception e) {
-                    throw new IndexException(e, "IndexScan.java: Heapfile error");
-                }
-
                 try {
                     JTuple.setIntFld(1, ((IntegerKey) nextentry.key).getKey().intValue());
                 } catch (Exception e) {
                     throw new IndexException(e, "IndexScan.java: Heapfile error");
                 }
             } else if (indexAttrType.attrType == AttrType.attrString) {
-
-                attrType[0] = new AttrType(AttrType.attrString);
-                s_sizes[0] = str_sizes;
-
-                try {
-                    JTuple.setHdr((short) 1, attrType, s_sizes);
-                } catch (Exception e) {
-                    throw new IndexException(e, "IndexScan.java: Heapfile error");
-                }
-
                 try {
                     JTuple.setStrFld(1, ((StringKey) nextentry.key).getKey());
                 } catch (Exception e) {
@@ -185,9 +171,6 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
 
         try {
             rid = ((LeafData) nextentry.data).getData();
-            Tuple JTuple = new Tuple();
-            // set the header which attribute types of the targeted columns
-            JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
             int postion = columnFile.positionOfRecord(rid);
             for (int i = 0; i < targetHeapFiles.length; i++) {
                 RID r = targetHeapFiles[i].recordAtPosition(postion);
@@ -231,6 +214,8 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
             // tuple that needs to sent
             Tuple JTuple = new Tuple();
             // set the header which attribute types of the targeted columns
+            JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+            JTuple = new Tuple(JTuple.size());
             JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
 
             if (bitMaps[scanCounter] == 1) {
