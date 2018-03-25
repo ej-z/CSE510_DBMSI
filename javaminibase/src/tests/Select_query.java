@@ -3,11 +3,13 @@ package tests;
 import static global.GlobalConst.NUMBUF;
 import global.AttrOperator;
 import global.AttrType;
+import global.RID;
 import global.SystemDefs;
 import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
 import heap.Tuple;
+import iterator.ColumnarColumnScan;
 import iterator.ColumnarFileScan;
 import iterator.CondExpr;
 import iterator.FileScanException;
@@ -38,6 +40,7 @@ class ColumnarDriver2 extends TestDriver {
     
     //private boolean delete = true;
     public ColumnarDriver2(String dBName2, String colfilename2, String projection2, String expression2, int bufspace2, String accesstype2) {
+    	super("BatchInsert");
     	DBName = dBName2;
     	Colfilename = colfilename2;
     	Projection = projection2;
@@ -49,10 +52,17 @@ class ColumnarDriver2 extends TestDriver {
     	
     		
     }
-        
+    boolean isNumeric(String s) {  
+    	//assumption give only numbers
+        return s != null && s.matches("\\d*\\.?\\d+");  
+    } 
+    boolean isInteger(String s) {  
+    	//assumption give only numbers
+        return s != null && s.matches("\\d+");  
+    } 
     public boolean runTests() {
 
-    	SystemDefs sysdef = new SystemDefs(DBName, 0, bufspace, "Clock");
+    	SystemDefs sysdef = new SystemDefs(dbpath, 0, bufspace, "Clock");
 
         // Kill anything that might be hanging around
         String newdbpath;
@@ -60,16 +70,19 @@ class ColumnarDriver2 extends TestDriver {
         String remove_logcmd;
         String remove_dbcmd;
         String remove_cmd = isUnix()? "/bin/rm -rf " : "cmd /c del /f ";
-
-    	
-        boolean _pass = test1();
+        boolean _pass=true;
+        if(Accesstype.equals("FILESCAN")){
+        	_pass = test1();
+        }
+        else if(Accesstype.equals("COLUMNSCAN")){
+        	_pass = test2();
+        }
         try {
             SystemDefs.JavabaseBM.flushAllPages();
             SystemDefs.JavabaseDB.closeDB();
         }catch (Exception e) {
             System.err.println("error: " + e);
         }
-                
         System.out.print("\n" + "..." + testName() + " tests ");
         System.out.print(_pass == OK ? "completely successfully" : "failed");
         System.out.print(".\n\n");
@@ -81,28 +94,55 @@ class ColumnarDriver2 extends TestDriver {
 
     protected boolean test1(){
     	try {
-    		System.out.println("here");
+    		//System.out.println("here");
 			Columnarfile cf=new Columnarfile(Colfilename);
 			short len_in1=cf.getnumColumns();
 			AttrType[] in1=cf.getAttributes();
 			short[] s1_sizes=cf.getStrSize();
 			String[] temp=Projection.split(",");
 			String[] expression1=expression.split(" ");
+			expression1[0]=expression1[0].replace("{","");
+			expression1[2]=expression1[2].replace("}", "");
 			int n_out_flds=temp.length;
 			CondExpr[] expr=new CondExpr[2];
-			System.out.println("here");
-			if(temp[1].equals("=")){
-				expr[0]=new CondExpr();
+			expr[0]=new CondExpr();
+			expr[0].next = null;
+			expr[0].type1 = new AttrType(AttrType.attrSymbol);
+			expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), cf.getAttributePosition(expression1[0])+1);
+			expr[1]=null;
+			//System.out.println("here");
+			  
+			if(expression1[1].equals("=")){
 				expr[0].op = new AttrOperator(AttrOperator.aopEQ);
-		        expr[0].next = null;
-		        //assuming it is always variable to left and it is a character
-		        expr[0].type1 = new AttrType(AttrType.attrSymbol);
-		        expr[0].type2 = new AttrType(AttrType.attrInteger);
-		        expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), cf.getAttributePosition(expression1[0])+1);
-		        expr[0].operand2.integer = Integer.parseInt(temp[2]);
-		        expr[1]=null;
 			}
-			System.out.println("here");
+			else if(expression1[1].equals(">")){
+				expr[0].op = new AttrOperator(AttrOperator.aopGT);
+			}
+			else if(expression1[1].equals("<")){
+				expr[0].op = new AttrOperator(AttrOperator.aopLT);
+			}
+			else if(expression1[1].equals("!=")){
+				expr[0].op = new AttrOperator(AttrOperator.aopNE);
+			}
+			else if(expression1[1].equals("<=")){
+				expr[0].op = new AttrOperator(AttrOperator.aopLE);
+			}
+			else if(expression1[1].equals(">=")){
+				expr[0].op = new AttrOperator(AttrOperator.aopGE);
+			}
+	        if(isNumeric(expression1[2])){
+		        expr[0].type2 = new AttrType(AttrType.attrReal);
+		        expr[0].operand2.real = Float.parseFloat(expression1[2]);
+			}
+			else if(isInteger(expression1[2])){
+				expr[0].type2 = new AttrType(AttrType.attrInteger);
+		        expr[0].operand2.integer = Integer.parseInt(expression1[2]);
+			}
+			else{
+				expr[0].type2 = new AttrType(AttrType.attrString);
+		        expr[0].operand2.string = expression1[2];
+			}
+			//System.out.println("here");
 			FldSpec[] projectionlist=new FldSpec[n_out_flds];
 			for(int i=0;i<n_out_flds;i++){
 				projectionlist[i]=new FldSpec(new RelSpec(RelSpec.outer),cf.getAttributePosition (temp[i])+1);
@@ -151,6 +191,99 @@ class ColumnarDriver2 extends TestDriver {
 		}
 		return false;	
     }
+    protected boolean test2(){
+    	try {
+    		//assumption no nested conditions
+			Columnarfile cf=new Columnarfile(Colfilename);
+			String[] expression1=expression.split(" ");
+			int columnNo=cf.getAttributePosition((expression1[0]).replace("{", ""));
+			try {
+				AttrType attrtype = cf.getAttrtypeforcolumn(columnNo);
+				String[] temp=Projection.split(",");
+				short[] targetedCols=new short[temp.length];
+				int index=0;
+				for(String i:temp){
+					targetedCols[index++]=(short) cf.getAttributePosition(i);
+				}
+				expression1[0]=expression1[0].replace("{","");
+				expression1[2]=expression1[2].replace("}", "");
+				for(int i=0;i<expression1.length;i++)
+				System.out.println(expression1[i]);
+				CondExpr[] expr=new CondExpr[2];
+				expr[0]=new CondExpr();
+				expr[0].next = null;
+		        //assuming it is always variable to left and it is a character
+		        expr[0].type1 = new AttrType(AttrType.attrSymbol);
+		        expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), 1);
+		        expr[1]=null;
+		        if(expression1[1].equals("=")){
+					expr[0].op = new AttrOperator(AttrOperator.aopEQ);
+				}
+				else if(expression1[1].equals(">")){
+					expr[0].op = new AttrOperator(AttrOperator.aopGT);
+				}
+				else if(expression1[1].equals("<")){
+					expr[0].op = new AttrOperator(AttrOperator.aopLT);
+				}
+				else if(expression1[1].equals("!=")){
+					expr[0].op = new AttrOperator(AttrOperator.aopNE);
+				}
+				else if(expression1[1].equals("<=")){
+					expr[0].op = new AttrOperator(AttrOperator.aopLE);
+				}
+				else if(expression1[1].equals(">=")){
+					expr[0].op = new AttrOperator(AttrOperator.aopGE);
+				}
+		        if(isNumeric(expression1[2])){
+			        expr[0].type2 = new AttrType(AttrType.attrReal);
+			        expr[0].operand2.real = Float.parseFloat(expression1[2]);
+				}
+				else if(isInteger(expression1[2])){
+					expr[0].type2 = new AttrType(AttrType.attrInteger);
+			        expr[0].operand2.integer = Integer.parseInt(expression1[2]);
+				}
+				else{
+					expr[0].type2 = new AttrType(AttrType.attrString);
+			        expr[0].operand2.string = expression1[2];
+				}
+		        AttrType[] atype2=new AttrType[temp.length];
+		        for(int i=0;i<temp.length;i++){
+		        	atype2[i]=cf.getAttrtypeforcolumn(targetedCols[i]);
+		        }
+		        System.out.println(Colfilename+" "+columnNo+" "+attrtype.attrType);
+		        for(int i=0;i<targetedCols.length;i++){
+		        	System.out.println(targetedCols[i]);
+		        }
+		        ColumnarColumnScan ccs=new ColumnarColumnScan(Colfilename, columnNo, attrtype, targetedCols, expr);
+		        boolean done=false;
+		        while(!done){
+		        	//RID rid = new RID();
+		        	Tuple result=ccs.get_next();
+		        	if(result==null){
+		        		done=true;
+		        		break;
+		        	}
+		        	result.print(atype2);
+		        }
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} catch (HFException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (HFBufMgrException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (HFDiskMgrException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
+    }
     protected String testName() {
 
         return "Columnar Tests";
@@ -179,7 +312,7 @@ public class Select_query extends TestDriver {
 	}
 	
 public static void main(String args[]){
-	String sampleinput = "SELECT columndb columnfile A,B,C {A = South_Dakota} 100 FileScan";
+	String sampleinput = "SELECT columndb columnfile A,B,C {C = 5} 100 FILESCAN";
 	String[] inputsplit=sampleinput.split(" ");
 	for(int i=0;i<inputsplit.length;i++){
 		System.out.println(inputsplit[i]);
@@ -190,4 +323,5 @@ public static void main(String args[]){
 }
 
 }
+
 
