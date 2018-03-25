@@ -905,6 +905,12 @@ public class Heapfile implements Filetype, GlobalConst {
         delete_file_entry(_fileName);
     }
 
+    public PageId setCurPage_forGivenPosition(int position) throws Exception {
+        RID rid = recordAtPosition(position);
+
+        return rid.pageNo;
+    }
+
     public RID recordAtPosition(int position) throws HFBufMgrException, IOException, InvalidSlotNumberException, InvalidTupleSizeException {
 
         PageId currentDirPageId = new PageId();
