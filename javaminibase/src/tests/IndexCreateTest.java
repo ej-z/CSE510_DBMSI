@@ -43,11 +43,10 @@ class IndexTestDriver extends TestDriver {
 	
     //private boolean delete = true;
     public IndexTestDriver() {
-        super("BatchInsert");
+        super("IndexTest");
     }
 
     public IndexTestDriver(String columnName, String columnDBName, String columnarFileName, String indexTypeVal) {
-    	super("BatchInsert");
     	colName = columnName;
     	dbName = columnDBName;
     	colFilename = columnarFileName;
@@ -56,12 +55,15 @@ class IndexTestDriver extends TestDriver {
     
     public boolean runTests() {
 
-        System.out.println("\n" + "Running " + testName() + " tests...." + dbpath+"\n");
+        System.out.println("\n" + "Running " + testName() + " tests...." + "\n");
+
+      // SystemDefs sysdef = new SystemDefs(dbName, numPages, NUMBUF, "Clock");
         
-        SystemDefs sysdef = new SystemDefs(dbpath, 0, NUMBUF, "Clock");
+		SystemDefs sysdef = new SystemDefs(dbName, 0, NUMBUF, "Clock");
+		//SystemDefs.JavabaseDB.openDB(this.dbName);
 
         // Kill anything that might be hanging around
-        String newdbpath;
+        /*String newdbpath;
         String newlogpath;
         String remove_logcmd;
         String remove_dbcmd;
@@ -73,18 +75,40 @@ class IndexTestDriver extends TestDriver {
         remove_logcmd = remove_cmd + logpath;
         remove_dbcmd = remove_cmd + dbpath;
 
-        boolean _pass = runAllTests();
+
+        // Commands here is very machine dependent.  We assume
+        // user are on UNIX system here
+        try {
+            Runtime.getRuntime().exec(remove_logcmd);
+            Runtime.getRuntime().exec(remove_dbcmd);
+        } catch (IOException e) {
+            System.err.println("IO error: " + e);
+        }
+
+        remove_logcmd = remove_cmd + newlogpath;
+        remove_dbcmd = remove_cmd + newdbpath;
+
+        try {
+            Runtime.getRuntime().exec(remove_logcmd);
+            Runtime.getRuntime().exec(remove_dbcmd);
+        } catch (IOException e) {
+            System.err.println("IO error: " + e);
+        }*/
+
+        //Run the tests. Return type different from C++
+        boolean _pass = test1();
+
+
+        
+        
+        //boolean _pass = runAllTests();
         try {
             SystemDefs.JavabaseBM.flushAllPages();
             SystemDefs.JavabaseDB.closeDB();
         }catch (Exception e) {
-        	System.out.println("coming from here");
             System.err.println("error: " + e);
         }
 
-        
-        System.out.println("Reads: "+PCounter.rcounter);
-        System.out.println("Writes: "+PCounter.wcounter);
         System.out.print("\n" + "..." + testName() + " tests ");
         System.out.print(_pass == OK ? "completely successfully" : "failed");
         System.out.print(".\n\n");
@@ -97,13 +121,20 @@ class IndexTestDriver extends TestDriver {
         
     	try {
 			Columnarfile cf = new Columnarfile(colFilename);
-			int colno = cf.getAttributePosition(colName);
-			
-			if (indexType.equals("BitMap")) {
-				//cf.createBitMapIndex(val, value);
+			int val = cf.getAttributePosition(colName);
+			AttrType attval = cf.getAttributes()[val];
+			ValueClass value;
+			if (attval.toString() == "attrInteger") {
+				value = new ValueInt<Integer>(10);
 			}
 			else {
-				cf.createBTreeIndex((short)colno);
+				value =  new ValueString<String>("Demo");
+			}
+			if (indexType.equals("BitMap")) {
+				cf.createBitMapIndex(val, value);
+			}
+			else {
+				cf.createBTreeIndex(val);
 			}
 		} catch (HFException | HFBufMgrException | HFDiskMgrException | IOException e) {
 			// TODO Auto-generated catch block
@@ -112,6 +143,11 @@ class IndexTestDriver extends TestDriver {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		
+		
+		System.out.println("Reads: "+PCounter.rcounter);
+        System.out.println("Writes: "+PCounter.wcounter);
 	 
         return true;
     }
