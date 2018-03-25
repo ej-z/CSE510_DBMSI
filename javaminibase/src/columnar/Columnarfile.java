@@ -527,7 +527,20 @@ public class Columnarfile {
                     pos_marked = Convert.getIntValue(6, tuple.getTupleByteArray());
                     for (int j = 0; j < numColumns; j++) {
                         rid = getColumn(j).recordAtPosition(pos_marked);
-                        status = getColumn(j).deleteRecord(rid);
+                        Tuple t = getColumn(j).getRecord(rid);
+                        getColumn(j).deleteRecord(rid);
+                        ValueClass valueClass;
+                        if (atype[i].attrType == AttrType.attrInteger) {
+                            valueClass = new ValueInt(t.getIntFld(1));
+                        } else {
+                            valueClass = new ValueString(t.getStrFld(1));
+                        }
+
+                        String bitMapFileName = getBMName(i, valueClass);
+                        if (BMMap.containsKey(bitMapFileName)) {
+                            BitMapFile bitMapFile = getBMIndex(bitMapFileName);
+                            bitMapFile.fullDelete(pos_marked);
+                        }
                     }
 
                 } catch (Exception e) {

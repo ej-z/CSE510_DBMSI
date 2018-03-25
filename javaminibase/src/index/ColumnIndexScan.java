@@ -15,6 +15,7 @@ import iterator.*;
 import org.w3c.dom.Attr;
 
 import java.io.IOException;
+import java.util.BitSet;
 
 
 /**
@@ -28,7 +29,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
     private BitMapFile bmIndFile;
     private PageId currentPageId;
     private Columnarfile columnarfile;
-    private byte[] bitMaps;
+    private BitSet bitMaps;
     private BMPage currentBMPage;
     private int counter;
     private int scanCounter = 0;
@@ -100,7 +101,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                     value = bmIndFile.getHeaderPage().getValue();
                     currentBMPage = new BMPage(pinPage(currentPageId));
                     counter = currentBMPage.getCounter();
-                    bitMaps = new BMPage(pinPage(currentPageId)).getBMpageArray();
+                    bitMaps = BitSet.valueOf(currentBMPage.getBMpageArray());
                 } catch (Exception e) {
                     // any exception is swalled into a Index Exception
                     throw new IndexException(e, "IndexScan.java: BTreeFile exceptions caught from BTreeFile constructor");
@@ -205,7 +206,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                     currentPageId.copyPageId(nextPage);
                     currentBMPage = new BMPage(pinPage(currentPageId));
                     counter = currentBMPage.getCounter();
-                    bitMaps = currentBMPage.getBMpageArray();
+                    bitMaps = BitSet.valueOf(currentBMPage.getBMpageArray());
                 } else {
                     close();
                     return null;
@@ -219,7 +220,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
             JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
 
             while (scanCounter <= counter) {
-                if (bitMaps[scanCounter] == 1) {
+                if (bitMaps.get(scanCounter)) {
                     if (index_only) {
                         switch (indexAttrType.attrType) {
                             case AttrType.attrInteger:

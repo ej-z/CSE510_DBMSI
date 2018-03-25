@@ -10,7 +10,7 @@ import java.io.IOException;
 public class BMPage extends Page implements GlobalConst {
 
     public static final int DPFIXED = 2 * 2 + 3 * 4;
-    public static final int NUM_POSITIONS_IN_A_PAGE = MAX_SPACE - DPFIXED;
+    public static final int NUM_POSITIONS_IN_A_PAGE = (MAX_SPACE - DPFIXED)*8;
 
     public static final int COUNTER = 0;
     public static final int FREE_SPACE = 2;
@@ -79,7 +79,7 @@ public class BMPage extends Page implements GlobalConst {
         Convert.setIntValue(prevPage.pid, PREV_PAGE, data);
         Convert.setIntValue(nextPage.pid, NEXT_PAGE, data);
 
-        freeSpace = (short) (MAX_SPACE - DPFIXED);    // amount of space available
+        freeSpace = (short) NUM_POSITIONS_IN_A_PAGE;    // amount of space available
         Convert.setShortValue(freeSpace, FREE_SPACE, data);
 
         for (int i = DPFIXED; i < MAX_SPACE; i++) {
@@ -93,7 +93,7 @@ public class BMPage extends Page implements GlobalConst {
 
     public void updateCounter(Short value) throws Exception {
         Convert.setShortValue(value, COUNTER, data);
-        Convert.setShortValue((short) (MAX_SPACE - DPFIXED - value), FREE_SPACE, data);
+        Convert.setShortValue((short) (NUM_POSITIONS_IN_A_PAGE - value), FREE_SPACE, data);
     }
 
     public void openBMpage(Page apage) {
@@ -137,8 +137,9 @@ public class BMPage extends Page implements GlobalConst {
     }
 
     public byte[] getBMpageArray() throws Exception {
-        byte[] bitMapArray = new byte[NUM_POSITIONS_IN_A_PAGE];
-        for (int i = 0; i < NUM_POSITIONS_IN_A_PAGE; i++) {
+        int numBytesInPage = NUM_POSITIONS_IN_A_PAGE /8;
+        byte[] bitMapArray = new byte[numBytesInPage];
+        for (int i = 0; i < numBytesInPage; i++) {
             bitMapArray[i] = Convert.getByteValue(DPFIXED + i, data);
         }
         return bitMapArray;

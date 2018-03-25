@@ -13,6 +13,7 @@ import global.SystemDefs;
 import heap.HFBufMgrException;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 
 public class BitMapFile implements GlobalConst {
@@ -125,7 +126,7 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
-    private void setValueAtPosition(byte value, int position) throws Exception {
+    private void setValueAtPosition(boolean set, int position) throws Exception {
         List<PageId> pinnedPages = new ArrayList<>();
         if (headerPage == null) {
             throw new Exception("Bitmap header page is null");
@@ -152,7 +153,12 @@ public class BitMapFile implements GlobalConst {
                 bmPage = new BMPage(page);
             }
             byte[] currentPageData = bmPage.getBMpageArray();
-            currentPageData[position] = value;
+            int bytePos = position/8;
+            int bitPos = position%8;
+            if(set)
+                currentPageData[bytePos] |= 1 << bitPos;
+            else
+                currentPageData[bytePos] &= ~(1 << bitPos);
             bmPage.writeBMPageArray(currentPageData);
             if (bmPage.getCounter() < position + 1) {
                 bmPage.updateCounter((short) (position + 1));
@@ -161,21 +167,82 @@ public class BitMapFile implements GlobalConst {
             PageId newPageId = getNewBMPage(headerPageId);
             pinnedPages.add(newPageId);
             headerPage.set_rootId(newPageId);
-            setValueAtPosition(value, position);
+            setValueAtPosition(set, position);
         }
         for (PageId pinnedPage : pinnedPages) {
             unpinPage(pinnedPage, true);
         }
     }
 
+    public Boolean fullDelete(int position) throws Exception {
+        if (headerPage == null) {
+            throw new Exception("Bitmap header page is null");
+        }
+        List<PageId> pinnedPages = new ArrayList<>();
+        if (headerPage.get_rootId().pid != INVALID_PAGE) {
+            int pageCounter = 1;
+            while (position >= BMPage.NUM_POSITIONS_IN_A_PAGE) {
+                pageCounter++;
+                position -= BMPage.NUM_POSITIONS_IN_A_PAGE;
+            }
+            PageId bmPageId = headerPage.get_rootId();
+            Page page = pinPage(bmPageId);
+            pinnedPages.add(bmPageId);
+            BMPage bmPage = new BMPage(page);
+            for (int i = 1; i < pageCounter; i++) {
+                bmPageId = bmPage.getNextPage();
+                page = pinPage(bmPageId);
+                bmPage = new BMPage(page);
+            }
+            BitSet bitSet = BitSet.valueOf(bmPage.getBMpageArray());
+            boolean lastBit = _fullDelete(bmPage.getNextPage());
+            while (position < bitSet.length()) {
+                int position1 = bitSet.nextSetBit(position);
+                bitSet.clear(position1);
+                bitSet.clear(position, position1);
+                bitSet.set(position1-1);
+                position = position1;
+            }
+            if(lastBit)
+                bitSet.set(bitSet.length()-1);
+            bmPage.writeBMPageArray(bitSet.toByteArray());
+            for (PageId pinnedPage : pinnedPages) {
+                unpinPage(pinnedPage, true);
+            }
+        }
+        return Boolean.TRUE;
+    }
+
+    private boolean _fullDelete(PageId pageId){
+        if(pageId.pid == INVALID_PAGE)
+            return false;
+
+        try {
+            Page page = pinPage(pageId);
+            BMPage bmPage = new BMPage(page);
+            BitSet bitSet = BitSet.valueOf(bmPage.getBMpageArray());
+            boolean firstBit = bitSet.get(0);
+            bitSet = bitSet.get(1, bitSet.length());
+            boolean lastBit = _fullDelete(bmPage.getNextPage());
+            if(lastBit)
+                bitSet.set(bitSet.length()-1);
+            bmPage.writeBMPageArray(bitSet.toByteArray());
+            return firstBit;
+        } catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+
+    }
+
     public Boolean delete(int position) throws Exception {
-        setValueAtPosition((byte) 0, position);
+        setValueAtPosition(false, position);
         return Boolean.TRUE;
     }
 
 
     public Boolean insert(int position) throws Exception {
-        setValueAtPosition((byte) 1, position);
+        setValueAtPosition(true, position);
         return Boolean.TRUE;
     }
 
