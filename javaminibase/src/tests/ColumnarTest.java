@@ -344,7 +344,7 @@ class ColumnarDriver extends TestDriver {
             sizes[0] = 20;
             sizes[1] = 20;
             sizes[2] = 20;
-            String[] attrNames = {"Attr1", "Attr2","Attr3","Attr4"};
+            String[] attrNames = {"Attr1", "Attr2","Attr3","Attr4", "Attr5"};
             Columnarfile cf = new Columnarfile(name, numColumns, types, sizes, attrNames);
 
             for (int i = 0; i < 100; i++) {
