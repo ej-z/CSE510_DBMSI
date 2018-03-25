@@ -218,42 +218,44 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
             JTuple = new Tuple(JTuple.size());
             JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
 
-            if (bitMaps[scanCounter] == 1) {
-                if (index_only) {
-                    switch (indexAttrType.attrType) {
-                        case AttrType.attrInteger:
-                            // Assumed that col heap page will have only one entry
-                            JTuple.setIntFld(1, Integer.parseInt(value));
-                            break;
-                        case AttrType.attrString:
-                            JTuple.setStrFld(1, value);
-                            break;
-                        default:
-                            throw new Exception("Attribute indexAttrType not supported");
-                    }
-                } else {
-                    for (int i = 0; i < targetHeapFiles.length; i++) {
-                        RID rid = targetHeapFiles[i].recordAtPosition(scanCounter);
-                        Tuple record = targetHeapFiles[i].getRecord(rid);
-                        switch (targetAttrTypes[i].attrType) {
+            while (scanCounter <= counter) {
+                if (bitMaps[scanCounter] == 1) {
+                    if (index_only) {
+                        switch (indexAttrType.attrType) {
                             case AttrType.attrInteger:
                                 // Assumed that col heap page will have only one entry
-                                JTuple.setIntFld(i + 1, record.getIntFld(1));
+                                JTuple.setIntFld(1, Integer.parseInt(value));
                                 break;
                             case AttrType.attrString:
-                                JTuple.setStrFld(i + 1, record.getStrFld(1));
+                                JTuple.setStrFld(1, value);
                                 break;
                             default:
                                 throw new Exception("Attribute indexAttrType not supported");
                         }
+                    } else {
+                        for (int i = 0; i < targetHeapFiles.length; i++) {
+                            RID rid = targetHeapFiles[i].recordAtPosition(scanCounter);
+                            Tuple record = targetHeapFiles[i].getRecord(rid);
+                            switch (targetAttrTypes[i].attrType) {
+                                case AttrType.attrInteger:
+                                    // Assumed that col heap page will have only one entry
+                                    JTuple.setIntFld(i + 1, record.getIntFld(1));
+                                    break;
+                                case AttrType.attrString:
+                                    JTuple.setStrFld(i + 1, record.getStrFld(1));
+                                    break;
+                                default:
+                                    throw new Exception("Attribute indexAttrType not supported");
+                            }
+                        }
                     }
+                    // increment the scan counter on every get_next() call
+                    scanCounter++;
+                    // return the Tuple built by scanning the targeted columns
+                    return JTuple;
+                } else {
+                    scanCounter++;
                 }
-                // increment the scan counter on every get_next() call
-                scanCounter++;
-                // return the Tuple built by scanning the targeted columns
-                return JTuple;
-            } else {
-                scanCounter++;
             }
         }
         catch (Exception e){
