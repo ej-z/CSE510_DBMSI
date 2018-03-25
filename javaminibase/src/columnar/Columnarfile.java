@@ -14,7 +14,6 @@ import iterator.TupleUtilsException;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import static tests.TestDriver.FAIL;
 import static tests.TestDriver.OK;
