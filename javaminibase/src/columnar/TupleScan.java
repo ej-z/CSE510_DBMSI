@@ -103,8 +103,8 @@ public class TupleScan {
             rids[i] = new RID();
             rids[i].copyRid(rid);
             rid = new RID();
-            int size = asize[i]; //6 bytes for count and offset
-            System.arraycopy(t.getTupleByteArray(), 6, data, offset, size);
+            int size = asize[i];
+            System.arraycopy(t.getTupleByteArray(), 0, data, offset, size);
             offset += asize[i];
         }
         position = sc[0].positionOfRecord(rids[0]);

@@ -123,7 +123,7 @@ class QueryingDriver extends TestDriver
 			cf = new Columnarfile(columnarFileName);
 			int val = cf.getAttributePosition(inputExpr[0]);
 			attval = cf.getAttributes()[val];
-			strsize = cf.getStringSizes()[val];
+			strsize = cf.getAttrSizes()[val];
 			
 			int size = targetCols.length;
 			targetcolnums = new short[size];
@@ -219,10 +219,10 @@ class QueryingDriver extends TestDriver
 				iscan = new ColumnIndexScan(indtype, columnarFileName, inputExpr[0], attval , strsize, expr, false, targetcolnums);
 				break;
 			case "Filescan":
-				iscan = new ColumnarFileScan(columnarFileName, cf.getAttributes(), cf.getStringSizes(),(short)cf.getAttributes().length, targetcolnums.length, Sprojection, expr, targetcolnums);
+				iscan = new ColumnarFileScan(columnarFileName, cf.getAttributes(), cf.getAttrSizes(),(short)cf.getAttributes().length, targetcolnums.length, Sprojection, expr, targetcolnums);
 				break;
 			case "Columnscan":
-				iscan = new ColumnarFileScan(columnarFileName, cf.getAttributes(), cf.getStringSizes(),(short)1, targetcolnums.length, Sprojection, expr, targetcolnums);
+				iscan = new ColumnarFileScan(columnarFileName, cf.getAttributes(), cf.getAttrSizes(),(short)1, targetcolnums.length, Sprojection, expr, targetcolnums);
 				break;
 			default:
 				break;
@@ -234,7 +234,7 @@ class QueryingDriver extends TestDriver
 	        short[] attrSize = new short[targetCols.length];
 	        for (int i=0;i<targetCols.length; i++) {
 	        	attrType[i] = cf.getAttributes()[targetcolnums[i]];
-				attrSize[i] = cf.getStringSizes()[targetcolnums[i]]; 
+				attrSize[i] = cf.getAttrSizes()[targetcolnums[i]];
 	        }
 	        // create a tuple of appropriate size
 	        Tuple t = new Tuple();
