@@ -414,7 +414,7 @@ public class Columnarfile {
         BitMapFile bitMapFile = new BitMapFile(indexName, this, columnNo, value);
         RID rid = new RID();
         Tuple tuple;
-        int position = 1;
+        int position = 0;
         while (true) {
             tuple = columnScan.getNext(rid);
             if (tuple == null) {

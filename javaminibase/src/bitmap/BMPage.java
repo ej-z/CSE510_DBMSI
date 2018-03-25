@@ -10,7 +10,7 @@ import java.io.IOException;
 public class BMPage extends Page implements GlobalConst {
 
     public static final int DPFIXED = 2 * 2 + 3 * 4;
-    public static final int MAX_POSITION_IN_A_PAGE = MAX_SPACE - DPFIXED;
+    public static final int NUM_POSITIONS_IN_A_PAGE = MAX_SPACE - DPFIXED;
 
     public static final int COUNTER = 0;
     public static final int FREE_SPACE = 2;
@@ -137,8 +137,8 @@ public class BMPage extends Page implements GlobalConst {
     }
 
     public byte[] getBMpageArray() throws Exception {
-        byte[] bitMapArray = new byte[MAX_POSITION_IN_A_PAGE];
-        for (int i = 0; i < MAX_POSITION_IN_A_PAGE; i++) {
+        byte[] bitMapArray = new byte[NUM_POSITIONS_IN_A_PAGE];
+        for (int i = 0; i < NUM_POSITIONS_IN_A_PAGE; i++) {
             bitMapArray[i] = Convert.getByteValue(DPFIXED + i, data);
         }
         return bitMapArray;
