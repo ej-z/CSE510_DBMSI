@@ -1,16 +1,15 @@
 package columnar;
 
-import diskmgr.DiskMgrException;
-import diskmgr.FileIOException;
-import diskmgr.InvalidPageNumberException;
-import global.*;
-import heap.*;
-import iterator.*;
+import global.AttrType;
+import global.RID;
+import heap.InvalidTupleSizeException;
+import heap.Scan;
+import heap.Tuple;
 
 import java.io.IOException;
 
 public class TupleScan {
-	//private Columnarfile file;
+    private Columnarfile file;
 	Scan[] sc;
 
 	private AttrType[] atype = null;
@@ -28,7 +27,7 @@ public class TupleScan {
      * @throws IOException
      */
 	public TupleScan(Columnarfile f) throws Exception {
-
+        file = f;
         numColumns = f.numColumns;
         atype = f.atype;
         asize = f.asize;
@@ -51,7 +50,7 @@ public class TupleScan {
      * @throws IOException
      */
     public TupleScan(Columnarfile f,short[] columns) throws Exception {
-
+        file = f;
         numColumns = (short)columns.length;
         atype = new AttrType[numColumns];
         asize = new short[numColumns];
@@ -84,6 +83,7 @@ public class TupleScan {
 		for(int i=0;i<sc.length;i++){
 			sc[i].closescan();
 		}
+        file.close();
 	}
 	public Tuple getNext(TID tid) throws Exception {
 

@@ -154,7 +154,7 @@ class ColumnarDriver extends TestDriver {
                 rr = new RID();
                 tt = sc.getNext(rr);
             }
-
+            sc.closescan();
 
             TupleScan scan = cf.openTupleScan();
 
@@ -179,6 +179,7 @@ class ColumnarDriver extends TestDriver {
                 t = scan.getNext(tid);
             }
             scan.closetuplescan();
+            cf.close();
             System.out.println("Reads: "+PCounter.rcounter);
             System.out.println("Writes: "+PCounter.wcounter);
 
