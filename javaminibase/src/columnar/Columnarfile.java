@@ -623,4 +623,33 @@ public class Columnarfile {
 
         return BMMap.get(indexName);
     }
+
+    public void close(){
+        if(hf != null){
+            for(int i =0; i < hf.length; i++)
+                hf[i] = null;
+        }
+        try {
+
+
+            if (BTMap != null) {
+                for (BTreeFile bt : BTMap.values()) {
+                    if (bt != null) {
+                        bt.close();
+                    }
+                }
+            }
+            if (BMMap != null) {
+                for (BitMapFile bm : BMMap.values()) {
+                    if (bm != null) {
+                        bm.close();
+                    }
+                }
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            System.err.println("Error closing columnar: "+fname);
+        }
+
+    }
 }
