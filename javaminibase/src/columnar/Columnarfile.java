@@ -2,15 +2,8 @@ package columnar;
 
 import bitmap.BitMapFile;
 import btree.*;
-import diskmgr.DiskMgrException;
-import diskmgr.FileIOException;
-import diskmgr.InvalidPageNumberException;
 import global.*;
 import heap.*;
-import iterator.FileScanException;
-import iterator.InvalidRelation;
-import iterator.SortException;
-import iterator.TupleUtilsException;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -444,9 +437,6 @@ public class Columnarfile {
             position++;
         }
         columnScan.closescan();
-        for (BitMapFile bitMapFile : bitMapFiles) {
-            bitMapFile.close();
-        }
 
         return true;
     }
