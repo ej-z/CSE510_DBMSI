@@ -20,7 +20,7 @@ public class BM implements GlobalConst {
      * @param header
      * @throws Exception
      */
-    public void printBitMap(BitMapHeaderPage header) throws Exception {
+    public static void printBitMap(BitMapHeaderPage header) throws Exception {
         if (header == null) {
             System.out.println("\n Empty Header!!!");
         } else {
@@ -35,7 +35,7 @@ public class BM implements GlobalConst {
             System.out.println("Attribute Value: " + header.getValue());
             Page page = pinPage(bmPageId);
             BMPage bmPage = new BMPage(page);
-            int position = 1;
+            int position = 0;
             while (Boolean.TRUE) {
                 int count = bmPage.getCounter();
                 byte[] currentPageByteArray = bmPage.getBMpageArray();
@@ -53,7 +53,7 @@ public class BM implements GlobalConst {
         }
     }
 
-    private Page pinPage(PageId pageno) throws PinPageException {
+    private static Page pinPage(PageId pageno) throws PinPageException {
         try {
             Page page = new Page();
             SystemDefs.JavabaseBM.pinPage(pageno, page, false/*Rdisk*/);
