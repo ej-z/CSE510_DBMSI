@@ -8,6 +8,7 @@ import global.PageId;
 import global.SystemDefs;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 
 public class BM implements GlobalConst {
@@ -44,9 +45,9 @@ public class BM implements GlobalConst {
             int position = 0;
             while (Boolean.TRUE) {
                 int count = bmPage.getCounter();
-                byte[] currentPageByteArray = bmPage.getBMpageArray();
+                BitSet currentBitSet = BitSet.valueOf(bmPage.getBMpageArray());
                 for (int i = 0; i < count; i++) {
-                    System.out.println("Position: " + position + "   Value: " + currentPageByteArray[i]);
+                    System.out.println("Position: " + position + "   Value: " + (currentBitSet.get(i)?1:0));
                     position++;
                 }
                 if (bmPage.getNextPage().pid == INVALID_PAGE) {
