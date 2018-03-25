@@ -24,7 +24,7 @@ import java.util.ArrayList;
 
 import static global.GlobalConst.NUMBUF;
 
-class ColumnarDriver extends TestDriver {
+class ColumnarDriver1 extends TestDriver {
 
     private  int numPages = 100000;
     private String dataFile;
@@ -37,11 +37,11 @@ class ColumnarDriver extends TestDriver {
 	String[] names;
     
     //private boolean delete = true;
-    public ColumnarDriver() {
+    public ColumnarDriver1() {
         super("cmtest");
     }
 
-    public ColumnarDriver(String datafileName, String columnDBName, String columnarFileName, int numColumns) {
+    public ColumnarDriver1(String datafileName, String columnDBName, String columnarFileName, int numColumns) {
     	dataFile = datafileName;
     	dbName = columnDBName;
     	colFilename = columnarFileName;
@@ -219,7 +219,7 @@ public class RangeInsert {
 	
     public static void runTests() {
 
-        ColumnarDriver cd = new ColumnarDriver(datafileName, columnDBName, columnarFileName, numColumns);
+        ColumnarDriver1 cd = new ColumnarDriver1(datafileName, columnDBName, columnarFileName, numColumns);
         cd.runTests();
     }
 

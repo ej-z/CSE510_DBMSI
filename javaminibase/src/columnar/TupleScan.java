@@ -39,7 +39,7 @@ public class TupleScan {
         tuplesize = f.getTupleSize();
         sc=new Scan[numColumns];
         for(int i=0;i<numColumns;i++){
-            sc[i] = f.hf[i+1].openScan();
+            sc[i] = f.getColumn(i).openScan();
         }
 
 		PageId pid = SystemDefs.JavabaseDB.get_file_entry(f.getDeletedFileName());
@@ -64,7 +64,7 @@ public class TupleScan {
      * @throws InvalidTupleSizeException
      * @throws IOException
      */
-    public TupleScan(Columnarfile f,short[] columns) throws InvalidTupleSizeException, IOException, InvalidPageNumberException, DiskMgrException, FileIOException, FileScanException, TupleUtilsException, InvalidRelation, SortException {
+    public TupleScan(Columnarfile f,short[] columns) throws InvalidTupleSizeException, IOException, InvalidPageNumberException, DiskMgrException, FileIOException, FileScanException, TupleUtilsException, InvalidRelation, SortException, HFDiskMgrException, HFBufMgrException, HFException {
 
         numColumns = (short)columns.length;
         atype = new AttrType[numColumns];
@@ -76,7 +76,7 @@ public class TupleScan {
             short c = columns[i];
             atype[i] = f.atype[c];
             asize[i] = f.asize[c];
-            sc[i] = f.hf[c+1].openScan();
+            sc[i] = f.getColumn(c).openScan();
 
             if(atype[i].attrType == AttrType.attrString)
                 strCnt++;

@@ -26,14 +26,12 @@ public class Columnarfile {
 
     //Best way handle +2 bytes for strings instead of multiple ifs
     short[] asize;
-    Heapfile[] hf = null;
+    private Heapfile[] hf = null;
     String fname = null;
     //int tupleCnt = 0;
     Tuple hdr = null;
     RID hdrRid = null;
     HashMap<String, Integer> columnMap;
-    HashSet<String> BTNames;
-    HashSet<String> BMNames;
     HashMap<String, BTreeFile> BTMap;
     HashMap<String, BitMapFile> BMMap;
 
@@ -62,8 +60,7 @@ public class Columnarfile {
             atype = new AttrType[numColumns];
             attrsizes = new short[numColumns];
             asize = new short[numColumns];
-            hf = new Heapfile[numColumns + 1];
-            hf[0] = f;
+            hf = new Heapfile[numColumns];
             int k = 0;
             for (int i = 0; i < numColumns; i++, k = k + 3) {
                 atype[i] = new AttrType(hdr.getIntFld(2 + k));
@@ -73,22 +70,23 @@ public class Columnarfile {
                 asize[i] = attrsizes[i];
                 if (atype[i].attrType == AttrType.attrString)
                     asize[i] += 2;
-                hf[i + 1] = new Heapfile(name + String.valueOf(i));
+                //hf[i + 1] = new Heapfile(name + String.valueOf(i));
             }
-
+            BTMap = new HashMap<>();
+            BMMap = new HashMap<>();
             pid = SystemDefs.JavabaseDB.get_file_entry(name + ".idx");
             if (pid != null) {
                 f = new Heapfile(name + ".idx");
-                BTNames = new HashSet<>();
-                BMNames = new HashSet<>();
                 scan = f.openScan();
-                Tuple t = f.getRecord(null);
+                RID r = new RID();
+                Tuple t = scan.getNext(r);
                 while (t != null){
                     int indexType = t.getIntFld(1);
                     if(indexType == 0)
-                        BTNames.add(t.getStrFld(2));
+                        BTMap.put(t.getStrFld(2),null);
                     else if(indexType == 1)
-                        BMNames.add(t.getStrFld(2));
+                        BMMap.put(t.getStrFld(2), null);
+                    t = scan.getNext(r);
                 }
             }
         } catch (Exception e) {
@@ -100,11 +98,12 @@ public class Columnarfile {
     public Columnarfile(java.lang.String name, int numcols, AttrType[] types, short[] attrSizes, String[] colnames) throws IOException, InvalidTupleSizeException, InvalidTypeException, FieldNumberOutOfBoundException, SpaceNotAvailableException, HFException, HFBufMgrException, InvalidSlotNumberException, HFDiskMgrException {
         RID rid1 = new RID();
         boolean status = true;
+        Heapfile hdrFile = null;
         columnMap = new HashMap<>();
         try {
-            hf = new Heapfile[numcols + 1];
+            hf = new Heapfile[numcols];
             //hf[0] for header file by default
-            hf[0] = new Heapfile(name + ".hdr");
+            hdrFile = new Heapfile(name + ".hdr");
 
         } catch (Exception e) {
             status = false;
@@ -164,24 +163,30 @@ public class Columnarfile {
                 hdr.setStrFld(4 + j, colnames[i]);
                 columnMap.put(colnames[i], i);
             }
-            hdrRid = hf[0].insertRecord(hdr.returnTupleByteArray());
+            hdrRid = hdrFile.insertRecord(hdr.returnTupleByteArray());
+            BTMap = new HashMap<>();
+            BMMap = new HashMap<>();
 
             //allocating memory for the others
-            try {
+            /*try {
                 for (int i = 1; i <= numColumns; i++) {
                     hf[i] = new Heapfile(name + String.valueOf(i - 1));
                 }
             } catch (Exception e) {
                 status = false;
                 e.printStackTrace();
-            }
+            }*/
         }
     }
 
-    public void deleteColumnarFile() throws InvalidSlotNumberException, FileAlreadyDeletedException, InvalidTupleSizeException, HFBufMgrException, HFDiskMgrException, IOException {
-        for (int i = 0; i <= numColumns; i++) {
+    public void deleteColumnarFile() throws InvalidSlotNumberException, FileAlreadyDeletedException, InvalidTupleSizeException, HFBufMgrException, HFDiskMgrException, IOException, HFException {
+        for (int i = 0; i < numColumns; i++) {
             hf[i].deleteFile();
         }
+        Heapfile hdr = new Heapfile(fname+"hdr");
+        hdr.deleteFile();
+        Heapfile idx = new Heapfile(fname+"idx");
+        idx.deleteFile();
         hf = null;
         atype = null;
         fname = null;
@@ -207,26 +212,19 @@ public class Columnarfile {
             byte[] data = t.getTupleByteArray();
             System.arraycopy(tuplePtr, offset, data, 6, asize[i]);
             t.tupleInit(data, 0, data.length);
-            rids[i] = hf[i + 1].insertRecord(t.getTupleByteArray());
+            rids[i] = getColumn(i).insertRecord(t.getTupleByteArray());
             offset += asize[i];
 
             String btIndexname = getBTName(i);
             String bmIndexname = getBMName(i, ValueFactory.getValueClass(t, atype[i]));
-            if(BTMap == null || !BTNames.contains(btIndexname)){
-                setBTFile(btIndexname);
+            if(BTMap != null && BTMap.containsKey(btIndexname)){
+                getBTIndex(btIndexname).insert(KeyFactory.getKeyClass(t, atype[i]), rids[i]);
             }
-            if(BMMap == null || !BMNames.contains(bmIndexname)){
-                setBMFile(bmIndexname);
-            }
-            if (BTMap != null && BTMap.containsKey(btIndexname)) {
-                BTMap.get(btIndexname).insert(KeyFactory.getKeyClass(t, atype[i]), rids[i]);
-            }
-            if (BMMap != null && BMMap.containsKey(bmIndexname)) {
-                position = hf[i + 1].positionOfRecord(rids[i]);
-                BMMap.get(bmIndexname).insert(position);
+            if(BMMap != null && BMMap.containsKey(bmIndexname)){
+                getBMIndex(bmIndexname).insert(position);
             }
         }
-        position = hf[1].positionOfRecord(rids[0]);
+        position = getColumn(1).positionOfRecord(rids[0]);
         TID tid = new TID(numColumns, position, rids);
         return tid;
     }
@@ -238,7 +236,7 @@ public class Columnarfile {
         byte[] data = result.getTupleByteArray();
         int offset = getOffset();
         for (int i = 0; i < numColumns; i++) {
-            Tuple t = hf[i + 1].getRecord(tidarg.recordIDs[i]);
+            Tuple t = getColumn(i).getRecord(tidarg.recordIDs[i]);
             System.arraycopy(t.getTupleByteArray(), 6, data, offset, asize[i]);
             offset += asize[i];
         }
@@ -250,12 +248,12 @@ public class Columnarfile {
 
     public ValueClass getValue(TID tidarg, int column) throws Exception {
 
-        Tuple t = hf[column + 1].getRecord(tidarg.recordIDs[column]);
+        Tuple t = getColumn(column).getRecord(tidarg.recordIDs[column]);
         return ValueFactory.getValueClass(t, atype[column]);
     }
 
-    public int getTupleCnt() throws HFBufMgrException, IOException, HFDiskMgrException, InvalidSlotNumberException, InvalidTupleSizeException {
-        return hf[1].getRecCnt();
+    public int getTupleCnt() throws HFDiskMgrException, HFException, HFBufMgrException, IOException, InvalidTupleSizeException, InvalidSlotNumberException {
+        return getColumn(0).getRecCnt();
     }
 
     public TupleScan openTupleScan() throws Exception {
@@ -264,7 +262,7 @@ public class Columnarfile {
         return result;
     }
 
-    public TupleScan openTupleScan(short[] columns) throws InvalidTupleSizeException, IOException, FileScanException, TupleUtilsException, FileIOException, SortException, InvalidPageNumberException, InvalidRelation, DiskMgrException {
+    public TupleScan openTupleScan(short[] columns) throws InvalidTupleSizeException, IOException, FileScanException, TupleUtilsException, FileIOException, SortException, InvalidPageNumberException, InvalidRelation, DiskMgrException, HFDiskMgrException, HFBufMgrException, HFException {
 
         TupleScan result = new TupleScan(this, columns);
         return result;
@@ -273,7 +271,7 @@ public class Columnarfile {
     public Scan openColumnScan(int columnNo) throws Exception {
         Scan scanobj = null;
         if (columnNo < hf.length) {
-            scanobj = new Scan(hf[columnNo + 1]);
+            scanobj = new Scan(getColumn(columnNo));
         } else {
 
             throw new Exception("Invalid Column number");
@@ -300,7 +298,7 @@ public class Columnarfile {
                 byte[] data = t.getTupleByteArray();
                 System.arraycopy(tuplePtr, offset, data, 6, asize[i]);
                 t.tupleInit(data, 0, data.length);
-                hf[i + 1].updateRecord(tidarg.recordIDs[i], t);
+                getColumn(i).updateRecord(tidarg.recordIDs[i], t);
                 offset += asize[i];
             }
         } catch (Exception e) {
@@ -326,7 +324,7 @@ public class Columnarfile {
             byte[] data = t.getTupleByteArray();
             System.arraycopy(tuplePtr, offset, data, 6, asize[column]);
             t.tupleInit(data, 0, data.length);
-            hf[column + 1].updateRecord(tidarg.recordIDs[column], t);
+            getColumn(column).updateRecord(tidarg.recordIDs[column], t);
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -400,10 +398,7 @@ public class Columnarfile {
             }
         }
         columnScan.closescan();
-
         addIndexToColumnar(0, indexName);
-        BTNames.add(indexName);
-        BTMap.put(indexName, bTreeFile);
         return true;
     }
 
@@ -441,8 +436,6 @@ public class Columnarfile {
         columnScan.closescan();
 
         addIndexToColumnar(1, indexName);
-        BMNames.add(indexName);
-        BMMap.put(indexName, bitMapFile);
 
         return true;
     }
@@ -461,8 +454,8 @@ public class Columnarfile {
             f.insertRecord(t.getTupleByteArray());
 
             for (int i = 0; i < tidarg.numRIDs; i++) {
-                RID rid = hf[i + 1].recordAtPosition(tidarg.position);
-                Tuple tuple = hf[i + 1].getRecord(rid);
+                RID rid = getColumn(i).recordAtPosition(tidarg.position);
+                Tuple tuple = getColumn(i).getRecord(rid);
                 ValueClass valueClass;
                 KeyClass keyClass;
                 if (atype[i].attrType == AttrType.attrInteger) {
@@ -475,12 +468,12 @@ public class Columnarfile {
 
                 String bTreeFileName = getBTName(i + 1);
                 String bitMapFileName = getBMName(i + 1, valueClass);
-                if (BTNames != null && BTNames.contains(bTreeFileName)) {
-                    BTreeFile bTreeFile = BTMap.get(bTreeFileName);
+                if (BTMap.containsKey(bTreeFileName)) {
+                    BTreeFile bTreeFile = getBTIndex(bTreeFileName);
                     bTreeFile.Delete(keyClass, tidarg.recordIDs[i]);
                 }
-                if (BMNames != null && BMNames.contains(bitMapFileName)) {
-                        BitMapFile bitMapFile = BMMap.get(bitMapFileName);
+                if (BMMap.containsKey(bitMapFileName)) {
+                    BitMapFile bitMapFile = getBMIndex(bitMapFileName);
                     bitMapFile.delete(tidarg.position);
                 }
             }
@@ -527,9 +520,9 @@ public class Columnarfile {
                         return true;
                     }
                     pos_marked = Convert.getIntValue(6, tuple.getTupleByteArray());
-                    for (int j = 1; j <= numColumns; j++) {
-                        rid = hf[i].recordAtPosition(pos_marked);
-                        status = hf[i].deleteRecord(rid);
+                    for (int j = 0; j < numColumns; j++) {
+                        rid = getColumn(j).recordAtPosition(pos_marked);
+                        status = getColumn(j).deleteRecord(rid);
                     }
                     //destroy th file
                     f.deleteFile();
@@ -586,13 +579,11 @@ public class Columnarfile {
             Heapfile f = new Heapfile(fname + ".idx");
             f.insertRecord(t.getTupleByteArray());
 
-            if(indexType == 0 && BTNames == null){
-                BTNames = new HashSet<>();
-                BTMap = new HashMap<>();
+            if(indexType == 0){
+                BTMap.put(indexName, null);
             }
-            else if(indexType == 1 && BMNames == null){
-                BMNames = new HashSet<>();
-                BMMap = new HashMap<>();
+            else if(indexType == 1){
+                BMMap.put(indexName, null);
             }
 
         } catch (Exception e){
@@ -602,27 +593,27 @@ public class Columnarfile {
         return true;
     }
 
-    private void setBTFile(String name) throws Exception{
-
-        PageId pid = SystemDefs.JavabaseDB.get_file_entry(name);
-        if (pid == null) {
-            return;
-        }
-
-        BTMap.put(name, new BTreeFile(name));
+    public Heapfile getColumn(int columnNo) throws IOException, HFException, HFBufMgrException, HFDiskMgrException {
+        if(hf[columnNo] == null)
+            hf[columnNo] = new Heapfile("name"+columnNo);
+        return hf[columnNo];
     }
 
-    private void setBMFile(String name) throws Exception {
+    public BTreeFile getBTIndex(String indexName) throws IOException, HFException, HFBufMgrException, HFDiskMgrException, ConstructPageException, GetFileEntryException, PinPageException {
+        if(!BTMap.containsKey(indexName))
+            return null;
+        if(BTMap.get(indexName) == null)
+            BTMap.put(indexName, new BTreeFile(indexName));
 
-        PageId pid = SystemDefs.JavabaseDB.get_file_entry(name);
-        if (pid == null) {
-            return;
-        }
-
-        BMMap.put(name, new BitMapFile(name));
+        return BTMap.get(indexName);
     }
 
-    public Heapfile getColumn(int columnNo){
-        return hf[columnNo+1];
+    public BitMapFile getBMIndex(String indexName) throws Exception {
+        if(!BMMap.containsKey(indexName))
+            return null;
+        if(BMMap.get(indexName) == null)
+            BMMap.put(indexName, new BitMapFile(indexName));
+
+        return BMMap.get(indexName);
     }
 }
