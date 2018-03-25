@@ -535,8 +535,6 @@ public class Columnarfile {
                         rid = hf[i].recordAtPosition(pos_marked);
                         status = hf[i].deleteRecord(rid);
                     }
-                    //destroy th file
-//                    f.deleteFile();
 
                 } catch (Exception e) {
                     e.printStackTrace();
