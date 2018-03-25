@@ -152,14 +152,14 @@ public class BitMapFile implements GlobalConst {
                 page = pinPage(bmPageId);
                 bmPage = new BMPage(page);
             }
-            byte[] currentPageData = bmPage.getBMpageArray();
-            int bytePos = position/8;
+            byte[] currData = bmPage.getBMpageArray();
+            int bytoPos = position/8;
             int bitPos = position%8;
             if(set)
-                currentPageData[bytePos] |= 1 << bitPos;
+                currData[bytoPos] |= (1<<bitPos);
             else
-                currentPageData[bytePos] &= ~(1 << bitPos);
-            bmPage.writeBMPageArray(currentPageData);
+                currData[bytoPos] &= ~(1<<bitPos);
+            bmPage.writeBMPageArray(currData);
             if (bmPage.getCounter() < position + 1) {
                 bmPage.updateCounter((short) (position + 1));
             }

@@ -217,6 +217,7 @@ public class Columnarfile {
                 getBTIndex(btIndexname).insert(KeyFactory.getKeyClass(t, atype[i]), rids[i]);
             }
             if(BMMap != null && BMMap.containsKey(bmIndexname)){
+                position = getColumn(i).positionOfRecord(rids[i]);
                 getBMIndex(bmIndexname).insert(position);
             }
         }

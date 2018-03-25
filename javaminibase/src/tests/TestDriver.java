@@ -247,6 +247,9 @@ public class TestDriver {
         if (!test7()) {
             _passAll = FAIL;
         }
+        if (!test8()) {
+            _passAll = FAIL;
+        }
 
         return _passAll;
     }

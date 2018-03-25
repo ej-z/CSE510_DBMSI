@@ -401,7 +401,7 @@ public class HFPage extends Page
     public int relativePositionOfSlot(RID rid)
             throws IOException {
 
-        int position = 0;
+        int position = -1;
         slotCnt = Convert.getShortValue(SLOT_CNT, data);
         int i;
         short length;

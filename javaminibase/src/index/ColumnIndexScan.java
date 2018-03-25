@@ -218,7 +218,6 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
             JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
             JTuple = new Tuple(JTuple.size());
             JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
-
             while (scanCounter <= counter) {
                 if (bitMaps.get(scanCounter)) {
                     if (index_only) {

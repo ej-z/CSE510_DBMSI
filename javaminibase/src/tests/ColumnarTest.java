@@ -631,7 +631,8 @@ class ColumnarDriver extends TestDriver {
             System.out.println("Creating columnar " + columnarName);
             String[] attrNames = {"Attr1", "Attr2","Attr3"};
             Columnarfile cf = new Columnarfile(columnarName, numColumns, types, sizes, attrNames);
-
+            //TODO: Should we handle marktupledeleted on columnIndexScan?
+            cf.createBitMapIndex(0, new ValueInt<>(4));
             TID tidToMarkedAsDeleted = null;
             TID tid = null;
             System.out.println("Inserting columns..");
@@ -662,7 +663,7 @@ class ColumnarDriver extends TestDriver {
 
             // create bitMap file
 
-            cf.createBitMapIndex(0, new ValueInt<>(4));
+
 
             BitMapFile bitMap = cf.getBMIndex(cf.getBMName(0, new ValueInt<>(4)));
 
@@ -685,9 +686,33 @@ class ColumnarDriver extends TestDriver {
 
 
             while (tuples != null){
-                System.out.println(tuples.getIntFld(1));
-                System.out.println(tuples.getStrFld(2));
-                System.out.println(tuples.getStrFld(3));
+                System.out.print(tuples.getIntFld(1));
+                System.out.print(",");
+                System.out.print(tuples.getStrFld(2));
+                System.out.print(",");
+                System.out.print(tuples.getStrFld(3));
+                System.out.println();
+                tuples = columnIndexScan.get_next();
+            }
+            columnIndexScan.close();
+
+            cf.purgeAllDeletedTuples();
+
+            columnIndexScan = new ColumnIndexScan(indexType, columnarName,
+                    bmName, null, (short) 1, null, false, targetedCols);
+
+
+            System.out.println("Starting Index Scan after purge");
+            tuples = columnIndexScan.get_next();
+
+
+            while (tuples != null){
+                System.out.print(tuples.getIntFld(1));
+                System.out.print(",");
+                System.out.print(tuples.getStrFld(2));
+                System.out.print(",");
+                System.out.print(tuples.getStrFld(3));
+                System.out.println();
                 tuples = columnIndexScan.get_next();
             }
             columnIndexScan.close();
