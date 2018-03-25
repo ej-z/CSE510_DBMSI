@@ -582,7 +582,7 @@ public class Columnarfile {
             t.setHdr((short) 2, itypes, isizes);
             t.setIntFld(1, indexType);
             t.setStrFld(2, indexName);
-            Heapfile f = new Heapfile(indexName);
+            Heapfile f = new Heapfile(fname + ".idx");
             f.insertRecord(t.getTupleByteArray());
 
             if(indexType == 0 && BTNames == null){
