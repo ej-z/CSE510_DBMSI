@@ -7,10 +7,7 @@ import diskmgr.FileIOException;
 import diskmgr.InvalidPageNumberException;
 import global.*;
 import heap.*;
-import iterator.FileScanException;
-import iterator.InvalidRelation;
-import iterator.SortException;
-import iterator.TupleUtilsException;
+import iterator.*;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -454,8 +451,7 @@ public class Columnarfile {
             f.insertRecord(t.getTupleByteArray());
 
             for (int i = 0; i < tidarg.numRIDs; i++) {
-                RID rid = getColumn(i).recordAtPosition(tidarg.position);
-                Tuple tuple = getColumn(i).getRecord(rid);
+                Tuple tuple = getColumn(i).getRecord(tidarg.recordIDs[i]);
                 ValueClass valueClass;
                 KeyClass keyClass;
                 if (atype[i].attrType == AttrType.attrInteger) {
@@ -466,8 +462,8 @@ public class Columnarfile {
                     keyClass = new StringKey(tuple.getStrFld(1));
                 }
 
-                String bTreeFileName = getBTName(i + 1);
-                String bitMapFileName = getBMName(i + 1, valueClass);
+                String bTreeFileName = getBTName(i);
+                String bitMapFileName = getBMName(i, valueClass);
                 if (BTMap.containsKey(bTreeFileName)) {
                     BTreeFile bTreeFile = getBTIndex(bTreeFileName);
                     bTreeFile.Delete(keyClass, tidarg.recordIDs[i]);
@@ -487,7 +483,7 @@ public class Columnarfile {
     public boolean purgeAllDeletedTuples() throws HFDiskMgrException, InvalidTupleSizeException, IOException, InvalidSlotNumberException, FileAlreadyDeletedException, HFBufMgrException {
 
         boolean status = OK;
-        Scan scan = null;
+        Sort deletedTuples = null;
         RID rid = new RID();
         Heapfile f = null;
         int pos_marked;
@@ -502,7 +498,14 @@ public class Columnarfile {
 
         if (status == OK) {
             try {
-                scan = f.openScan();
+                AttrType[] types = new AttrType[1];
+                types[0] = new AttrType(AttrType.attrInteger);
+                short[] sizes = new	short[0];
+                FldSpec[] projlist = new FldSpec[1];
+                projlist[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
+                FileScan fs = new FileScan(fname, types, sizes, (short)1, 1, projlist, null);
+                deletedTuples = new Sort(types, (short) 1, sizes, fs, 1, new TupleOrder(TupleOrder.Descending), 4, 10);
+
             } catch (Exception e) {
                 status = FAIL;
                 System.err.println("*** Error opening scan\n");
@@ -516,7 +519,7 @@ public class Columnarfile {
             while (!done) {
                 try {
                     rid = new RID();
-                    tuple = scan.getNext(rid);
+                    tuple = deletedTuples.get_next();
                     if (tuple == null) {
                         done = true;
                         return true;
@@ -552,17 +555,17 @@ public class Columnarfile {
     }
 
     public String getBTName(int columnNo){
-        return "BT" + "-" + fname + "-" + columnNo;
+        return "BT" + "." + fname + "." + columnNo;
         // return SystemDefs.JavabaseDBName + "-" + "BT" + "-" + fname+ "-" +columnNo;
     }
 
     public String getBMName(int columnNo, ValueClass value){
-        return "BM" + "-" + fname + "-" + columnNo + "-" + value.toString();
+        return "BM" + "." + fname + "." + columnNo + "." + value.toString();
         // return SystemDefs.JavabaseDBName + "-" + "BM" + "-" + fname + "-" + columnNo + "-" + value.toString();
     }
 
     public String getDeletedFileName(){
-        return fname+"-markedTupleDeleted";
+        return fname+".del";
     }
 
     private boolean addIndexToColumnar(int indexType, String indexName){
@@ -599,7 +602,7 @@ public class Columnarfile {
 
     public Heapfile getColumn(int columnNo) throws IOException, HFException, HFBufMgrException, HFDiskMgrException {
         if(hf[columnNo] == null)
-            hf[columnNo] = new Heapfile("name"+columnNo);
+            hf[columnNo] = new Heapfile(fname+columnNo);
         return hf[columnNo];
     }
 

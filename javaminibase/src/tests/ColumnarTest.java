@@ -17,7 +17,8 @@ import static global.GlobalConst.NUMBUF;
 
 class ColumnarDriver extends TestDriver {
 
-    private  int numPages = 1000;
+    private  int numPages = 10000;
+    boolean skip = true;
     //private boolean delete = true;
     public ColumnarDriver() {
         super("cmtest");
@@ -91,7 +92,7 @@ class ColumnarDriver extends TestDriver {
     }
 
     protected boolean test1(){
-        if(numPages == 0)
+        if(numPages == 0 || skip)
             return true;
         try {
             String name = "file1";
@@ -137,7 +138,7 @@ class ColumnarDriver extends TestDriver {
 
     protected boolean test2() {
 
-        if(numPages == 0)
+        if(numPages == 0 || skip)
             return true;
         String name = "file1";
         System.out.println("Opening columnar " + name);
@@ -190,6 +191,8 @@ class ColumnarDriver extends TestDriver {
 
     protected boolean test3() {
 
+        if(numPages == 0 || skip)
+            return true;
         try{
 
             AttrType[] Stypes = new AttrType[3];
@@ -263,6 +266,8 @@ class ColumnarDriver extends TestDriver {
 
     // equality search using bitMaps
     protected boolean test4()  {
+        if(numPages == 0 || skip)
+            return true;
         System.out.println("####################################");
         System.out.println("#### T E S T 4 ####################");
         System.out.println("####################################");
@@ -344,7 +349,8 @@ class ColumnarDriver extends TestDriver {
     }
 
     protected boolean test5() {
-
+        if(numPages == 0)
+            return true;
         System.out.println("####################################");
         System.out.println("#### T E S T 5 ####################");
         System.out.println("####################################");
@@ -383,8 +389,8 @@ class ColumnarDriver extends TestDriver {
                 t.setStrFld(5, "C" + i);
                 cf.insertTuple(t.getTupleByteArray());
             }
-
-            BitMapFile bitMapFile = new BitMapFile("bitmap-file-5", cf, 1, new ValueInt(4));
+            cf.createBitMapIndex(0,new ValueInt(4));
+            /*BitMapFile bitMapFile = new BitMapFile("bitmap-file-5", cf, 1, new ValueInt(4));
             TupleScan scan = cf.openTupleScan();
             TID tid = new TID();
             Tuple t = scan.getNext(tid);
@@ -398,7 +404,7 @@ class ColumnarDriver extends TestDriver {
                 count++;
                 t = scan.getNext(tid);
             }
-            scan.closetuplescan();
+            scan.closetuplescan();*/
 
             short[] targetedCols = new short[3];
 
@@ -565,6 +571,7 @@ class ColumnarDriver extends TestDriver {
                 } else {
                     tid =  cf.insertTuple(t.getTupleByteArray());
                 }
+                System.out.println(i);
             }
 
             cf.purgeAllDeletedTuples();

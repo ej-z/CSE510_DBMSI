@@ -247,10 +247,10 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                                 throw new Exception("Attribute indexAttrType not supported");
                         }
                     }
-                    // increment the scan counter on every get_next() call
-                    scanCounter++;
-                    // return the Tuple built by scanning the targeted columns
                 }
+                // increment the scan counter on every get_next() call
+                scanCounter++;
+                // return the Tuple built by scanning the targeted columns
                 return JTuple;
             } else {
                 scanCounter++;

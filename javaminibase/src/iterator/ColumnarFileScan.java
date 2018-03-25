@@ -5,6 +5,9 @@ import columnar.Columnarfile;
 import columnar.TID;
 import columnar.TupleScan;
 import global.AttrType;
+import global.PageId;
+import global.SystemDefs;
+import global.TupleOrder;
 import heap.*;
 
 import java.io.IOException;
@@ -22,6 +25,8 @@ public class ColumnarFileScan extends Iterator {
     private int nOutFlds;
     private CondExpr[]  OutputFilter;
     public FldSpec[] perm_mat;
+    Sort deletedTuples;
+    private int currDeletePos = -1;
 
     public ColumnarFileScan(java.lang.String file_name,
                             AttrType[] in1,
@@ -88,6 +93,16 @@ public class ColumnarFileScan extends Iterator {
 
         try {
             scan = in_cols == null? f.openTupleScan() : f.openTupleScan(in_cols);
+            PageId pid = SystemDefs.JavabaseDB.get_file_entry(f.getDeletedFileName());
+            if (pid != null) {
+                AttrType[] types = new AttrType[1];
+                types[0] = new AttrType(AttrType.attrInteger);
+                short[] sizes = new	short[0];
+                FldSpec[] projlist = new FldSpec[1];
+                projlist[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
+                FileScan fs = new FileScan(f.getDeletedFileName(), types, sizes, (short)1, 1, projlist, null);
+                deletedTuples = new Sort(types, (short) 1, sizes, fs, 1, new TupleOrder(TupleOrder.Ascending), 4, 10);
+            }
         }
         catch(Exception e){
             throw new FileScanException(e, "openScan() failed");
@@ -121,6 +136,22 @@ public class ColumnarFileScan extends Iterator {
         while(true) {
             if((tuple1 =  scan.getNext(tid)) == null) {
                 return null;
+            }
+
+            int position = tid.getPosition();
+            if(position > currDeletePos){
+                while (true){
+                    Tuple dtuple = deletedTuples.get_next();
+                    if(dtuple == null)
+                        break;
+                    currDeletePos = dtuple.getIntFld(1);
+                    if(currDeletePos >= position)
+                        break;
+                }
+            }
+            if(position == currDeletePos){
+                deletedTuples.get_next();
+                continue;
             }
 
             //tuple1.setHdr(in1_len, _in1, s_sizes);

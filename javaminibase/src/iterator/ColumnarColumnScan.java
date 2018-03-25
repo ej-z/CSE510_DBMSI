@@ -109,6 +109,8 @@ public class ColumnarColumnScan extends Iterator {
                 if(position > currDeletePos){
                     while (true){
                         Tuple dtuple = deletedTuples.get_next();
+                        if(dtuple == null)
+                            break;
                         currDeletePos = dtuple.getIntFld(1);
                         if(currDeletePos >= position)
                             break;

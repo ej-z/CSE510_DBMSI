@@ -620,7 +620,7 @@ public class Heapfile implements Filetype, GlobalConst {
 
         // delete the record on the datapage
         currentDataPage.deleteRecord(rid);
-
+        pdpinfo.slotCnt = currentDataPage.getSlotCnt();
         pdpinfo.recct--;
         pdpinfo.flushToTuple();    //Write to the buffer pool
         if (pdpinfo.recct >= 1) {
@@ -930,11 +930,11 @@ public class Heapfile implements Filetype, GlobalConst {
                 atuple = currentDirPage.getRecord(rid);
                 DataPageInfo dpinfo = new DataPageInfo(atuple);
 
-                if(cnt + dpinfo.slotCnt >= position){
+                if(cnt + dpinfo.slotCnt > position){
                     unpinPage(currentDirPageId, false /*undirty*/);
                     return new RID(dpinfo.pageId,position - cnt);
                 }
-                cnt += dpinfo.slotCnt;
+                cnt += dpinfo.slotCnt - 1;
 
             }
 
@@ -977,7 +977,7 @@ public class Heapfile implements Filetype, GlobalConst {
                     unpinPage(currentDirPageId, false /*undirty*/);
                     return position+r.slotNo;
                 }
-                position += dpinfo.slotCnt;
+                position += dpinfo.slotCnt-1;
 
             }
 
