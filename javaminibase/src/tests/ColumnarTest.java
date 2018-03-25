@@ -4,10 +4,8 @@ import bitmap.BM;
 import bitmap.BitMapFile;
 import columnar.*;
 import diskmgr.PCounter;
-import global.AttrOperator;
-import global.AttrType;
-import global.IndexType;
-import global.SystemDefs;
+import global.*;
+import heap.Scan;
 import heap.Tuple;
 import index.ColumnIndexScan;
 import iterator.ColumnarFileScan;
@@ -116,7 +114,7 @@ class ColumnarDriver extends TestDriver {
                 int s = t.size();
                 t = new Tuple(s);
                 t.setHdr((short)3, types, sizes);
-                t.setIntFld(1,i);
+                t.setIntFld(1,i % 5);
                 t.setFloFld(2, (float)(i*1.1));
                 t.setStrFld(3, "A"+i);
                 TID tid =  cf.insertTuple(t.getTupleByteArray());
@@ -146,6 +144,16 @@ class ColumnarDriver extends TestDriver {
         try {
             Columnarfile cf = new Columnarfile(name);
             System.out.println("File contains " + cf.getTupleCnt()+" tuples.");
+            Scan sc = cf.openColumnScan(0);
+            RID rr = new RID();
+            Tuple tt = sc.getNext(rr);
+            while (tt != null){
+                System.out.println(tt.getIntFld(1));
+                rr = new RID();
+                tt = sc.getNext(rr);
+            }
+
+
             TupleScan scan = cf.openTupleScan();
 
             TID tid = new TID();
@@ -275,11 +283,11 @@ class ColumnarDriver extends TestDriver {
                 cf.insertTuple(t.getTupleByteArray());
             }
 
-            BitMapFile bitMapFile = new BitMapFile("bitmap_file4", cf, 1, new ValueInt(4));
+            /*BitMapFile bitMapFile = new BitMapFile("bitmap_file4", cf, 1, new ValueInt(4));
             TupleScan scan = cf.openTupleScan();
             TID tid = new TID();
             Tuple t = scan.getNext(tid);
-            Integer count = 1;
+            Integer count = tid.position;
             while (t != null) {
                 if (t.getIntFld(1) == 4) {
                     bitMapFile.insert(count);
@@ -291,18 +299,21 @@ class ColumnarDriver extends TestDriver {
             }
             scan.closetuplescan();
             BM bm = new BM();
+            bm.printBitMap(bitMapFile.getHeaderPage());*/
+            cf.createBitMapIndex(0,new ValueInt<>(4));
+            BitMapFile bitMapFile = new BitMapFile(cf.getBMName(0,new ValueInt<>(4)));
+            BM bm = new BM();
             bm.printBitMap(bitMapFile.getHeaderPage());
-
             short[] targetedCols = new short[3];
 
-            targetedCols[0] = 1;
+            targetedCols[0] = 0;
             targetedCols[1] = 2;
             targetedCols[2] = 3;
 
             IndexType indexType = new IndexType(3);
 
-            ColumnIndexScan columnIndexScan = new ColumnIndexScan(indexType, "file4",
-                    "bitmap_file4", null, (short) 1, null, false, targetedCols);
+            ColumnIndexScan columnIndexScan = new ColumnIndexScan(indexType, cf.getColumnarFileName(),
+                    cf.getBMName(0,new ValueInt<>(4)), new AttrType(AttrType.attrInteger), (short) 1, null, false, targetedCols);
 
 
             System.out.println("Starting Index Scan");
@@ -328,7 +339,8 @@ class ColumnarDriver extends TestDriver {
 
     protected boolean test5() {
 
-        System.out.println("####################################");
+        return true;
+        /*System.out.println("####################################");
         System.out.println("#### T E S T 5 ####################");
         System.out.println("####################################");
         try {
@@ -419,7 +431,7 @@ class ColumnarDriver extends TestDriver {
 
         System.out.println("Reads: "+  PCounter.rcounter);
         System.out.println("Writes: "+ PCounter.wcounter);
-        return true;
+        return true;*/
     }
 
     protected boolean test6() {
