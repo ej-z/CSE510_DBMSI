@@ -98,14 +98,14 @@ class ColumnarDriver2 extends TestDriver {
 		        //assuming it is always variable to left and it is a character
 		        expr[0].type1 = new AttrType(AttrType.attrSymbol);
 		        expr[0].type2 = new AttrType(AttrType.attrInteger);
-		        expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), cf.columnMap.get(expression1[0])+1);
+		        expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), cf.getAttributePosition(expression1[0])+1);
 		        expr[0].operand2.integer = Integer.parseInt(temp[2]);
 		        expr[1]=null;
 			}
 			System.out.println("here");
 			FldSpec[] projectionlist=new FldSpec[n_out_flds];
 			for(int i=0;i<n_out_flds;i++){
-				projectionlist[i]=new FldSpec(new RelSpec(RelSpec.outer),cf.columnMap.get(temp[i])+1);
+				projectionlist[i]=new FldSpec(new RelSpec(RelSpec.outer),cf.getAttributePosition (temp[i])+1);
 			}
 			try {
 				ColumnarFileScan fc=new ColumnarFileScan(Colfilename, in1,s1_sizes,len_in1,n_out_flds,projectionlist,expr);

@@ -92,7 +92,7 @@ class ColumnarDriver extends TestDriver {
     }
 
     protected boolean test1(){
-        if(numPages == 0 || skip)
+        if(numPages == 0)
             return true;
         try {
             String name = "file1";
@@ -138,7 +138,7 @@ class ColumnarDriver extends TestDriver {
 
     protected boolean test2() {
 
-        if(numPages == 0 || skip)
+        if(numPages == 0)
             return true;
         String name = "file1";
         System.out.println("Opening columnar " + name);
@@ -191,7 +191,7 @@ class ColumnarDriver extends TestDriver {
 
     protected boolean test3() {
 
-        if(numPages == 0 || skip)
+        if(numPages == 0)
             return true;
         try{
 
@@ -266,7 +266,7 @@ class ColumnarDriver extends TestDriver {
 
     // equality search using bitMaps
     protected boolean test4()  {
-        if(numPages == 0 || skip)
+        if(numPages == 0)
             return true;
         System.out.println("####################################");
         System.out.println("#### T E S T 4 ####################");

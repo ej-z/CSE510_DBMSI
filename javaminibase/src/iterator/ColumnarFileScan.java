@@ -139,7 +139,7 @@ public class ColumnarFileScan extends Iterator {
             }
 
             int position = tid.getPosition();
-            if(position > currDeletePos){
+            if(deletedTuples != null && position > currDeletePos){
                 while (true){
                     Tuple dtuple = deletedTuples.get_next();
                     if(dtuple == null)

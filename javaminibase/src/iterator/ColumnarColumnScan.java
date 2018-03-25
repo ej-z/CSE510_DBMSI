@@ -106,7 +106,7 @@ public class ColumnarColumnScan extends Iterator {
                     return null;
                 }
                 int position = columnarfile.getColumn(_columnNo).positionOfRecord(rid);
-                if(position > currDeletePos){
+                if(deletedTuples != null && position > currDeletePos){
                     while (true){
                         Tuple dtuple = deletedTuples.get_next();
                         if(dtuple == null)

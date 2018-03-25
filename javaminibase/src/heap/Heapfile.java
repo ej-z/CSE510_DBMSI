@@ -930,11 +930,15 @@ public class Heapfile implements Filetype, GlobalConst {
                 atuple = currentDirPage.getRecord(rid);
                 DataPageInfo dpinfo = new DataPageInfo(atuple);
 
-                if(cnt + dpinfo.slotCnt > position){
+                if(cnt + dpinfo.recct > position){
                     unpinPage(currentDirPageId, false /*undirty*/);
-                    return new RID(dpinfo.pageId,position - cnt);
+                    HFPage apage = new HFPage();
+                    pinPage(dpinfo.pageId, apage, false);
+                    int slot = apage.slotAtRelativePosition(position-cnt);
+                    unpinPage(dpinfo.pageId, false);
+                    return new RID(dpinfo.pageId, slot);
                 }
-                cnt += dpinfo.slotCnt - 1;
+                cnt += dpinfo.recct;
 
             }
 
@@ -975,9 +979,13 @@ public class Heapfile implements Filetype, GlobalConst {
 
                 if(dpinfo.pageId.pid == r.pageNo.pid){
                     unpinPage(currentDirPageId, false /*undirty*/);
-                    return position+r.slotNo;
+                    HFPage apage = new HFPage();
+                    pinPage(dpinfo.pageId, apage, false);
+                    int rp = apage.relativePositionOfSlot(r);
+                    unpinPage(dpinfo.pageId, false);
+                    return position+rp;
                 }
-                position += dpinfo.slotCnt-1;
+                position += dpinfo.recct;
 
             }
 
