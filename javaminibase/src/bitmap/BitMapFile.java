@@ -15,8 +15,6 @@ import heap.HFBufMgrException;
 import java.util.ArrayList;
 import java.util.List;
 
-// TODO: createBTreeIndex
-// TODO: markTupleDeleted and purge in ColumnarFile.
 // TODO: Naming conventions
 public class BitMapFile implements GlobalConst {
     private String fileName;
@@ -135,9 +133,9 @@ public class BitMapFile implements GlobalConst {
         }
         if (headerPage.get_rootId().pid != INVALID_PAGE) {
             int pageCounter = 1;
-            while (position > BMPage.MAX_POSITION_IN_A_PAGE) {
+            while (position >= BMPage.NUM_POSITIONS_IN_A_PAGE) {
                 pageCounter++;
-                position -= BMPage.MAX_POSITION_IN_A_PAGE;
+                position -= BMPage.NUM_POSITIONS_IN_A_PAGE;
             }
             PageId bmPageId = headerPage.get_rootId();
             Page page = pinPage(bmPageId);
@@ -155,10 +153,10 @@ public class BitMapFile implements GlobalConst {
                 bmPage = new BMPage(page);
             }
             byte[] currentPageData = bmPage.getBMpageArray();
-            currentPageData[position - 1] = value;
+            currentPageData[position] = value;
             bmPage.writeBMPageArray(currentPageData);
-            if (bmPage.getCounter() < position) {
-                bmPage.updateCounter((short) position);
+            if (bmPage.getCounter() < position + 1) {
+                bmPage.updateCounter((short) (position + 1));
             }
         } else {
             PageId newPageId = getNewBMPage(headerPageId);

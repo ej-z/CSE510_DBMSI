@@ -2,6 +2,7 @@ package global;
 
 import bufmgr.BufMgr;
 import catalog.Catalog;
+import diskmgr.ColumnarDB;
 import diskmgr.DB;
 
 public class SystemDefs {
@@ -54,7 +55,7 @@ public class SystemDefs {
 
         try {
             JavabaseBM = new BufMgr(bufpoolsize, replacement_policy);
-            JavabaseDB = new DB();
+            JavabaseDB = new ColumnarDB();
 /*
 	JavabaseCatalog = new Catalog(); 
 */

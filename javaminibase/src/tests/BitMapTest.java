@@ -4,6 +4,7 @@ import bitmap.BM;
 import bitmap.BitMapFile;
 import columnar.Columnarfile;
 import columnar.ValueInt;
+import diskmgr.PCounter;
 import global.AttrType;
 import global.SystemDefs;
 import heap.Tuple;
@@ -52,7 +53,7 @@ class BitMapDriver extends TestDriver {
             String[] attrNames = {"Attr1", "Attr2","Attr3"};
             Columnarfile cf = new Columnarfile(name, numColumns, types, sizes, attrNames);
 
-            for (int i = 0; i < 2000; i++) {
+            for (int i = 0; i < 10; i++) {
                 Tuple t = new Tuple();
                 t.setHdr((short) 3, types, sizes);
                 int s = t.size();
@@ -64,16 +65,17 @@ class BitMapDriver extends TestDriver {
                 cf.insertTuple(t.getTupleByteArray());
             }
 
-            cf.createBitMapIndex(1, new ValueInt(4));
-            BitMapFile bitMapFile = new BitMapFile("BMfile114");
+            cf.createBitMapIndex(0, new ValueInt(4));
+            BitMapFile bitMapFile = new BitMapFile(cf.getBMName(0, new ValueInt(4)));
             BM bm = new BM();
             bm.printBitMap(bitMapFile.getHeaderPage());
-
-
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
+
+        System.out.println("Reads: "+ PCounter.rcounter);
+        System.out.println("Writes: "+PCounter.wcounter);
 
         return true;
     }
