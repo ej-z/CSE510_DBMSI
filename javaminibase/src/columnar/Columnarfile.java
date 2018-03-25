@@ -261,7 +261,7 @@ public class Columnarfile {
         return result;
     }
 
-    public TupleScan openTupleScan(short[] columns) throws InvalidTupleSizeException, IOException, FileScanException, TupleUtilsException, FileIOException, SortException, InvalidPageNumberException, InvalidRelation, DiskMgrException, HFDiskMgrException, HFBufMgrException, HFException {
+    public TupleScan openTupleScan(short[] columns) throws Exception {
 
         TupleScan result = new TupleScan(this, columns);
         return result;
