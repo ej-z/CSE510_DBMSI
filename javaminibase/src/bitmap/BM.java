@@ -1,10 +1,14 @@
 package bitmap;
 
 import btree.PinPageException;
+import btree.UnpinPageException;
 import diskmgr.Page;
 import global.GlobalConst;
 import global.PageId;
 import global.SystemDefs;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class BM implements GlobalConst {
 
@@ -24,6 +28,7 @@ public class BM implements GlobalConst {
         if (header == null) {
             System.out.println("\n Empty Header!!!");
         } else {
+            List<PageId> pinnedPages = new ArrayList<>();
             PageId bmPageId = header.get_rootId();
             if (bmPageId.pid == INVALID_PAGE) {
                 System.out.println("Empty Bitmap File");
@@ -34,6 +39,7 @@ public class BM implements GlobalConst {
             System.out.println("Attribute Type: " + header.getAttrType());
             System.out.println("Attribute Value: " + header.getValue());
             Page page = pinPage(bmPageId);
+            pinnedPages.add(bmPageId);
             BMPage bmPage = new BMPage(page);
             int position = 1;
             while (Boolean.TRUE) {
@@ -47,9 +53,23 @@ public class BM implements GlobalConst {
                     break;
                 } else {
                     page = pinPage(bmPage.getNextPage());
+                    pinnedPages.add(bmPage.getNextPage());
                     bmPage.openBMpage(page);
                 }
             }
+            for (PageId pageId : pinnedPages) {
+                unpinPage(pageId);
+            }
+        }
+    }
+
+    private void unpinPage(PageId pageno)
+            throws UnpinPageException {
+        try {
+            SystemDefs.JavabaseBM.unpinPage(pageno, false /* = not DIRTY */);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new UnpinPageException(e, "");
         }
     }
 

@@ -15,7 +15,6 @@ import heap.HFBufMgrException;
 import java.util.ArrayList;
 import java.util.List;
 
-// TODO: Naming conventions
 public class BitMapFile implements GlobalConst {
     private String fileName;
     private BitMapHeaderPage headerPage;

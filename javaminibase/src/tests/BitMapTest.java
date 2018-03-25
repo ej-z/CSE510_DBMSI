@@ -69,6 +69,7 @@ class BitMapDriver extends TestDriver {
             BitMapFile bitMapFile = new BitMapFile(cf.getBMName(0, new ValueInt(4)));
             BM bm = new BM();
             bm.printBitMap(bitMapFile.getHeaderPage());
+            bitMapFile.close();
         } catch (Exception e) {
             e.printStackTrace();
             return false;

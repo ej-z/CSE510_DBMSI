@@ -439,6 +439,7 @@ public class Columnarfile {
             position++;
         }
         columnScan.closescan();
+        bitMapFile.close();
 
         addIndexToColumnar(1, indexName);
         BMNames.add(indexName);
