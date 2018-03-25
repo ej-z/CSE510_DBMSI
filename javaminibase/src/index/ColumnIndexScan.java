@@ -72,7 +72,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
             columnarfile = new Columnarfile(relName);
             setTargetHeapFiles(relName, targetedCols);
             setTargetColumnAttributeTypes(targetedCols);
-            setTargetColuumStringSizes(targetedCols);
+            setTargetColumnStringSizes(targetedCols);
         } catch (Exception e) {
             e.printStackTrace();
             return;
@@ -188,10 +188,12 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                 switch (targetAttrTypes[i].attrType) {
                     case AttrType.attrInteger:
                         // Assumed that col heap page will have only one entry
-                        JTuple.setIntFld(i + 1, record.getIntFld(1));
+                        JTuple.setIntFld(i + 1,
+                                Convert.getIntValue(0, record.getTupleByteArray()));
                         break;
                     case AttrType.attrString:
-                        JTuple.setStrFld(i + 1, record.getStrFld(1));
+                        JTuple.setStrFld(i + 1,
+                                Convert.getStrValue(0, record.getTupleByteArray(),targetShortSizes[i]+2));
                         break;
                     default:
                         throw new Exception("Attribute indexAttrType not supported");
@@ -276,10 +278,12 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                             switch (targetAttrTypes[i].attrType) {
                                 case AttrType.attrInteger:
                                     // Assumed that col heap page will have only one entry
-                                    JTuple.setIntFld(i + 1, record.getIntFld(1));
+                                    JTuple.setIntFld(i + 1,
+                                            Convert.getIntValue(0, record.getTupleByteArray()));
                                     break;
                                 case AttrType.attrString:
-                                    JTuple.setStrFld(i + 1, record.getStrFld(1));
+                                    JTuple.setStrFld(i + 1,
+                                            Convert.getStrValue(0, record.getTupleByteArray(),targetShortSizes[i]+2));
                                     break;
                                 default:
                                     throw new Exception("Attribute indexAttrType not supported");
@@ -381,8 +385,8 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
     * Gets the attribute string sizes from the coulumar file
     * and required for the seting the tuple header for the projection
     * */
-    private void setTargetColuumStringSizes(short[] targetedCols) {
-        short[] attributeStringSizes = columnarfile.getStringSizes();
+    private void setTargetColumnStringSizes(short[] targetedCols) {
+        short[] attributeStringSizes = columnarfile.getAttrSizes();
 
         for(int i=0; i < targetAttrTypes.length; i++) {
             targetShortSizes[i] = attributeStringSizes[targetedCols[i]];

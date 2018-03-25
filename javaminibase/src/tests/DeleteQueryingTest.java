@@ -125,7 +125,7 @@ class DeleteQueryingDriver extends TestDriver
 			cf = new Columnarfile(columnarFileName);
 			int val = cf.getAttributePosition(inputExpr[0]);
 			attval = cf.getAttributes()[val];
-			strsize = cf.getStringSizes()[val];
+			strsize = cf.getAttrSizes()[val];
 			
 			int size = cf.getAttributes().length;
 			targetcolnums = new short[size];
@@ -210,15 +210,15 @@ class DeleteQueryingDriver extends TestDriver
         
         
         try {
-        	ColumnarFileScan iscan = new ColumnarFileScan(columnarFileName, cf.getAttributes(), cf.getStringSizes(),(short)cf.getAttributes().length, targetcolnums.length, Sprojection, expr, targetcolnums);
+        	ColumnarFileScan iscan = new ColumnarFileScan(columnarFileName, cf.getAttributes(), cf.getAttrSizes(),(short)cf.getAttributes().length, targetcolnums.length, Sprojection, expr, targetcolnums);
         	
 			boolean status = OK;
 
 	        AttrType[] attrType = cf.getAttributes();
-	        short[] attrSize = cf.getStringSizes();
+	        short[] attrSize = cf.getAttrSizes();
 	        for (int i=0;i<targetcolnums.length; i++) {
 	        	attrType[i] = cf.getAttributes()[targetcolnums[i]];
-				attrSize[i] = cf.getStringSizes()[targetcolnums[i]]; 
+				attrSize[i] = cf.getAttrSizes()[targetcolnums[i]];
 	        }
 	        // create a tuple of appropriate size
 	        Tuple t = new Tuple();

@@ -24,6 +24,7 @@ public class Columnarfile {
 
     //Best way handle +2 bytes for strings instead of multiple ifs
     short[] asize;
+    private Heapfile[] hf = null;
     String fname = null;
     //int tupleCnt = 0;
     Tuple hdr = null;
@@ -31,7 +32,6 @@ public class Columnarfile {
     HashMap<String, Integer> columnMap;
     HashMap<String, BTreeFile> BTMap;
     HashMap<String, BitMapFile> BMMap;
-    private Heapfile[] hf = null;
 
     //for fetching the file
     public Columnarfile(java.lang.String name) throws HFException, HFBufMgrException, HFDiskMgrException, IOException {
@@ -54,6 +54,7 @@ public class Columnarfile {
             scan = f.openScan();
             hdrRid = new RID();
             Tuple hdr = scan.getNext(hdrRid);
+            hdr.setHeaderMetaData();
             this.numColumns = (short) hdr.getIntFld(1);
             atype = new AttrType[numColumns];
             attrsizes = new short[numColumns];
@@ -68,7 +69,6 @@ public class Columnarfile {
                 asize[i] = attrsizes[i];
                 if (atype[i].attrType == AttrType.attrString)
                     asize[i] += 2;
-                //hf[i + 1] = new Heapfile(name + String.valueOf(i));
             }
             BTMap = new HashMap<>();
             BMMap = new HashMap<>();
@@ -79,6 +79,7 @@ public class Columnarfile {
                 RID r = new RID();
                 Tuple t = scan.getNext(r);
                 while (t != null) {
+                    t.setHeaderMetaData();
                     int indexType = t.getIntFld(1);
                     if (indexType == 0)
                         BTMap.put(t.getStrFld(2), null);
@@ -164,16 +165,6 @@ public class Columnarfile {
             hdrRid = hdrFile.insertRecord(hdr.returnTupleByteArray());
             BTMap = new HashMap<>();
             BMMap = new HashMap<>();
-
-            //allocating memory for the others
-            /*try {
-                for (int i = 1; i <= numColumns; i++) {
-                    hf[i] = new Heapfile(name + String.valueOf(i - 1));
-                }
-            } catch (Exception e) {
-                status = false;
-                e.printStackTrace();
-            }*/
         }
     }
 
@@ -199,24 +190,15 @@ public class Columnarfile {
         int position = 0;
         for (int i = 0; i < numColumns; i++) {
 
-            int size = 6 + asize[i]; //6 bytes for count and offset
-
-            AttrType[] ttype = new AttrType[1];
-            ttype[0] = atype[i];
-            short[] tsize = new short[1];
-            tsize[0] = attrsizes[i];
-            Tuple t = new Tuple(size);
-            t.setHdr((short) 1, ttype, tsize);
-            byte[] data = t.getTupleByteArray();
-            System.arraycopy(tuplePtr, offset, data, 6, asize[i]);
-            t.tupleInit(data, 0, data.length);
-            rids[i] = getColumn(i).insertRecord(t.getTupleByteArray());
+            byte[] data = new byte[asize[i]];
+            System.arraycopy(tuplePtr, offset, data, 0, asize[i]);
+            rids[i] = getColumn(i).insertRecord(data);
             offset += asize[i];
 
             String btIndexname = getBTName(i);
-            String bmIndexname = getBMName(i, ValueFactory.getValueClass(t, atype[i]));
+            String bmIndexname = getBMName(i, ValueFactory.getValueClass(data, atype[i], asize[i]));
             if (BTMap != null && BTMap.containsKey(btIndexname)) {
-                getBTIndex(btIndexname).insert(KeyFactory.getKeyClass(t, atype[i]), rids[i]);
+                getBTIndex(btIndexname).insert(KeyFactory.getKeyClass(data, atype[i], asize[i]), rids[i]);
             }
             if (BMMap != null && BMMap.containsKey(bmIndexname)) {
                 position = getColumn(i).positionOfRecord(rids[i]);
@@ -236,7 +218,7 @@ public class Columnarfile {
         int offset = getOffset();
         for (int i = 0; i < numColumns; i++) {
             Tuple t = getColumn(i).getRecord(tidarg.recordIDs[i]);
-            System.arraycopy(t.getTupleByteArray(), 6, data, offset, asize[i]);
+            System.arraycopy(t.getTupleByteArray(), 0, data, offset, asize[i]);
             offset += asize[i];
         }
 
@@ -248,7 +230,7 @@ public class Columnarfile {
     public ValueClass getValue(TID tidarg, int column) throws Exception {
 
         Tuple t = getColumn(column).getRecord(tidarg.recordIDs[column]);
-        return ValueFactory.getValueClass(t, atype[column]);
+        return ValueFactory.getValueClass(t.getTupleByteArray(), atype[column], asize[column]);
     }
 
     public int getTupleCnt() throws HFDiskMgrException, HFException, HFBufMgrException, IOException, InvalidTupleSizeException, InvalidSlotNumberException {
@@ -286,16 +268,9 @@ public class Columnarfile {
             byte[] tuplePtr = newtuple.getTupleByteArray();
             for (int i = 0; i < numColumns; i++) {
 
-                int size = 6 + asize[i]; //6 bytes for count and offset
-
-                AttrType[] ttype = new AttrType[1];
-                ttype[0] = atype[i];
-                short[] tsize = new short[1];
-                tsize[0] = attrsizes[i];
-                Tuple t = new Tuple(size);
-                t.setHdr((short) 1, ttype, tsize);
-                byte[] data = t.getTupleByteArray();
-                System.arraycopy(tuplePtr, offset, data, 6, asize[i]);
+                byte[] data = new byte[asize[i]];
+                System.arraycopy(tuplePtr, offset, data, 0, asize[i]);
+                Tuple t = new Tuple(asize[i]);
                 t.tupleInit(data, 0, data.length);
                 getColumn(i).updateRecord(tidarg.recordIDs[i], t);
                 offset += asize[i];
@@ -311,17 +286,9 @@ public class Columnarfile {
         try {
             int offset = getOffset(column);
             byte[] tuplePtr = newtuple.getTupleByteArray();
-
-            int size = 6 + asize[column]; //6 bytes for count and offset
-
-            AttrType[] ttype = new AttrType[1];
-            ttype[0] = atype[column];
-            short[] tsize = new short[1];
-            tsize[0] = attrsizes[column];
-            Tuple t = new Tuple(size);
-            t.setHdr((short) 1, ttype, tsize);
+            Tuple t = new Tuple(asize[column]);
             byte[] data = t.getTupleByteArray();
-            System.arraycopy(tuplePtr, offset, data, 6, asize[column]);
+            System.arraycopy(tuplePtr, offset, data, 0, asize[column]);
             t.tupleInit(data, 0, data.length);
             getColumn(column).updateRecord(tidarg.recordIDs[column], t);
         } catch (Exception e) {
@@ -390,11 +357,7 @@ public class Columnarfile {
             if (tuple == null) {
                 break;
             }
-            if (keyType == AttrType.attrInteger) {
-                bTreeFile.insert(new IntegerKey(tuple.getIntFld(1)), rid);
-            } else {
-                bTreeFile.insert(new StringKey(tuple.getStrFld(1)), rid);
-            }
+            bTreeFile.insert(KeyFactory.getKeyClass(tuple.getTupleByteArray(), atype[columnNo], asize[columnNo]), rid);
         }
         columnScan.closescan();
         addIndexToColumnar(0, indexName);
@@ -414,21 +377,11 @@ public class Columnarfile {
             if (tuple == null) {
                 break;
             }
-            ValueClass valueClass;
-            if (value instanceof ValueInt) {
-                valueClass = new ValueInt(tuple.getIntFld(1));
-                if (valueClass.getValue() == value.getValue()) {
-                    bitMapFile.insert(position);
-                } else {
-                    bitMapFile.delete(position);
-                }
+            ValueClass valueClass = ValueFactory.getValueClass(tuple.getTupleByteArray(), atype[columnNo], asize[columnNo]);
+            if (valueClass.toString().equals(value.toString())) {
+                bitMapFile.insert(position);
             } else {
-                valueClass = new ValueString(tuple.getStrFld(1));
-                if (valueClass.toString().equals(value.toString())) {
-                    bitMapFile.insert(position);
-                } else {
-                    bitMapFile.delete(position);
-                }
+                bitMapFile.delete(position);
             }
             position++;
         }
@@ -458,13 +411,12 @@ public class Columnarfile {
                 Tuple tuple = getColumn(i).getRecord(rid);
                 ValueClass valueClass;
                 KeyClass keyClass;
-                if (atype[i].attrType == AttrType.attrInteger) {
-                    valueClass = new ValueInt(tuple.getIntFld(1));
-                    keyClass = new IntegerKey(tuple.getIntFld(1));
-                } else {
-                    valueClass = new ValueString(tuple.getStrFld(1));
-                    keyClass = new StringKey(tuple.getStrFld(1));
-                }
+                valueClass = ValueFactory.getValueClass(tuple.getTupleByteArray(),
+                        atype[i],
+                        asize[i]);
+                keyClass = KeyFactory.getKeyClass(tuple.getTupleByteArray(),
+                        atype[i],
+                        asize[i]);
 
                 String bTreeFileName = getBTName(i);
                 String bitMapFileName = getBMName(i, valueClass);
@@ -610,7 +562,7 @@ public class Columnarfile {
         return atype;
     }
 
-    public short[] getStringSizes() {
+    public short[] getAttrSizes() {
         return attrsizes;
     }
 
@@ -620,7 +572,6 @@ public class Columnarfile {
 
     public String getBTName(int columnNo) {
         return "BT" + "." + fname + "." + columnNo;
-        // return SystemDefs.JavabaseDBName + "-" + "BT" + "-" + fname+ "-" +columnNo;
     }
 
     public String getBMName(int columnNo, ValueClass value) {
@@ -720,7 +671,7 @@ public class Columnarfile {
         return numColumns;
     }
 
-    public AttrType getAttrtypeforcolumn(int columnNo) throws Exception{
+    public AttrType getAttrtypeforcolumn(int columnNo) throws Exception {
         if (columnNo < numColumns) {
             return atype[columnNo];
         } else {
@@ -728,4 +679,11 @@ public class Columnarfile {
         }
     }
 
+    public short getAttrsizeforcolumn(int columnNo) throws Exception {
+        if (columnNo < numColumns) {
+            return asize[columnNo];
+        } else {
+            throw new Exception("Invalid Column Number");
+        }
+    }
 }

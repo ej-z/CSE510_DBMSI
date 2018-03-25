@@ -14,15 +14,18 @@ import java.io.IOException;
 
 public class ColumnarColumnScan extends Iterator {
 
-    private AttrType[] _in1;
     private Columnarfile columnarfile;
     private Scan scan;
     private CondExpr[] OutputFilter;
     public FldSpec[] perm_mat;
+    private AttrType[] _in1 = null;
+    private short[] s_sizes = null;
     private Heapfile[] targetHeapFiles = null;
     private AttrType[] targetAttrTypes = null;
     private short[] targetShortSizes = null;
     private short[] givenTargetedCols = null;
+    private short _tuplesize;
+    private int _attrsize;
     int _columnNo;
     Sort deletedTuples;
     private int currDeletePos = -1;
@@ -30,6 +33,7 @@ public class ColumnarColumnScan extends Iterator {
     public ColumnarColumnScan(String file_name,
                               int columnNo,
                               AttrType attrType,
+                              short strSize,
                               short[] targetedCols,
                               CondExpr[] outFilter) throws FileScanException, TupleUtilsException, IOException, InvalidRelation {
 
@@ -46,7 +50,10 @@ public class ColumnarColumnScan extends Iterator {
             columnarfile = new Columnarfile(file_name);
             setTargetHeapFiles(file_name, targetedCols);
             setTargetColumnAttributeTypes(targetedCols);
-            setTargetColuumStringSizes(targetedCols);
+            setTargetColumnStringSizes(targetedCols);
+            _attrsize = columnarfile.getAttrSizes()[columnNo];
+            if(attrType.attrType == AttrType.attrString)
+                _attrsize += 2;
         } catch (Exception e) {
             e.printStackTrace();
             return;
@@ -56,13 +63,17 @@ public class ColumnarColumnScan extends Iterator {
             scan = columnarfile.openColumnScan(columnNo);
             PageId pid = SystemDefs.JavabaseDB.get_file_entry(columnarfile.getDeletedFileName());
             if (pid != null) {
-                AttrType[] types = new AttrType[1];
-                types[0] = new AttrType(AttrType.attrInteger);
-                short[] sizes = new	short[0];
+                _in1 = new AttrType[1];
+                _in1[0] = new AttrType(AttrType.attrInteger);
+                s_sizes = new	short[1];
+                s_sizes[0] = strSize;
+                Tuple t = new Tuple();
+                t.setHdr((short)1, _in1, s_sizes);
+                _tuplesize = t.size();
                 FldSpec[] projlist = new FldSpec[1];
                 projlist[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
-                FileScan fs = new FileScan(columnarfile.getDeletedFileName(), types, sizes, (short)1, 1, projlist, null);
-                deletedTuples = new Sort(types, (short) 1, sizes, fs, 1, new TupleOrder(TupleOrder.Ascending), 4, 10);
+                FileScan fs = new FileScan(columnarfile.getDeletedFileName(), _in1, s_sizes, (short)1, 1, projlist, null);
+                deletedTuples = new Sort(_in1, (short) 1, s_sizes, fs, 1, new TupleOrder(TupleOrder.Ascending), 4, 10);
             }
         } catch (Exception e) {
             throw new FileScanException(e, "openScan() failed");
@@ -141,7 +152,11 @@ public class ColumnarColumnScan extends Iterator {
                 return -1;
             }
 
-            //tuple1.setHdr(in1_len, _in1, s_sizes);
+            Tuple tuple1= new Tuple(_tuplesize);
+            tuple1.setHdr((short)1, _in1, s_sizes);
+            tuple1 = new Tuple(tuple1.size());
+            byte[] data = tuple1.getTupleByteArray();
+            System.arraycopy(t.getTupleByteArray(), 0, data, 6, _attrsize);
             if (PredEval.Eval(OutputFilter, t, null, _in1, null) == true) {
                 int position = columnarfile.getColumn(_columnNo).positionOfRecord(rid);
                 if(deletedTuples != null && position > currDeletePos){
@@ -179,8 +194,8 @@ public class ColumnarColumnScan extends Iterator {
     * Gets the attribute string sizes from the coulumar file
     * and required for the seting the tuple header for the projection
     * */
-    private void setTargetColuumStringSizes(short[] targetedCols) {
-        short[] attributeStringSizes = columnarfile.getStringSizes();
+    private void setTargetColumnStringSizes(short[] targetedCols) {
+        short[] attributeStringSizes = columnarfile.getAttrSizes();
 
         for (int i = 0; i < targetAttrTypes.length; i++) {
             targetShortSizes[i] = attributeStringSizes[targetedCols[i]];

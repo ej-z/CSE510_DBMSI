@@ -69,13 +69,6 @@ public class Tuple implements GlobalConst {
         data = atuple;
         tuple_offset = offset;
         tuple_length = length;
-        fldCnt = Convert.getShortValue(offset, data);
-        fldOffset = new short[fldCnt + 1];
-        int pos = tuple_offset + 2;
-        for (int i = 0; i < fldCnt + 1; i++) {
-            fldOffset[i] = Convert.getShortValue(pos, data);
-            pos += 2;
-        }
     }
 
     /**
@@ -141,6 +134,17 @@ public class Tuple implements GlobalConst {
         System.arraycopy(record, offset, data, 0, length);
         tuple_offset = 0;
         tuple_length = length;
+    }
+
+
+    public void setHeaderMetaData() throws IOException {
+        fldCnt = Convert.getShortValue(tuple_offset, data);
+        fldOffset = new short[fldCnt + 1];
+        int pos = tuple_offset + 2;
+        for (int i = 0; i < fldCnt + 1; i++) {
+            fldOffset[i] = Convert.getShortValue(pos, data);
+            pos += 2;
+        }
     }
 
     /**

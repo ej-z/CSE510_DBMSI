@@ -150,7 +150,7 @@ class ColumnarDriver extends TestDriver {
             RID rr = new RID();
             Tuple tt = sc.getNext(rr);
             while (tt != null){
-                System.out.println(tt.getIntFld(1));
+                System.out.println(Convert.getIntValue(0, tt.getTupleByteArray()));
                 rr = new RID();
                 tt = sc.getNext(rr);
             }
