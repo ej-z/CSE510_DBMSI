@@ -540,7 +540,7 @@ public class Columnarfile {
 
         boolean status = OK;
         Sort deletedTuples = null;
-        RID rid = new RID();
+        RID rid;
         Heapfile f = null;
         int pos_marked;
         boolean done = false;
@@ -583,20 +583,14 @@ public class Columnarfile {
                     pos_marked = Convert.getIntValue(6, tuple.getTupleByteArray());
                     for (int j = 0; j < numColumns; j++) {
                         rid = getColumn(j).recordAtPosition(pos_marked);
-                        Tuple t = getColumn(j).getRecord(rid);
                         getColumn(j).deleteRecord(rid);
-                        ValueClass valueClass;
-                        if (atype[i].attrType == AttrType.attrInteger) {
-                            valueClass = new ValueInt(t.getIntFld(1));
-                        } else {
-                            valueClass = new ValueString(t.getStrFld(1));
-                        }
 
-                        String bitMapFileName = getBMName(i, valueClass);
-                        // TODO: Need to reorganise all the indexes on the column. Not just one index.
-                        if (BMMap.containsKey(bitMapFileName)) {
-                            BitMapFile bitMapFile = getBMIndex(bitMapFileName);
-                            bitMapFile.fullDelete(pos_marked);
+                        for (String fileName : BMMap.keySet()) {
+                            int columnNo = Integer.parseInt(fileName.split(".")[2]);
+                            if (columnNo == i) {
+                                BitMapFile bitMapFile = getBMIndex(fileName);
+                                bitMapFile.fullDelete(pos_marked);
+                            }
                         }
                     }
 
