@@ -2,12 +2,12 @@ package columnar;
 
 import bitmap.BitMapFile;
 import btree.*;
-import diskmgr.DiskMgrException;
-import diskmgr.FileIOException;
-import diskmgr.InvalidPageNumberException;
 import global.*;
 import heap.*;
-import iterator.*;
+import iterator.FileScan;
+import iterator.FldSpec;
+import iterator.RelSpec;
+import iterator.Sort;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -538,6 +538,7 @@ public class Columnarfile {
                         }
 
                         String bitMapFileName = getBMName(i, valueClass);
+                        // TODO: Need to reorganise all the indexes on the column. Not just one index.
                         if (BMMap.containsKey(bitMapFileName)) {
                             BitMapFile bitMapFile = getBMIndex(bitMapFileName);
                             bitMapFile.fullDelete(pos_marked);
