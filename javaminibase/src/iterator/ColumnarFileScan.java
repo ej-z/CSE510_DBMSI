@@ -161,6 +161,22 @@ public class ColumnarFileScan extends Iterator {
             }
         }
     }
+    public Tuple get_next(TID tid)
+            throws Exception {
+        
+
+        while(true) {
+            if((tuple1 =  scan.getNext(tid)) == null) {
+                return null;
+            }
+
+            //tuple1.setHdr(in1_len, _in1, s_sizes);
+            if (PredEval.Eval(OutputFilter, tuple1, null, _in1, null) == true){
+                Projection.Project(tuple1, _in1,  Jtuple, perm_mat, nOutFlds);
+                return  Jtuple;
+            }
+        }
+    }
 
     /**
      *implement the abstract method close() from super class Iterator
@@ -175,3 +191,4 @@ public class ColumnarFileScan extends Iterator {
         }
     }
 }
+
