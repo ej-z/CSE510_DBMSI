@@ -154,7 +154,7 @@ class ColumnarDriver extends TestDriver {
                 rr = new RID();
                 tt = sc.getNext(rr);
             }
-
+            sc.closescan();
 
             TupleScan scan = cf.openTupleScan();
 
