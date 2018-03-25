@@ -254,7 +254,8 @@ class ColumnarDriver2 extends TestDriver {
 		        for(int i=0;i<targetedCols.length;i++){
 		        	System.out.println(targetedCols[i]);
 		        }
-		        ColumnarColumnScan ccs=new ColumnarColumnScan(Colfilename, columnNo, attrtype, targetedCols, expr);
+		        short attrsize = cf.getAttrsizeforcolumn(columnNo);
+		        ColumnarColumnScan ccs=new ColumnarColumnScan(Colfilename, columnNo, attrtype, attrsize, targetedCols, expr);
 		        boolean done=false;
 		        while(!done){
 		        	//RID rid = new RID();

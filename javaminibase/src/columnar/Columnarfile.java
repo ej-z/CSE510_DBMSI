@@ -78,12 +78,12 @@ public class Columnarfile {
                 scan = f.openScan();
                 RID r = new RID();
                 Tuple t = scan.getNext(r);
-                while (t != null){
+                while (t != null) {
                     t.setHeaderMetaData();
                     int indexType = t.getIntFld(1);
-                    if(indexType == 0)
-                        BTMap.put(t.getStrFld(2),null);
-                    else if(indexType == 1)
+                    if (indexType == 0)
+                        BTMap.put(t.getStrFld(2), null);
+                    else if (indexType == 1)
                         BMMap.put(t.getStrFld(2), null);
                     t = scan.getNext(r);
                 }
@@ -197,7 +197,7 @@ public class Columnarfile {
 
             String btIndexname = getBTName(i);
             String bmIndexname = getBMName(i, ValueFactory.getValueClass(data, atype[i], asize[i]));
-            if(BTMap != null && BTMap.containsKey(btIndexname)){
+            if (BTMap != null && BTMap.containsKey(btIndexname)) {
                 getBTIndex(btIndexname).insert(KeyFactory.getKeyClass(data, atype[i], asize[i]), rids[i]);
             }
             if (BMMap != null && BMMap.containsKey(bmIndexname)) {
@@ -357,7 +357,7 @@ public class Columnarfile {
             if (tuple == null) {
                 break;
             }
-            bTreeFile.insert(KeyFactory.getKeyClass(tuple.getTupleByteArray(),atype[columnNo],asize[columnNo]), rid);
+            bTreeFile.insert(KeyFactory.getKeyClass(tuple.getTupleByteArray(), atype[columnNo], asize[columnNo]), rid);
         }
         columnScan.closescan();
         addIndexToColumnar(0, indexName);
@@ -377,7 +377,7 @@ public class Columnarfile {
             if (tuple == null) {
                 break;
             }
-            ValueClass valueClass = ValueFactory.getValueClass(tuple.getTupleByteArray(),atype[columnNo], asize[columnNo]);
+            ValueClass valueClass = ValueFactory.getValueClass(tuple.getTupleByteArray(), atype[columnNo], asize[columnNo]);
             if (valueClass.toString().equals(value.toString())) {
                 bitMapFile.insert(position);
             } else {
@@ -671,10 +671,19 @@ public class Columnarfile {
         return numColumns;
     }
 
-    public AttrType getAttrtypeforcolumn(int columnNo) throws Exception{
+    public AttrType getAttrtypeforcolumn(int columnNo) throws Exception {
         if (columnNo < numColumns) {
             return atype[columnNo];
         } else {
             throw new Exception("Invalid Column Number");
         }
     }
+
+    public short getAttrsizeforcolumn(int columnNo) throws Exception {
+        if (columnNo < numColumns) {
+            return asize[columnNo];
+        } else {
+            throw new Exception("Invalid Column Number");
+        }
+    }
+}
