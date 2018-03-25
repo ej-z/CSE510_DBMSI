@@ -99,8 +99,6 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
         }
     }
 
-
-    // TODO think about unpinning the pages
     @Override
     public Tuple get_next() {
 
