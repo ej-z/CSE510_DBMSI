@@ -52,13 +52,17 @@ class ColumnarDriver2 extends TestDriver {
     	
     		
     }
-    boolean isNumeric(String s) {  
-    	//assumption give only numbers
-        return s != null && s.matches("\\d*\\.?\\d+");  
-    } 
+    
     boolean isInteger(String s) {  
     	//assumption give only numbers
-        return s != null && s.matches("\\d+");  
+        try{
+        	int chumma=Integer.parseInt(s);
+        	System.out.println(s);
+        }
+        catch(NumberFormatException e){
+        	return false;
+        }
+        return true;
     } 
     public boolean runTests() {
 
@@ -76,6 +80,12 @@ class ColumnarDriver2 extends TestDriver {
         }
         else if(Accesstype.equals("COLUMNSCAN")){
         	_pass = test2();
+        }
+        else if(Accesstype.equals("BTREE")){
+        	_pass = test3();
+        }
+        else if(Accesstype.equals("BITMAP")){
+        	
         }
         try {
             SystemDefs.JavabaseBM.flushAllPages();
@@ -103,6 +113,7 @@ class ColumnarDriver2 extends TestDriver {
 			String[] expression1=expression.split(" ");
 			expression1[0]=expression1[0].replace("{","");
 			expression1[2]=expression1[2].replace("}", "");
+			
 			int n_out_flds=temp.length;
 			CondExpr[] expr=new CondExpr[2];
 			expr[0]=new CondExpr();
@@ -130,11 +141,8 @@ class ColumnarDriver2 extends TestDriver {
 			else if(expression1[1].equals(">=")){
 				expr[0].op = new AttrOperator(AttrOperator.aopGE);
 			}
-	        if(isNumeric(expression1[2])){
-		        expr[0].type2 = new AttrType(AttrType.attrReal);
-		        expr[0].operand2.real = Float.parseFloat(expression1[2]);
-			}
-			else if(isInteger(expression1[2])){
+	        if(isInteger(expression1[2])){
+				System.out.println("hi");
 				expr[0].type2 = new AttrType(AttrType.attrInteger);
 		        expr[0].operand2.integer = Integer.parseInt(expression1[2]);
 			}
@@ -189,7 +197,7 @@ class ColumnarDriver2 extends TestDriver {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return false;	
+		return true;	
     }
     protected boolean test2(){
     	try {
@@ -234,11 +242,7 @@ class ColumnarDriver2 extends TestDriver {
 				else if(expression1[1].equals(">=")){
 					expr[0].op = new AttrOperator(AttrOperator.aopGE);
 				}
-		        if(isNumeric(expression1[2])){
-			        expr[0].type2 = new AttrType(AttrType.attrReal);
-			        expr[0].operand2.real = Float.parseFloat(expression1[2]);
-				}
-				else if(isInteger(expression1[2])){
+		        if(isInteger(expression1[2])){
 					expr[0].type2 = new AttrType(AttrType.attrInteger);
 			        expr[0].operand2.integer = Integer.parseInt(expression1[2]);
 				}
@@ -313,7 +317,7 @@ public class Select_query extends TestDriver {
 	}
 	
 public static void main(String args[]){
-	String sampleinput = "SELECT columndb columnfile A,B,C {C = 5} 100 FILESCAN";
+	String sampleinput = "SELECT columndb columnfile A,B,C,D {A != South_Dakota} 100 COLUMNSCAN";
 	String[] inputsplit=sampleinput.split(" ");
 	for(int i=0;i<inputsplit.length;i++){
 		System.out.println(inputsplit[i]);
