@@ -424,10 +424,14 @@ class ColumnarDriver extends TestDriver {
     //test case for markTuple as Deleted
     protected boolean test6() {
 
+        System.out.println("####################################");
+        System.out.println("#### T E S T 6 ####################");
+        System.out.println("####################################");
+
         if(numPages == 0)
             return true;
         try {
-            String name = "file5";
+            String name = "file6";
             int numColumns = 3;
             AttrType[] types = new AttrType[numColumns];
             types[0] = new AttrType(AttrType.attrInteger);
@@ -450,9 +454,8 @@ class ColumnarDriver extends TestDriver {
                 int s = t.size();
                 t = new Tuple(s);
                 t.setHdr((short)3, types, sizes);
-                if(i%3 == 0) {
+                if(i%2 == 0) {
                     t.setIntFld(1,4);
-
                 } else {
                     t.setIntFld(1,i);
                 }
@@ -461,18 +464,33 @@ class ColumnarDriver extends TestDriver {
 
                 if(i == 12) {
                      tidToMarkedAsDeleted =  cf.insertTuple(t.getTupleByteArray());
+                    System.out.println(tidToMarkedAsDeleted.getPosition());
 
                 } else {
                      tid =  cf.insertTuple(t.getTupleByteArray());
-
                 }
-
             }
 
+            cf.createBitMapIndex(0, new ValueInt<>(4));
+            BitMapFile bitMap;
 
-            cf.createBitMapIndex(1, new ValueInt<>(4));
+            bitMap = cf.getBitMap(0, new ValueInt<>(4));
+            System.out.println("####################################");
+            System.out.println("#### Bit map before deletion ####################");
+            System.out.println("####################################");
+
+            BM.printBitMap(bitMap.getHeaderPage());
+
 
             cf.markTupleDeleted(tidToMarkedAsDeleted);
+            bitMap = cf.getBitMap(0, new ValueInt<Integer>(4));
+
+
+            System.out.println("####################################");
+            System.out.println("#### Bit map after deletion ####################");
+            System.out.println("####################################");
+            BM.printBitMap(bitMap.getHeaderPage());
+
             System.out.println("Reads: "+PCounter.rcounter);
             System.out.println("Writes: "+PCounter.wcounter);
         } catch (Exception e) {
@@ -483,8 +501,88 @@ class ColumnarDriver extends TestDriver {
         return true;
     }
 
-    protected String testName() {
 
+    // test 7 is for purgeAllDeletedTuples
+    protected boolean test7() {
+
+        System.out.println("####################################");
+        System.out.println("#### T E S T 7 ####################");
+        System.out.println("####################################");
+
+        if(numPages == 0)
+            return true;
+        try {
+            String name = "file7";
+            int numColumns = 3;
+            AttrType[] types = new AttrType[numColumns];
+            types[0] = new AttrType(AttrType.attrInteger);
+            types[1] = new AttrType(AttrType.attrString);
+            types[2] = new AttrType(AttrType.attrString);
+            short[] sizes = new short[2];
+            sizes[0] = 20;
+            sizes[1] = 20;
+            System.out.println("Creating columnar " + name);
+            String[] attrNames = {"Attr1", "Attr2","Attr3"};
+            Columnarfile cf = new Columnarfile(name, numColumns, types, sizes, attrNames);
+
+            TID tidToMarkedAsDeleted = null;
+            TID tid = null;
+            System.out.println("Inserting columns..");
+            for(int i = 0; i < 50; i++){
+
+                Tuple t = new Tuple();
+                t.setHdr((short)3, types, sizes);
+                int s = t.size();
+                t = new Tuple(s);
+                t.setHdr((short)3, types, sizes);
+
+                t.setIntFld(1,i);
+                t.setStrFld(2, "A"+i);
+                t.setStrFld(3, "B"+i);
+
+                if(i % 3 ==0) {
+                    tidToMarkedAsDeleted =  cf.insertTuple(t.getTupleByteArray());
+                    cf.markTupleDeleted(tidToMarkedAsDeleted);
+                } else {
+                    tid =  cf.insertTuple(t.getTupleByteArray());
+                }
+            }
+
+            cf.purgeAllDeletedTuples();
+
+            try {
+                System.out.println("File contains " + cf.getTupleCnt()+" tuples.");
+                TupleScan scan = cf.openTupleScan();
+
+                tid = new TID();
+                Tuple t = scan.getNext(tid);
+                while (t != null){
+                    System.out.println(t.getIntFld(1)+","+t.getStrFld(2)+","+t.getStrFld(3));
+                    t = scan.getNext(tid);
+                }
+                scan.closetuplescan();
+
+
+            } catch (Exception e){
+                e.printStackTrace();
+                return false;
+            }
+
+            System.out.println("Reads: "+PCounter.rcounter);
+            System.out.println("Writes: "+PCounter.wcounter);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
+
+
+
+
+
+    protected String testName() {
         return "Columnar file";
     }
 }

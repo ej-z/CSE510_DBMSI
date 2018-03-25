@@ -67,4 +67,8 @@ public class TID {
             recordIDs[column].copyRid(recordID);
         }
     }
+
+    public int getPosition() {
+        return position;
+    }
 }

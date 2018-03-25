@@ -474,14 +474,15 @@ public class Columnarfile {
                     keyClass = new StringKey(tuple.getStrFld(1));
                 }
 
-                String bTreeFileName = getBTName(i + 1);
-                String bitMapFileName = getBMName(i + 1, valueClass);
+                String bTreeFileName = getBTName(i);
+                String bitMapFileName = getBMName(i, valueClass);
                 if (BTNames != null && BTNames.contains(bTreeFileName)) {
                     BTreeFile bTreeFile = BTMap.get(bTreeFileName);
                     bTreeFile.Delete(keyClass, tidarg.recordIDs[i]);
                 }
+
                 if (BMNames != null && BMNames.contains(bitMapFileName)) {
-                        BitMapFile bitMapFile = BMMap.get(bitMapFileName);
+                    BitMapFile bitMapFile = BMMap.get(bitMapFileName);
                     bitMapFile.delete(tidarg.position);
                 }
             }
@@ -492,7 +493,8 @@ public class Columnarfile {
         return true;
     }
 
-    public boolean purgeAllDeletedTuples() {
+    public boolean purgeAllDeletedTuples() throws HFDiskMgrException, InvalidTupleSizeException, IOException, InvalidSlotNumberException, FileAlreadyDeletedException, HFBufMgrException {
+
         boolean status = OK;
         Scan scan = null;
         RID rid = new RID();
@@ -522,6 +524,7 @@ public class Columnarfile {
             Tuple tuple;
             while (!done) {
                 try {
+                    rid = new RID();
                     tuple = scan.getNext(rid);
                     if (tuple == null) {
                         done = true;
@@ -533,7 +536,7 @@ public class Columnarfile {
                         status = hf[i].deleteRecord(rid);
                     }
                     //destroy th file
-                    f.deleteFile();
+//                    f.deleteFile();
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -541,6 +544,8 @@ public class Columnarfile {
                 }
             }
         }
+        f.deleteFile();
+
         return true;
     }
 
@@ -621,5 +626,10 @@ public class Columnarfile {
         }
 
         BMMap.put(name, new BitMapFile(name));
+    }
+
+    public BitMapFile getBitMap(int column, ValueClass valueClass) {
+
+        return BMMap.get(getBMName(column, valueClass));
     }
 }
