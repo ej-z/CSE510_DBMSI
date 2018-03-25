@@ -4,8 +4,7 @@ import bufmgr.PageNotReadException;
 import columnar.Columnarfile;
 import columnar.TID;
 import columnar.TupleScan;
-import global.AttrType;
-import global.RID;
+import global.*;
 import heap.*;
 
 import java.io.IOException;
@@ -22,6 +21,8 @@ public class ColumnarColumnScan extends Iterator {
     private short[] targetShortSizes = null;
     private short[] givenTargetedCols = null;
     int _columnNo;
+    Sort deletedTuples;
+    private int currDeletePos = -1;
 
     public ColumnarColumnScan(String file_name,
                               int columnNo,
@@ -50,6 +51,16 @@ public class ColumnarColumnScan extends Iterator {
 
         try {
             scan = columnarfile.openColumnScan(columnNo);
+            PageId pid = SystemDefs.JavabaseDB.get_file_entry(columnarfile.getDeletedFileName());
+            if (pid != null) {
+                AttrType[] types = new AttrType[1];
+                types[0] = new AttrType(AttrType.attrInteger);
+                short[] sizes = new	short[0];
+                FldSpec[] projlist = new FldSpec[1];
+                projlist[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
+                FileScan fs = new FileScan(columnarfile.getDeletedFileName(), types, sizes, (short)1, 1, projlist, null);
+                deletedTuples = new Sort(types, (short) 1, sizes, fs, 1, new TupleOrder(TupleOrder.Ascending), 4, 10);
+            }
         } catch (Exception e) {
             throw new FileScanException(e, "openScan() failed");
         }
@@ -94,9 +105,21 @@ public class ColumnarColumnScan extends Iterator {
                     e.printStackTrace();
                     return null;
                 }
-                int postion = columnarfile.getColumn(_columnNo).positionOfRecord(rid);
+                int position = columnarfile.getColumn(_columnNo).positionOfRecord(rid);
+                if(position > currDeletePos){
+                    while (true){
+                        Tuple dtuple = deletedTuples.get_next();
+                        currDeletePos = dtuple.getIntFld(1);
+                        if(currDeletePos >= position)
+                            break;
+                    }
+                }
+                if(position == currDeletePos){
+                    deletedTuples.get_next();
+                    continue;
+                }
                 for (int i = 0; i < targetHeapFiles.length; i++) {
-                    RID r = targetHeapFiles[i].recordAtPosition(postion);
+                    RID r = targetHeapFiles[i].recordAtPosition(position);
                     Tuple record = targetHeapFiles[i].getRecord(r);
                     switch (targetAttrTypes[i].attrType) {
                         case AttrType.attrInteger:

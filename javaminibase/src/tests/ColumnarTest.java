@@ -312,6 +312,7 @@ class ColumnarDriver extends TestDriver {
             BM.printBitMap(bitMapFile.getHeaderPage());
 
             short[] targetedCols = new short[2];
+
             targetedCols[0] = 0;
             //targetedCols[1] = 2;
 
@@ -383,9 +384,7 @@ class ColumnarDriver extends TestDriver {
                 cf.insertTuple(t.getTupleByteArray());
             }
 
-            cf.createBitMapIndex(0, new ValueInt<>(4));
-            BitMapFile bitMapFile = cf.getBMIndex(cf.getBMName(0, new ValueInt<>(4)));
-
+            BitMapFile bitMapFile = new BitMapFile("bitmap-file-5", cf, 1, new ValueInt(4));
             TupleScan scan = cf.openTupleScan();
             TID tid = new TID();
             Tuple t = scan.getNext(tid);

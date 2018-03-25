@@ -87,7 +87,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
 
                 try {
                     btIndScan = IndexUtils.BTree_scan(selects, btIndFile);
-                    int columnNo = Integer.parseInt(indName.substring(columnarfile.getColumnarFileName().length() + 2));
+                    int columnNo = Integer.parseInt(indName.substring(columnarfile.getColumnarFileName().length() + 4));
                     columnFile = columnarfile.getColumn(columnNo);
                 } catch (Exception e) {
                     throw new IndexException(e, "IndexScan.java: BTreeFile exceptions caught from IndexUtils.BTree_scan().");
