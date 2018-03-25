@@ -280,12 +280,12 @@ class ColumnarDriver extends TestDriver {
             short[] targetedCols = new short[2];
 
             targetedCols[0] = 0;
-            targetedCols[1] = 2;
+            //targetedCols[1] = 2;
 
             IndexType indexType = new IndexType(3);
 
             ColumnIndexScan columnIndexScan = new ColumnIndexScan(indexType, cf.getColumnarFileName(),
-                    cf.getBMName(0,new ValueInt<>(4)), new AttrType(AttrType.attrInteger), (short) 1, null, false, targetedCols);
+                    cf.getBMName(0,new ValueInt<>(4)), new AttrType(AttrType.attrInteger), (short) 1, null, true, targetedCols);
 
 
             System.out.println("Starting Index Scan");
@@ -294,7 +294,7 @@ class ColumnarDriver extends TestDriver {
 
             while (tuples != null){
                 System.out.println(tuples.getIntFld(1));
-                System.out.println(tuples.getStrFld(2));
+                //System.out.println(tuples.getStrFld(2));
                 tuples = columnIndexScan.get_next();
             }
             columnIndexScan.close();
@@ -457,7 +457,7 @@ class ColumnarDriver extends TestDriver {
             cf.createBitMapIndex(0, new ValueInt<>(4));
             BitMapFile bitMap;
 
-            bitMap = cf.getBitMap(0, new ValueInt<>(4));
+            bitMap = cf.getBMIndex(cf.getBMName(0, new ValueInt<>(4)));
             System.out.println("####################################");
             System.out.println("#### Bit map before deletion ####################");
             System.out.println("####################################");
@@ -466,7 +466,7 @@ class ColumnarDriver extends TestDriver {
 
 
             cf.markTupleDeleted(tidToMarkedAsDeleted);
-            bitMap = cf.getBitMap(0, new ValueInt<Integer>(4));
+            bitMap = cf.getBMIndex(cf.getBMName(0, new ValueInt<>(4)));
 
 
             System.out.println("####################################");

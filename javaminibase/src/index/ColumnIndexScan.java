@@ -7,6 +7,7 @@ import bufmgr.PageNotReadException;
 import btree.PinPageException;
 import columnar.Columnarfile;
 import columnar.TID;
+import columnar.ValueClass;
 import diskmgr.Page;
 import global.*;
 import heap.*;
@@ -42,7 +43,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
     private CondExpr[] _selects;
     private Heapfile columnFile;
     private boolean index_only;
-
+    private String value;
 
     public ColumnIndexScan(IndexType index,
                            String relName,
@@ -99,6 +100,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                 try {
                     bmIndFile = new BitMapFile(indName);
                     currentPageId = bmIndFile.getHeaderPage().get_rootId();
+                    value = bmIndFile.getHeaderPage().getValue();
                     currentBMPage = new BMPage(pinPage(currentPageId));
                     counter = currentBMPage.getCounter();
                     bitMaps = new BMPage(pinPage(currentPageId)).getBMpageArray();
@@ -232,24 +234,38 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
             JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
 
             if (bitMaps[scanCounter] == 1) {
-                for (int i = 0; i < targetHeapFiles.length; i++) {
-                    RID rid = targetHeapFiles[i].recordAtPosition(scanCounter);
-                    Tuple record = targetHeapFiles[i].getRecord(rid);
-                    switch (targetAttrTypes[i].attrType) {
+                if (index_only) {
+                    switch (indexAttrType.attrType) {
                         case AttrType.attrInteger:
                             // Assumed that col heap page will have only one entry
-                            JTuple.setIntFld(i + 1, record.getIntFld(1));
+                            JTuple.setIntFld(1, Integer.parseInt(value));
                             break;
                         case AttrType.attrString:
-                            JTuple.setStrFld(i + 1, record.getStrFld(1));
+                            JTuple.setStrFld(1, value);
                             break;
                         default:
                             throw new Exception("Attribute indexAttrType not supported");
                     }
+                } else {
+                    for (int i = 0; i < targetHeapFiles.length; i++) {
+                        RID rid = targetHeapFiles[i].recordAtPosition(scanCounter);
+                        Tuple record = targetHeapFiles[i].getRecord(rid);
+                        switch (targetAttrTypes[i].attrType) {
+                            case AttrType.attrInteger:
+                                // Assumed that col heap page will have only one entry
+                                JTuple.setIntFld(i + 1, record.getIntFld(1));
+                                break;
+                            case AttrType.attrString:
+                                JTuple.setStrFld(i + 1, record.getStrFld(1));
+                                break;
+                            default:
+                                throw new Exception("Attribute indexAttrType not supported");
+                        }
+                    }
+                    // increment the scan counter on every get_next() call
+                    scanCounter++;
+                    // return the Tuple built by scanning the targeted columns
                 }
-                // increment the scan counter on every get_next() call
-                scanCounter++;
-                // return the Tuple built by scanning the targeted columns
                 return JTuple;
             } else {
                 scanCounter++;
