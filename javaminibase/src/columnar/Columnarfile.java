@@ -403,7 +403,7 @@ public class Columnarfile {
 
         addIndexToColumnar(0, indexName);
         BTNames.add(indexName);
-
+        BTMap.put(indexName, bTreeFile);
         return true;
     }
 
@@ -442,6 +442,7 @@ public class Columnarfile {
 
         addIndexToColumnar(1, indexName);
         BMNames.add(indexName);
+        BMMap.put(indexName, bitMapFile);
 
         return true;
     }
@@ -464,7 +465,7 @@ public class Columnarfile {
                 Tuple tuple = hf[i + 1].getRecord(rid);
                 ValueClass valueClass;
                 KeyClass keyClass;
-                if (atype[i + 1].attrType == AttrType.attrInteger) {
+                if (atype[i].attrType == AttrType.attrInteger) {
                     valueClass = new ValueInt(tuple.getIntFld(1));
                     keyClass = new IntegerKey(tuple.getIntFld(1));
                 } else {
@@ -474,12 +475,12 @@ public class Columnarfile {
 
                 String bTreeFileName = getBTName(i + 1);
                 String bitMapFileName = getBMName(i + 1, valueClass);
-                if (BTNames.contains(bTreeFileName)) {
+                if (BTNames != null && BTNames.contains(bTreeFileName)) {
                     BTreeFile bTreeFile = BTMap.get(bTreeFileName);
                     bTreeFile.Delete(keyClass, tidarg.recordIDs[i]);
                 }
-                if (BMNames.contains(bitMapFileName)) {
-                    BitMapFile bitMapFile = BMMap.get(bitMapFileName);
+                if (BMNames != null && BMNames.contains(bitMapFileName)) {
+                        BitMapFile bitMapFile = BMMap.get(bitMapFileName);
                     bitMapFile.delete(tidarg.position);
                 }
             }
@@ -560,7 +561,7 @@ public class Columnarfile {
     }
 
     public String getBMName(int columnNo, ValueClass value){
-        return "BM"+fname+columnNo+value.toString();
+        return "BM" + fname + columnNo + value.toString();
     }
 
     public String getDeletedFileName(){
@@ -587,10 +588,13 @@ public class Columnarfile {
 
             if(indexType == 0 && BTNames == null){
                 BTNames = new HashSet<>();
+                BTMap = new HashMap<>();
             }
             else if(indexType == 1 && BMNames == null){
                 BMNames = new HashSet<>();
+                BMMap = new HashMap<>();
             }
+
         } catch (Exception e){
             e.printStackTrace();
             return false;
