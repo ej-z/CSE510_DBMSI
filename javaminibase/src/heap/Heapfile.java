@@ -161,7 +161,6 @@ public class Heapfile implements Filetype, GlobalConst {
         dpinfop.pageId.pid = pageId.pid;
         dpinfop.recct = 0;
         dpinfop.availspace = hfpage.available_space();
-        dpinfop.slotCnt = hfpage.getSlotCnt();
         return hfpage;
 
     } // end of _newDatapage
@@ -552,7 +551,6 @@ public class Heapfile implements Filetype, GlobalConst {
 
         dpinfo.recct++;
         dpinfo.availspace = currentDataPage.available_space();
-        dpinfo.slotCnt = currentDataPage.getSlotCnt();
         unpinPage(dpinfo.pageId, true /* = DIRTY */);
 
         // DataPage is now released
@@ -563,7 +561,6 @@ public class Heapfile implements Filetype, GlobalConst {
         dpinfo_ondirpage.availspace = dpinfo.availspace;
         dpinfo_ondirpage.recct = dpinfo.recct;
         dpinfo_ondirpage.pageId.pid = dpinfo.pageId.pid;
-        dpinfo_ondirpage.slotCnt = dpinfo.slotCnt;
         dpinfo_ondirpage.flushToTuple();
 
 
@@ -620,7 +617,6 @@ public class Heapfile implements Filetype, GlobalConst {
 
         // delete the record on the datapage
         currentDataPage.deleteRecord(rid);
-        pdpinfo.slotCnt = currentDataPage.getSlotCnt();
         pdpinfo.recct--;
         pdpinfo.flushToTuple();    //Write to the buffer pool
         if (pdpinfo.recct >= 1) {
