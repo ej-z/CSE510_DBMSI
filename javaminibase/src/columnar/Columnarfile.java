@@ -14,6 +14,8 @@ import iterator.TupleUtilsException;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import static tests.TestDriver.FAIL;
 import static tests.TestDriver.OK;
@@ -401,6 +403,53 @@ public class Columnarfile {
         return true;
     }
 
+    public boolean createAllBitMapIndexForColumn(int columnNo) throws Exception {
+        Scan columnScan = openColumnScan(columnNo);
+        RID rid = new RID();
+        Tuple tuple;
+        int position = 0;
+        Set<BitMapFile> bitMapFiles = new HashSet<>();
+        while (true) {
+            tuple = columnScan.getNext(rid);
+            if (tuple == null) {
+                break;
+            }
+
+            ValueClass valueClass;
+            if (atype[columnNo].attrType == AttrType.attrInteger) {
+                valueClass = new ValueInt(tuple.getIntFld(1));
+            } else {
+                valueClass = new ValueString(tuple.getStrFld(1));
+            }
+
+            BitMapFile bitMapFile;
+            String bitMapFileName = getBMName(columnNo, valueClass);
+            if (!BMMap.containsKey(bitMapFileName)) {
+                bitMapFile = new BitMapFile(bitMapFileName, this, columnNo, valueClass);
+                addIndexToColumnar(1, bitMapFileName);
+                BMMap.put(bitMapFileName, bitMapFile);
+            } else {
+                bitMapFile = BMMap.get(bitMapFileName);
+            }
+            bitMapFiles.add(bitMapFile);
+
+            for (BitMapFile existingBitMapFile : bitMapFiles) {
+                if (existingBitMapFile.getHeaderPage().getValue().equals(valueClass.toString())) {
+                    existingBitMapFile.insert(position);
+                } else {
+                    existingBitMapFile.delete(position);
+                }
+            }
+
+            position++;
+        }
+        columnScan.closescan();
+        for (BitMapFile bitMapFile : bitMapFiles) {
+            bitMapFile.close();
+        }
+
+        return true;
+    }
 
     public boolean createBitMapIndex(int columnNo, ValueClass value) throws Exception {
         Scan columnScan = openColumnScan(columnNo);
