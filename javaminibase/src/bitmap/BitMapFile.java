@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // TODO: Naming conventions
+// TODO: setCurPage_forGivenPosition
 public class BitMapFile implements GlobalConst {
     private String fileName;
     private BitMapHeaderPage headerPage;
