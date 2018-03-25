@@ -3,12 +3,14 @@ package tests;
 import static global.GlobalConst.NUMBUF;
 import global.AttrOperator;
 import global.AttrType;
+import global.IndexType;
 import global.RID;
 import global.SystemDefs;
 import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
 import heap.Tuple;
+import index.ColumnIndexScan;
 import iterator.ColumnarColumnScan;
 import iterator.ColumnarFileScan;
 import iterator.CondExpr;
@@ -82,10 +84,10 @@ class ColumnarDriver2 extends TestDriver {
         	_pass = test2();
         }
         else if(Accesstype.equals("BTREE")){
-        	_pass = test3();
+        	_pass = test3(0);
         }
         else if(Accesstype.equals("BITMAP")){
-        	
+        	_pass = test3(1);
         }
         try {
             SystemDefs.JavabaseBM.flushAllPages();
@@ -101,7 +103,127 @@ class ColumnarDriver2 extends TestDriver {
         return _pass;
 
     }
-
+    protected boolean test3(int id){
+    	IndexType it=new IndexType(1);
+    	String relName=Colfilename;
+    	StringBuilder sb=new StringBuilder();
+    	//BM.ColumnarFileName.0.value
+    	//BT.ColumnarFileName.0.value
+    	Columnarfile cf;
+		try {
+			cf = new Columnarfile(Colfilename);
+			String[] temp=Projection.split(",");
+			String[] expression1=expression.split(" ");
+			expression1[0]=expression1[0].replace("{","");
+			expression1[2]=expression1[2].replace("}", "");
+			int columnNo=cf.getAttributePosition(expression1[0]);
+			if(id==0){
+	    	sb.append("BT.");
+			}
+			else{
+				sb.append("BM");
+			}
+	    	sb.append(Colfilename);
+	    	sb.append(".");
+	    	sb.append(String.valueOf(columnNo));
+	    	sb.append(".");
+	    	sb.append(expression1[2]);    	
+	    	String indName=sb.toString();
+	    	System.out.print(indName);
+	    	try {
+				AttrType indexAttrType=cf.getAttrtypeforcolumn(columnNo);
+				short[] scize=cf.getStrSize();
+				short csize=scize[columnNo];
+				short[] targetedCols=new short[temp.length];
+				boolean indexOnly;
+				if(temp.length==1){
+					if(temp[0].equals(expression1[0]))
+						indexOnly=true;
+					else
+						indexOnly=false;
+				}
+				else{
+					indexOnly=false;
+				}
+				int index=0;
+				for(String i:temp){
+					targetedCols[index++]=(short) cf.getAttributePosition(i);
+				}
+				CondExpr[] expr=new CondExpr[2];
+				expr[0]=new CondExpr();
+				expr[0].next = null;
+				expr[0].type1 = new AttrType(AttrType.attrSymbol);
+				expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), cf.getAttributePosition(expression1[0])+1);
+				expr[1]=null;
+				//System.out.println("here");
+				  
+				if(expression1[1].equals("=")){
+					expr[0].op = new AttrOperator(AttrOperator.aopEQ);
+				}
+				else if(expression1[1].equals(">")){
+					expr[0].op = new AttrOperator(AttrOperator.aopGT);
+				}
+				else if(expression1[1].equals("<")){
+					expr[0].op = new AttrOperator(AttrOperator.aopLT);
+				}
+				else if(expression1[1].equals("!=")){
+					expr[0].op = new AttrOperator(AttrOperator.aopNE);
+				}
+				else if(expression1[1].equals("<=")){
+					expr[0].op = new AttrOperator(AttrOperator.aopLE);
+				}
+				else if(expression1[1].equals(">=")){
+					expr[0].op = new AttrOperator(AttrOperator.aopGE);
+				}
+		        if(isInteger(expression1[2])){
+					System.out.println("hi");
+					expr[0].type2 = new AttrType(AttrType.attrInteger);
+			        expr[0].operand2.integer = Integer.parseInt(expression1[2]);
+				}
+				else{
+					expr[0].type2 = new AttrType(AttrType.attrString);
+			        expr[0].operand2.string = expression1[2];
+				}
+		        ColumnIndexScan cis=new ColumnIndexScan(it,relName,indName,indexAttrType,csize,expr,indexOnly,targetedCols);
+		        boolean done=false;
+		        AttrType[] atype2=new AttrType[temp.length];
+		        for(int i=0;i<temp.length;i++){
+		        	atype2[i]=cf.getAttrtypeforcolumn(targetedCols[i]);
+		        }
+		        while(!done){
+		        	Tuple result=cis.get_next();
+		        	if(result==null){
+		        		done=true;
+		        		break;
+		        	}
+		        	else{
+		        		result.print(atype2);
+		        	}
+		        }
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} catch (HFException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (HFBufMgrException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (HFDiskMgrException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	
+    	
+    	return true;
+    }
+    protected boolean test4(){
+    	return true;
+    }
     protected boolean test1(){
     	try {
     		//System.out.println("here");
@@ -327,5 +449,6 @@ public static void main(String args[]){
 }
 
 }
+
 
 
