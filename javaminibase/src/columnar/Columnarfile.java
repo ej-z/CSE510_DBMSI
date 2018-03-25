@@ -563,11 +563,13 @@ public class Columnarfile {
     }
 
     public String getBTName(int columnNo){
-        return "BT"+fname+columnNo;
+        return "BT" + "-" + fname + "-" + columnNo;
+        // return SystemDefs.JavabaseDBName + "-" + "BT" + "-" + fname+ "-" +columnNo;
     }
 
     public String getBMName(int columnNo, ValueClass value){
-        return "BM" + fname + columnNo + value.toString();
+        return "BM" + "-" + fname + "-" + columnNo + "-" + value.toString();
+        // return SystemDefs.JavabaseDBName + "-" + "BM" + "-" + fname + "-" + columnNo + "-" + value.toString();
     }
 
     public String getDeletedFileName(){
