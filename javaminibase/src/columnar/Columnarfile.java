@@ -682,10 +682,3 @@ public class Columnarfile {
     	}
     }
 }
-
-
-    public short getnumColumns(){
-        return numColumns;
-    }
-}
-
