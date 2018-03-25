@@ -671,4 +671,14 @@ public class Columnarfile {
     public short getnumColumns(){
         return numColumns;
     }
+    
+    public AttrType getAttrtypeforcolumn(int columnNo) throws Exception{
+    	if(columnNo<numColumns){
+    	return atype[columnNo];
+    	}
+    	else{
+    		throw new Exception("Invalid Column Number");
+    	}
+    }
 }
+
