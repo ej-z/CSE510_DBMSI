@@ -621,8 +621,6 @@ class ColumnarDriver extends TestDriver {
 
             cf.createBitMapIndex(0, new ValueInt<>(4));
 
-            BitMapFile bitMap = cf.getBitMap(0, new ValueInt<>(4));
-
             String bmName = cf.getBMName(0, new ValueInt<>(4));
             short[] targetedCols = new short[3];
 

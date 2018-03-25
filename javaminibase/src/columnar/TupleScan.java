@@ -64,7 +64,7 @@ public class TupleScan {
      * @throws InvalidTupleSizeException
      * @throws IOException
      */
-    public TupleScan(Columnarfile f,short[] columns) throws InvalidTupleSizeException, IOException, InvalidPageNumberException, DiskMgrException, FileIOException, FileScanException, TupleUtilsException, InvalidRelation, SortException, HFDiskMgrException, HFBufMgrException, HFException {
+    public TupleScan(Columnarfile f,short[] columns) throws Exception {
 
         numColumns = (short)columns.length;
         atype = new AttrType[numColumns];
@@ -103,10 +103,8 @@ public class TupleScan {
 			projlist[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
 			FileScan fs = new FileScan(f.getDeletedFileName(), types, sizes, (short)1, 1, projlist, null);
 			deletedTuples = new Sort(types, (short) 1, sizes, fs, 1, new TupleOrder(TupleOrder.Ascending), 4, 10);
+			currDeletePos = deletedTuples.get_next().getIntFld(1);
 		}
-
-
-
     }
 	public void closetuplescan(){
 		for(int i=0;i<sc.length;i++){
@@ -129,6 +127,14 @@ public class TupleScan {
 				Tuple t = sc[i].getNext(rid);
 				if(t != null && deletedTuples != null){
 					position = sc[i].positionOfRecord(rid);
+					if(position > currDeletePos){
+						while (true){
+							Tuple dtuple = deletedTuples.get_next();
+							currDeletePos = dtuple.getIntFld(1);
+							if(currDeletePos >= position)
+								break;
+						}
+					}
 					if(position == currDeletePos){
 						for (int j = 1; j < numColumns; j++){
 							sc[j].getNext(rid);
