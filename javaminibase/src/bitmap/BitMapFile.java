@@ -153,10 +153,10 @@ public class BitMapFile implements GlobalConst {
                 bmPage = new BMPage(page);
             }
             byte[] currentPageData = bmPage.getBMpageArray();
-            currentPageData[position - 1] = value;
+            currentPageData[position] = value;
             bmPage.writeBMPageArray(currentPageData);
-            if (bmPage.getCounter() < position) {
-                bmPage.updateCounter((short) position);
+            if (bmPage.getCounter() <= position) {
+                bmPage.updateCounter((short) (position + 1));
             }
         } else {
             PageId newPageId = getNewBMPage(headerPageId);

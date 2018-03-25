@@ -378,11 +378,11 @@ public class Columnarfile {
         return fname;
     }
 
-    boolean createBTreeIndex(int columnNo) throws Exception {
+    public boolean createBTreeIndex(int columnNo) throws Exception {
         String indexName = getBTName(columnNo);
 
-        int keyType = atype[columnNo - 1].attrType;
-        int keySize = asize[columnNo - 1];
+        int keyType = atype[columnNo].attrType;
+        int keySize = asize[columnNo];
         int deleteFashion = 0;
         BTreeFile bTreeFile = new BTreeFile(indexName, keyType, keySize, deleteFashion);
         Scan columnScan = openColumnScan(columnNo);
@@ -616,5 +616,9 @@ public class Columnarfile {
         }
 
         BMMap.put(name, new BitMapFile(name));
+    }
+
+    public Heapfile getColumn(int columnNo){
+        return hf[columnNo+1];
     }
 }

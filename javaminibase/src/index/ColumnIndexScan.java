@@ -2,13 +2,14 @@ package index;
 
 import bitmap.BMPage;
 import bitmap.BitMapFile;
-import btree.PinPageException;
+import btree.*;
 import bufmgr.PageNotReadException;
 import columnar.Columnarfile;
 import diskmgr.Page;
 import global.*;
 import heap.*;
 import iterator.*;
+import org.w3c.dom.Attr;
 
 import java.io.IOException;
 
@@ -21,8 +22,8 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
     private final String indName;
     private final AttrType indexAttrType;
     private final short str_sizes;
-    private BitMapFile indFile;
-    private PageId rootId;
+    private BitMapFile bmIndFile;
+    private PageId currentPageId;
     private Columnarfile columnarfile;
     private byte[] bitMaps;
     private BMPage currentBMPage;
@@ -33,6 +34,12 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
     private short[] targetShortSizes = null;
     private short[] givenTargetedCols = null;
     private Boolean isIndexOnlyQuery = false;
+    private IndexType indexType;
+    private IndexFile btIndFile;
+    private IndexFileScan btIndScan;
+    private CondExpr[] _selects;
+    private Heapfile columnFile;
+    private boolean index_only;
 
 
     public ColumnIndexScan(IndexType index,
@@ -57,32 +64,42 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
             throw new IndexException(e, "IndexScan.java: Heapfile not created");
         }
 
+        try {
+            indexType = index;
+            columnarfile = new Columnarfile(relName);
+            setTargetHeapFiles(relName, targetedCols);
+            setTargetColumnAttributeTypes(targetedCols);
+            setTargetColuumStringSizes(targetedCols);
+            _selects = selects;
+            index_only = indexOnly;
+        }catch (Exception e) {
+                e.printStackTrace();
+                return;
+            }
+
         switch (index.indexType) {
+            case IndexType.B_Index:
+                try {
+                    btIndFile = new BTreeFile(indName);
+                } catch (Exception e) {
+                    throw new IndexException(e, "IndexScan.java: BTreeFile exceptions caught from BTreeFile constructor");
+                }
+
+                try {
+                    btIndScan = IndexUtils.BTree_scan(selects, btIndFile);
+                    int columnNo = Integer.parseInt(indName.substring(columnarfile.getColumnarFileName().length()+2));
+                    columnFile = columnarfile.getColumn(columnNo);
+                } catch (Exception e) {
+                    throw new IndexException(e, "IndexScan.java: BTreeFile exceptions caught from IndexUtils.BTree_scan().");
+                }
+                break;
             case IndexType.BitMapIndex:
                 try {
-
-                    if(indexOnly) {
-                        isIndexOnlyQuery = true;
-                        // if the query is index only, we can use the index to answer the queries
-                        // no other heap files are opened except the bitmap file
-                        indFile = new BitMapFile(indName);
-                        rootId = indFile.getHeaderPage().get_rootId();
-                        currentBMPage = new BMPage(pinPage(rootId));
-                        counter = currentBMPage.getCounter();
-                        bitMaps = new BMPage(pinPage(rootId)).getBMpageArray();
-
-                    } else {
-                        indFile = new BitMapFile(indName);
-                        rootId = indFile.getHeaderPage().get_rootId();
-                        currentBMPage = new BMPage(pinPage(rootId));
-                        counter = currentBMPage.getCounter();
-                        bitMaps = new BMPage(pinPage(rootId)).getBMpageArray();
-                        columnarfile = new Columnarfile(relName);
-
-                        setTargetHeapFiles(relName, targetedCols);
-                        setTargetColumnAttributeTypes(targetedCols);
-                        setTargetColuumStringSizes(targetedCols);
-                    }
+                    bmIndFile = new BitMapFile(indName);
+                    currentPageId = bmIndFile.getHeaderPage().get_rootId();
+                    currentBMPage = new BMPage(pinPage(currentPageId));
+                    counter = currentBMPage.getCounter();
+                    bitMaps = new BMPage(pinPage(currentPageId)).getBMpageArray();
                 } catch (Exception e) {
                     // any exception is swalled into a Index Exception
                     throw new IndexException(e, "IndexScan.java: BTreeFile exceptions caught from BTreeFile constructor");
@@ -96,92 +113,144 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
         }
     }
 
-
-    // TODO think about unpinning the pages
     @Override
-    public Tuple get_next() {
+    public Tuple get_next() throws IndexException, UnknownKeyTypeException {
+
+        if(indexType.indexType == IndexType.B_Index){
+            return get_next_BT();
+        }
+        else if(indexType.indexType == IndexType.BitMapIndex){
+            return get_next_BM();
+        }
+        return null;
+    }
+
+    public Tuple get_next_BT() throws IndexException, UnknownKeyTypeException {
+        RID rid;
+        KeyDataEntry nextentry = null;
 
         try {
-            if (isIndexOnlyQuery) {
-                if (bitMaps[scanCounter] == 1) {
-                    AttrType[] types = new AttrType[1];
-                    types[0] = indexAttrType;
-                    short[] sizes = new short[1];
-                    sizes[0] = 200;
-                    Tuple JTuple = new Tuple();
-                    // set the tuple header to contain only one value as it is index only query
-                    JTuple.setHdr((short) 1, types, sizes);
+            nextentry = btIndScan.get_next();
+        } catch (Exception e) {
+            throw new IndexException(e, "IndexScan.java: BTree error");
+        }
 
-                    // return the value class on which the bitmap was built
-                    String value = indName.split("-")[2];
+        if (nextentry == null)
+            return null;
+        if (index_only) {
+            // only need to return the key
 
-                    switch (indexAttrType.attrType) {
+            AttrType[] attrType = new AttrType[1];
+            short[] s_sizes = new short[1];
+            Tuple JTuple = new Tuple();
+            if (indexAttrType.attrType == AttrType.attrInteger) {
+                attrType[0] = new AttrType(AttrType.attrInteger);
+                try {
+                    JTuple.setHdr((short) 1, attrType, s_sizes);
+                } catch (Exception e) {
+                    throw new IndexException(e, "IndexScan.java: Heapfile error");
+                }
+
+                try {
+                    JTuple.setIntFld(1, ((IntegerKey) nextentry.key).getKey().intValue());
+                } catch (Exception e) {
+                    throw new IndexException(e, "IndexScan.java: Heapfile error");
+                }
+            } else if (indexAttrType.attrType == AttrType.attrString) {
+
+                attrType[0] = new AttrType(AttrType.attrString);
+                s_sizes[0] = str_sizes;
+
+                try {
+                    JTuple.setHdr((short) 1, attrType, s_sizes);
+                } catch (Exception e) {
+                    throw new IndexException(e, "IndexScan.java: Heapfile error");
+                }
+
+                try {
+                    JTuple.setStrFld(1, ((StringKey) nextentry.key).getKey());
+                } catch (Exception e) {
+                    throw new IndexException(e, "IndexScan.java: Heapfile error");
+                }
+            } else {
+                // attrReal not supported for now
+                throw new UnknownKeyTypeException("Only Integer and String keys are supported so far");
+            }
+            return JTuple;
+        }
+
+        try {
+            rid = ((LeafData) nextentry.data).getData();
+            Tuple JTuple = new Tuple();
+            // set the header which attribute types of the targeted columns
+            JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+            int postion = columnFile.positionOfRecord(rid);
+            for (int i = 0; i < targetHeapFiles.length; i++) {
+                RID r = targetHeapFiles[i].recordAtPosition(postion);
+                Tuple record = targetHeapFiles[i].getRecord(r);
+                switch (targetAttrTypes[i].attrType) {
+                    case AttrType.attrInteger:
+                        // Assumed that col heap page will have only one entry
+                        JTuple.setIntFld(i + 1, record.getIntFld(1));
+                        break;
+                    case AttrType.attrString:
+                        JTuple.setStrFld(i + 1, record.getStrFld(1));
+                        break;
+                    default:
+                        throw new Exception("Attribute indexAttrType not supported");
+                }
+            }
+            return JTuple;
+        } catch (Exception e) {
+            throw new IndexException(e, "IndexScan.java: getRecord failed");
+        }
+
+        //return null;
+    }
+
+    public Tuple get_next_BM(){
+        try {
+
+            if (scanCounter > counter) {
+                PageId nextPage = currentBMPage.getNextPage();
+                unpinPage(currentPageId, false);
+                if (nextPage.pid != INVALID_PAGE) {
+                    currentPageId.copyPageId(nextPage);
+                    currentBMPage = new BMPage(pinPage(currentPageId));
+                    counter = currentBMPage.getCounter();
+                    bitMaps = currentBMPage.getBMpageArray();
+                } else {
+                    close();
+                    return null;
+                }
+            }
+            // tuple that needs to sent
+            Tuple JTuple = new Tuple();
+            // set the header which attribute types of the targeted columns
+            JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+
+            if (bitMaps[scanCounter] == 1) {
+                for (int i = 0; i < targetHeapFiles.length; i++) {
+                    RID rid = targetHeapFiles[i].recordAtPosition(scanCounter);
+                    Tuple record = targetHeapFiles[i].getRecord(rid);
+                    switch (targetAttrTypes[i].attrType) {
                         case AttrType.attrInteger:
-                            // why 1 as it col heap file will have one field
-                            JTuple.setIntFld(1, Integer.parseInt(value));
+                            // Assumed that col heap page will have only one entry
+                            JTuple.setIntFld(i + 1, record.getIntFld(1));
                             break;
                         case AttrType.attrString:
-                            JTuple.setStrFld(1, value);
+                            JTuple.setStrFld(i + 1, record.getStrFld(1));
                             break;
                         default:
                             throw new Exception("Attribute indexAttrType not supported");
                     }
-                    // increment the scan counter on every get_next() call
-                    scanCounter++;
-                    return JTuple;
-                } else {
-                    scanCounter++;
                 }
-
+                // increment the scan counter on every get_next() call
+                scanCounter++;
+                // return the Tuple built by scanning the targeted columns
+                return JTuple;
             } else {
-                while (true) {
-                    // if the scanCounter is greater than the current BM Page counter then scan
-                    // the next BMPage else close the iterator
-                    if (scanCounter > counter) {
-                        PageId nextPage = currentBMPage.getNextPage();
-                        if (nextPage.pid != INVALID_PAGE) {
-                            currentBMPage = new BMPage(pinPage(nextPage));
-                            counter = currentBMPage.getCounter();
-                            bitMaps = new BMPage(pinPage(rootId)).getBMpageArray();
-                        } else {
-                            close();
-                            break;
-                        }
-                    } else {
-
-                        // tuple that needs to sent
-                        Tuple JTuple = new Tuple();
-                        // set the header which attribute types of the targeted columns
-                        JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
-                        // for every bit 1 in the bitmap file, get the record at the position in the targeted columns
-                        // extract the data element and set it to the tuple based on the attribute type
-
-                        if (bitMaps[scanCounter] == 1) {
-                            for (int i = 0; i < targetHeapFiles.length; i++) {
-                                RID rid = targetHeapFiles[i].recordAtPosition(scanCounter);
-                                Tuple record = targetHeapFiles[i].getRecord(rid);
-                                switch (targetAttrTypes[i].attrType) {
-                                    case AttrType.attrInteger:
-                                        // Assumed that col heap page will have only one entry
-                                        JTuple.setIntFld(i + 1, record.getIntFld(1));
-                                        break;
-                                    case AttrType.attrString:
-                                        JTuple.setStrFld(i + 1, record.getStrFld(1));
-                                        break;
-                                    default:
-                                        throw new Exception("Attribute indexAttrType not supported");
-                                }
-                            }
-                            // increment the scan counter on every get_next() call
-                            scanCounter++;
-                            // return the Tuple built by scanning the targeted columns
-                            return JTuple;
-                        } else {
-                            scanCounter++;
-                        }
-                    }
-                }
-
+                scanCounter++;
             }
         }
         catch (Exception e){
@@ -195,8 +264,13 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
         if (!closeFlag) {
             closeFlag = true;
 
-            PageId curPage = currentBMPage.getCurPage();
-            unpinPage(curPage, false);
+            if(indexType.indexType == IndexType.B_Index){
+                btIndFile = null;
+                btIndScan = null;
+            }
+            else if(indexType.indexType == IndexType.BitMapIndex) {
+                unpinPage(currentPageId, false);
+            }
         }
     }
 
