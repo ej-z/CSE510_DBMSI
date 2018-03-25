@@ -434,6 +434,7 @@ public class Columnarfile {
             position++;
         }
         columnScan.closescan();
+        bitMapFile.close();
 
         addIndexToColumnar(1, indexName);
 
@@ -484,7 +485,8 @@ public class Columnarfile {
         return true;
     }
 
-    public boolean purgeAllDeletedTuples() {
+    public boolean purgeAllDeletedTuples() throws HFDiskMgrException, InvalidTupleSizeException, IOException, InvalidSlotNumberException, FileAlreadyDeletedException, HFBufMgrException {
+
         boolean status = OK;
         Scan scan = null;
         RID rid = new RID();
@@ -514,6 +516,7 @@ public class Columnarfile {
             Tuple tuple;
             while (!done) {
                 try {
+                    rid = new RID();
                     tuple = scan.getNext(rid);
                     if (tuple == null) {
                         done = true;
@@ -524,8 +527,6 @@ public class Columnarfile {
                         rid = getColumn(j).recordAtPosition(pos_marked);
                         status = getColumn(j).deleteRecord(rid);
                     }
-                    //destroy th file
-                    f.deleteFile();
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -533,6 +534,8 @@ public class Columnarfile {
                 }
             }
         }
+        f.deleteFile();
+
         return true;
     }
 
@@ -550,11 +553,13 @@ public class Columnarfile {
     }
 
     public String getBTName(int columnNo){
-        return "BT"+fname+columnNo;
+        return "BT" + "-" + fname + "-" + columnNo;
+        // return SystemDefs.JavabaseDBName + "-" + "BT" + "-" + fname+ "-" +columnNo;
     }
 
     public String getBMName(int columnNo, ValueClass value){
-        return "BM" + fname + columnNo + value.toString();
+        return "BM" + "-" + fname + "-" + columnNo + "-" + value.toString();
+        // return SystemDefs.JavabaseDBName + "-" + "BM" + "-" + fname + "-" + columnNo + "-" + value.toString();
     }
 
     public String getDeletedFileName(){

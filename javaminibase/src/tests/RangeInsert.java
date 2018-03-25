@@ -1,30 +1,21 @@
 package tests;
 
 import columnar.Columnarfile;
-import columnar.TID;
-import columnar.TupleScan;
-import columnar.ValueClass;
 import diskmgr.PCounter;
 import global.AttrType;
 import global.SystemDefs;
-import heap.InvalidTupleSizeException;
-import heap.InvalidTypeException;
 import heap.Tuple;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.sql.NClob;
 import java.util.ArrayList;
 
 import static global.GlobalConst.NUMBUF;
 
-class ColumnarDriver1 extends TestDriver {
+class RangeDriver extends TestDriver {
 
     private  int numPages = 100000;
     private String dataFile;
@@ -37,11 +28,11 @@ class ColumnarDriver1 extends TestDriver {
 	String[] names;
     
     //private boolean delete = true;
-    public ColumnarDriver1() {
+    public RangeDriver() {
         super("cmtest");
     }
 
-    public ColumnarDriver1(String datafileName, String columnDBName, String columnarFileName, int numColumns) {
+    public RangeDriver(String datafileName, String columnDBName, String columnarFileName, int numColumns) {
     	dataFile = datafileName;
     	dbName = columnDBName;
     	colFilename = columnarFileName;
@@ -219,7 +210,7 @@ public class RangeInsert {
 	
     public static void runTests() {
 
-        ColumnarDriver1 cd = new ColumnarDriver1(datafileName, columnDBName, columnarFileName, numColumns);
+        RangeDriver cd = new RangeDriver(datafileName, columnDBName, columnarFileName, numColumns);
         cd.runTests();
     }
 
