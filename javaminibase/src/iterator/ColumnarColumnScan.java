@@ -1,9 +1,12 @@
 package iterator;
 
+import bitmap.BitMapFile;
+import btree.BTreeFile;
+import btree.IntegerKey;
+import btree.KeyClass;
+import btree.StringKey;
 import bufmgr.PageNotReadException;
-import columnar.Columnarfile;
-import columnar.TID;
-import columnar.TupleScan;
+import columnar.*;
 import global.*;
 import heap.*;
 
@@ -85,26 +88,61 @@ public class ColumnarColumnScan extends Iterator {
      */
     public Tuple get_next()
             throws Exception {
+
+        int position = getNextPosition();
+        if (position < 0)
+            return null;
+        //tuple1.setHdr(in1_len, _in1, s_sizes);
+        Tuple JTuple = null;
+        try {
+            JTuple = new Tuple();
+            JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+            JTuple = new Tuple(JTuple.size());
+            JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        for (int i = 0; i < targetHeapFiles.length; i++) {
+            RID r = targetHeapFiles[i].recordAtPosition(position);
+            Tuple record = targetHeapFiles[i].getRecord(r);
+            switch (targetAttrTypes[i].attrType) {
+                case AttrType.attrInteger:
+                    // Assumed that col heap page will have only one entry
+                    JTuple.setIntFld(i + 1, record.getIntFld(1));
+                    break;
+                case AttrType.attrString:
+                    JTuple.setStrFld(i + 1, record.getStrFld(1));
+                    break;
+                default:
+                    throw new Exception("Attribute indexAttrType not supported");
+            }
+        }
+
+        return JTuple;
+    }
+
+    public boolean delete_next()
+            throws Exception{
+
+        int position = getNextPosition();
+        if (position < 0)
+            return false;
+        return columnarfile.markTupleDeleted(position);
+    }
+
+    private int getNextPosition()throws Exception {
         RID rid = new RID();
 
         Tuple t = null;
         while (true) {
             if ((t = scan.getNext(rid)) == null) {
-                return null;
+                return -1;
             }
 
             //tuple1.setHdr(in1_len, _in1, s_sizes);
             if (PredEval.Eval(OutputFilter, t, null, _in1, null) == true) {
-                Tuple JTuple = null;
-                try {
-                    JTuple = new Tuple();
-                    JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
-                    JTuple = new Tuple(JTuple.size());
-                    JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return null;
-                }
                 int position = columnarfile.getColumn(_columnNo).positionOfRecord(rid);
                 if(deletedTuples != null && position > currDeletePos){
                     while (true){
@@ -120,22 +158,7 @@ public class ColumnarColumnScan extends Iterator {
                     deletedTuples.get_next();
                     continue;
                 }
-                for (int i = 0; i < targetHeapFiles.length; i++) {
-                    RID r = targetHeapFiles[i].recordAtPosition(position);
-                    Tuple record = targetHeapFiles[i].getRecord(r);
-                    switch (targetAttrTypes[i].attrType) {
-                        case AttrType.attrInteger:
-                            // Assumed that col heap page will have only one entry
-                            JTuple.setIntFld(i + 1, record.getIntFld(1));
-                            break;
-                        case AttrType.attrString:
-                            JTuple.setStrFld(i + 1, record.getStrFld(1));
-                            break;
-                        default:
-                            throw new Exception("Attribute indexAttrType not supported");
-                    }
-                }
-                return JTuple;
+                return position;
             }
         }
     }

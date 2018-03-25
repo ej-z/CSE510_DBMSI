@@ -127,12 +127,23 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
         return null;
     }
 
-    public Tuple get_next_BT() throws IndexException, UnknownKeyTypeException {
+    public boolean delete_next() throws IndexException, UnknownKeyTypeException {
+
+        if(indexType.indexType == IndexType.B_Index){
+            return delete_next_BT();
+        }
+        else if(indexType.indexType == IndexType.BitMapIndex){
+            return delete_next_BM();
+        }
+        return false;
+    }
+
+    private Tuple get_next_BT() throws IndexException, UnknownKeyTypeException {
         RID rid;
         KeyDataEntry nextentry = null;
-
+        int position = -1;
         try {
-            nextentry = btIndScan.get_next();
+            position = getNextBTPosition(nextentry);
         } catch (Exception e) {
             throw new IndexException(e, "IndexScan.java: BTree error");
         }
@@ -171,10 +182,8 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
         }
 
         try {
-            rid = ((LeafData) nextentry.data).getData();
-            int postion = columnFile.positionOfRecord(rid);
             for (int i = 0; i < targetHeapFiles.length; i++) {
-                RID r = targetHeapFiles[i].recordAtPosition(postion);
+                RID r = targetHeapFiles[i].recordAtPosition(position);
                 Tuple record = targetHeapFiles[i].getRecord(r);
                 switch (targetAttrTypes[i].attrType) {
                     case AttrType.attrInteger:
@@ -196,30 +205,58 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
         //return null;
     }
 
+    private boolean delete_next_BT() throws IndexException, UnknownKeyTypeException {
+        KeyDataEntry nextentry = null;
+        int position = -1;
+        try {
+            position = getNextBTPosition(nextentry);
+        } catch (Exception e) {
+            throw new IndexException(e, "IndexScan.java: BTree error");
+        }
+
+        if (nextentry == null || position < 0)
+            return false;
+
+        return columnarfile.markTupleDeleted(position);
+    }
+
+    private int getNextBTPosition(KeyDataEntry nextentry) throws IndexException, UnknownKeyTypeException {
+        RID rid;
+        try {
+            nextentry = btIndScan.get_next();
+        } catch (Exception e) {
+            throw new IndexException(e, "IndexScan.java: BTree error");
+        }
+
+        if (nextentry == null)
+            return -1;
+
+        if (index_only) {
+            return -1;
+        }
+
+        try {
+            rid = ((LeafData) nextentry.data).getData();
+            int position = columnFile.positionOfRecord(rid);
+            return position;
+        } catch (Exception e) {
+            throw new IndexException(e, "IndexScan.java: getRecord failed");
+        }
+    }
+
+
     public Tuple get_next_BM(){
         try {
 
-            if (scanCounter > counter) {
-                PageId nextPage = currentBMPage.getNextPage();
-                unpinPage(currentPageId, false);
-                if (nextPage.pid != INVALID_PAGE) {
-                    currentPageId.copyPageId(nextPage);
-                    currentBMPage = new BMPage(pinPage(currentPageId));
-                    counter = currentBMPage.getCounter();
-                    bitMaps = BitSet.valueOf(currentBMPage.getBMpageArray());
-                } else {
-                    close();
-                    return null;
-                }
-            }
+            int position = getNextBMPosition();
+            if(position < 0)
+                return null;
             // tuple that needs to sent
             Tuple JTuple = new Tuple();
             // set the header which attribute types of the targeted columns
             JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
             JTuple = new Tuple(JTuple.size());
             JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
-            while (scanCounter <= counter) {
-                if (bitMaps.get(scanCounter)) {
                     if (index_only) {
                         switch (indexAttrType.attrType) {
                             case AttrType.attrInteger:
@@ -234,7 +271,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                         }
                     } else {
                         for (int i = 0; i < targetHeapFiles.length; i++) {
-                            RID rid = targetHeapFiles[i].recordAtPosition(scanCounter);
+                            RID rid = targetHeapFiles[i].recordAtPosition(position);
                             Tuple record = targetHeapFiles[i].getRecord(rid);
                             switch (targetAttrTypes[i].attrType) {
                                 case AttrType.attrInteger:
@@ -249,20 +286,54 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
                             }
                         }
                     }
-                    // increment the scan counter on every get_next() call
-                    scanCounter++;
                     // return the Tuple built by scanning the targeted columns
                     return JTuple;
+
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private boolean delete_next_BM() throws IndexException, UnknownKeyTypeException {
+        int position = getNextBMPosition();
+        if(position < 0)
+            return false;
+
+        return columnarfile.markTupleDeleted(position);
+    }
+
+    public int getNextBMPosition(){
+        try {
+
+            if (scanCounter > counter) {
+                PageId nextPage = currentBMPage.getNextPage();
+                unpinPage(currentPageId, false);
+                if (nextPage.pid != INVALID_PAGE) {
+                    currentPageId.copyPageId(nextPage);
+                    currentBMPage = new BMPage(pinPage(currentPageId));
+                    counter = currentBMPage.getCounter();
+                    bitMaps = BitSet.valueOf(currentBMPage.getBMpageArray());
+                } else {
+                    close();
+                    return -1;
+                }
+            }
+            while (scanCounter <= counter) {
+                if (bitMaps.get(scanCounter)) {
+                    int position = scanCounter;
+                    scanCounter++;
+                    return position;
                 } else {
                     scanCounter++;
                 }
             }
         }
         catch (Exception e){
-            System.err.println(scanCounter);
             e.printStackTrace();
         }
-        return null;
+        return -1;
     }
 
     public void close() throws IOException, JoinsException, SortException, IndexException, HFBufMgrException {

@@ -438,11 +438,11 @@ public class Columnarfile {
         return true;
     }
 
-    public boolean markTupleDeleted(TID tidarg) {
+    public boolean markTupleDeleted(int position){
         String name = getDeletedFileName();
         try {
             Heapfile f = new Heapfile(name);
-            Integer pos = tidarg.position;
+            Integer pos = position;
             AttrType[] types = new AttrType[1];
             types[0] = new AttrType(AttrType.attrInteger);
             short[] sizes = new short[0];
@@ -451,8 +451,9 @@ public class Columnarfile {
             t.setIntFld(1, pos);
             f.insertRecord(t.getTupleByteArray());
 
-            for (int i = 0; i < tidarg.numRIDs; i++) {
-                Tuple tuple = getColumn(i).getRecord(tidarg.recordIDs[i]);
+            for (int i = 0; i < numColumns; i++) {
+                RID rid = getColumn(i).recordAtPosition(position);
+                Tuple tuple = getColumn(i).getRecord(rid);
                 ValueClass valueClass;
                 KeyClass keyClass;
                 if (atype[i].attrType == AttrType.attrInteger) {
@@ -467,11 +468,11 @@ public class Columnarfile {
                 String bitMapFileName = getBMName(i, valueClass);
                 if (BTMap.containsKey(bTreeFileName)) {
                     BTreeFile bTreeFile = getBTIndex(bTreeFileName);
-                    bTreeFile.Delete(keyClass, tidarg.recordIDs[i]);
+                    bTreeFile.Delete(keyClass, rid);
                 }
                 if (BMMap.containsKey(bitMapFileName)) {
                     BitMapFile bitMapFile = getBMIndex(bitMapFileName);
-                    bitMapFile.delete(tidarg.position);
+                    bitMapFile.delete(position);
                 }
             }
         } catch (Exception e) {
@@ -479,6 +480,10 @@ public class Columnarfile {
             return false;
         }
         return true;
+    }
+
+    public boolean markTupleDeleted(TID tidarg) {
+        return markTupleDeleted(tidarg.position);
     }
 
     public boolean purgeAllDeletedTuples() throws HFDiskMgrException, InvalidTupleSizeException, IOException, InvalidSlotNumberException, FileAlreadyDeletedException, HFBufMgrException {

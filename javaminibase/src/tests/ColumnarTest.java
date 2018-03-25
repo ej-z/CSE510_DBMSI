@@ -125,7 +125,7 @@ class ColumnarDriver extends TestDriver {
                 ValueClass v = cf.getValue(tid,2);
                 System.out.println(v.getValue());
             }
-
+            cf.close();
             System.out.println("Reads: "+PCounter.rcounter);
             System.out.println("Writes: "+PCounter.wcounter);
         } catch (Exception e) {
@@ -179,6 +179,7 @@ class ColumnarDriver extends TestDriver {
                 t = scan.getNext(tid);
             }
             scan.closetuplescan();
+            cf.close();
             System.out.println("Reads: "+PCounter.rcounter);
             System.out.println("Writes: "+PCounter.wcounter);
 
@@ -253,6 +254,7 @@ class ColumnarDriver extends TestDriver {
                 t = cis.get_next();
             }
             cis.close();
+            cf.close();
             System.out.println("Reads: "+PCounter.rcounter);
             System.out.println("Writes: "+PCounter.wcounter);
 
@@ -338,6 +340,7 @@ class ColumnarDriver extends TestDriver {
                 tuples = columnIndexScan.get_next();
             }
             columnIndexScan.close();
+            cf.close();
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -436,6 +439,7 @@ class ColumnarDriver extends TestDriver {
             }
 
             columnIndexScan.close();
+            cf.close();
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -515,7 +519,7 @@ class ColumnarDriver extends TestDriver {
             System.out.println("#### Bit map after deletion ####################");
             System.out.println("####################################");
             BM.printBitMap(bitMap.getHeaderPage());
-
+            cf.close();
             System.out.println("Reads: "+PCounter.rcounter);
             System.out.println("Writes: "+PCounter.wcounter);
         } catch (Exception e) {
@@ -593,7 +597,7 @@ class ColumnarDriver extends TestDriver {
                 e.printStackTrace();
                 return false;
             }
-
+            cf.close();
             System.out.println("Reads: "+PCounter.rcounter);
             System.out.println("Writes: "+PCounter.wcounter);
         } catch (Exception e) {
@@ -716,6 +720,7 @@ class ColumnarDriver extends TestDriver {
                 tuples = columnIndexScan.get_next();
             }
             columnIndexScan.close();
+            cf.close();
         } catch (Exception e) {
             e.printStackTrace();
             return false;
