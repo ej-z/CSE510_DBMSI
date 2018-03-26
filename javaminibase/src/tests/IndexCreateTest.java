@@ -81,7 +81,7 @@ class IndexTestDriver extends TestDriver {
 			Columnarfile cf = new Columnarfile(colFilename);
 			int colno = cf.getAttributePosition(colName);
 			
-			if (indexType.equals("BitMap")) {
+			if (indexType.equals("BITMAP")) {
 				//cf.createBitMapIndex(val, value);
                 cf.createAllBitMapIndexForColumn(colno);
 			}

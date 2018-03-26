@@ -529,7 +529,7 @@ public class Select_query extends TestDriver {
     }
 
     public static void main(String args[]) {
-        String sampleinput = "SELECT cdb file A,B,C,D {A = South_Dakota} 100 BTREE";
+        String sampleinput = "SELECT testColumnDB students C {C > 6} 100 BTREE";
         String[] inputsplit = sampleinput.split(" ");
         for (int i = 0; i < inputsplit.length; i++) {
             System.out.println(inputsplit[i]);

@@ -16,21 +16,36 @@ import static tests.TestDriver.OK;
 
 public class Columnarfile {
     short numColumns;
+    // field to store all the types of the columns
     AttrType[] atype = null;
+    // Stores sizes of the Attributes
     short[] attrsizes;
 
     //Best way handle +2 bytes for strings instead of multiple ifs
     short[] asize;
+    // The column files for the c-store
     private Heapfile[] hf = null;
     String fname = null;
     //int tupleCnt = 0;
     Tuple hdr = null;
     RID hdrRid = null;
+    // Maps Attributes to position
     HashMap<String, Integer> columnMap;
+    // Map to store the BTree indexes
     HashMap<String, BTreeFile> BTMap;
+    // Map to store the BitMap indexes
     HashMap<String, BitMapFile> BMMap;
 
     //for fetching the file
+
+    /**
+     *
+     * @param name of the columarfile
+     * @throws HFException
+     * @throws HFBufMgrException
+     * @throws HFDiskMgrException
+     * @throws IOException
+     */
     public Columnarfile(java.lang.String name) throws HFException, HFBufMgrException, HFDiskMgrException, IOException {
         Heapfile f = null;
         Scan scan = null;
@@ -38,6 +53,7 @@ public class Columnarfile {
         fname = name;
         columnMap = new HashMap<>();
         try {
+            // get the columnar header page
             PageId pid = SystemDefs.JavabaseDB.get_file_entry(name + ".hdr");
             if (pid == null) {
                 throw new Exception("Columnar with the name: " + name + ".hdr doesn't exists");
@@ -69,6 +85,8 @@ public class Columnarfile {
             }
             BTMap = new HashMap<>();
             BMMap = new HashMap<>();
+
+            // create a idx file to store all column which consists of indexes
             pid = SystemDefs.JavabaseDB.get_file_entry(name + ".idx");
             if (pid != null) {
                 f = new Heapfile(name + ".idx");
@@ -180,6 +198,13 @@ public class Columnarfile {
     }
 
     //Assumption: tupleptr contains header information.
+
+    /**
+     *
+     * @param tuplePtr - insert the tuple and return the TID for the user
+     * @return
+     * @throws Exception
+     */
     public TID insertTuple(byte[] tuplePtr) throws Exception {
 
         int offset = getOffset();
@@ -192,6 +217,7 @@ public class Columnarfile {
             rids[i] = getColumn(i).insertRecord(data);
             offset += asize[i];
 
+            // update the indexes accordingly
             String btIndexname = getBTName(i);
             String bmIndexname = getBMName(i, ValueFactory.getValueClass(data, atype[i], asize[i]));
             if (BTMap != null && BTMap.containsKey(btIndexname)) {
@@ -209,6 +235,12 @@ public class Columnarfile {
         return tid;
     }
 
+    /**
+     * give TID build an return the tuple
+     * @param tidarg
+     * @return
+     * @throws Exception
+     */
     public Tuple getTuple(TID tidarg) throws Exception {
 
         Tuple result = new Tuple(getTupleSize());
@@ -226,28 +258,39 @@ public class Columnarfile {
         return result;
     }
 
+    /**
+     * get the value for tidarg and respective column
+     * @param tidarg
+     * @param column
+     * @return
+     * @throws Exception
+     */
     public ValueClass getValue(TID tidarg, int column) throws Exception {
 
         Tuple t = getColumn(column).getRecord(tidarg.recordIDs[column]);
         return ValueFactory.getValueClass(t.getTupleByteArray(), atype[column], asize[column]);
     }
 
-    public int getTupleCnt() throws HFDiskMgrException, HFException, HFBufMgrException, IOException, InvalidTupleSizeException, InvalidSlotNumberException {
+    // get the tuple count for each of the column
+    public int getTupleCnt() throws HFDiskMgrException, HFException,
+            HFBufMgrException, IOException, InvalidTupleSizeException, InvalidSlotNumberException {
         return getColumn(0).getRecCnt();
     }
 
+    // open the tuple scan on all the columns by open all the heap files
     public TupleScan openTupleScan() throws Exception {
 
         TupleScan result = new TupleScan(this);
         return result;
     }
 
+    // open tuple scan on the given cols
     public TupleScan openTupleScan(short[] columns) throws Exception {
-
         TupleScan result = new TupleScan(this, columns);
         return result;
     }
 
+    // open tuple scan for the given col
     public Scan openColumnScan(int columnNo) throws Exception {
         Scan scanobj = null;
         if (columnNo < hf.length) {
@@ -260,6 +303,7 @@ public class Columnarfile {
         return scanobj;
     }
 
+    // update the tupe with given newTuple for the TID argument
     public boolean updateTuple(TID tidarg, Tuple newtuple) {
         try {
 
@@ -280,6 +324,7 @@ public class Columnarfile {
         }
         return true;
     }
+
 
     public boolean updateColumnofTuple(TID tidarg, Tuple newtuple, int column) {
         try {
@@ -581,14 +626,17 @@ public class Columnarfile {
         return attrsizes;
     }
 
+
     public int getAttributePosition(String name) {
         return columnMap.get(name);
     }
 
+    // return the BT Name
     public String getBTName(int columnNo) {
         return "BT" + "." + fname + "." + columnNo;
     }
 
+    // return the BitMap file name by following the conventions
     public String getBMName(int columnNo, ValueClass value) {
         return "BM" + "." + fname + "." + columnNo + "." + value.toString();
         // return SystemDefs.JavabaseDBName + "-" + "BM" + "-" + fname + "-" + columnNo + "-" + value.toString();
@@ -598,6 +646,7 @@ public class Columnarfile {
         return fname + ".del";
     }
 
+    // Write the indexes created on each column to the .idx file
     private boolean addIndexToColumnar(int indexType, String indexName) {
 
         try {
@@ -629,12 +678,14 @@ public class Columnarfile {
         return true;
     }
 
+    //Return the respective columnNo
     public Heapfile getColumn(int columnNo) throws IOException, HFException, HFBufMgrException, HFDiskMgrException {
         if (hf[columnNo] == null)
             hf[columnNo] = new Heapfile(fname + columnNo);
         return hf[columnNo];
     }
 
+    // return the BTree index for the given indexName
     public BTreeFile getBTIndex(String indexName) throws IOException, HFException, HFBufMgrException, HFDiskMgrException, ConstructPageException, GetFileEntryException, PinPageException {
         if (!BTMap.containsKey(indexName))
             return null;
@@ -644,6 +695,7 @@ public class Columnarfile {
         return BTMap.get(indexName);
     }
 
+    // Return bitmap file for the given indexName
     public BitMapFile getBMIndex(String indexName) throws Exception {
         if (!BMMap.containsKey(indexName))
             return null;
@@ -653,6 +705,7 @@ public class Columnarfile {
         return BMMap.get(indexName);
     }
 
+    // remove all the dangling files for the store
     public void close() {
         if (hf != null) {
             for (int i = 0; i < hf.length; i++)
@@ -686,6 +739,7 @@ public class Columnarfile {
         return numColumns;
     }
 
+    // given a column returns the AttrType
     public AttrType getAttrtypeforcolumn(int columnNo) throws Exception {
         if (columnNo < numColumns) {
             return atype[columnNo];
@@ -694,6 +748,7 @@ public class Columnarfile {
         }
     }
 
+    // given the column returns the size of AttrString
     public short getAttrsizeforcolumn(int columnNo) throws Exception {
         if (columnNo < numColumns) {
             return asize[columnNo];
