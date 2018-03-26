@@ -365,14 +365,22 @@ public class Columnarfile {
 
 
     public boolean createBitMapIndex(int columnNo, ValueClass value) throws Exception {
-        Scan columnScan = openColumnScan(columnNo);
+
+        short[] targetedCols = new short[1];
+        targetedCols[0] = (short) columnNo;
+
+        ColumnarColumnScan columnScan = new ColumnarColumnScan(getColumnarFileName(), columnNo,
+                getAttrtypeforcolumn(columnNo),
+                getAttrsizeforcolumn(columnNo),
+                targetedCols,
+                null);
+
         String indexName = getBMName(columnNo, value);
         BitMapFile bitMapFile = new BitMapFile(indexName, this, columnNo, value);
-        RID rid = new RID();
         Tuple tuple;
         int position = 0;
         while (true) {
-            tuple = columnScan.getNext(rid);
+            tuple = columnScan.get_next();
             if (tuple == null) {
                 break;
             }
@@ -384,7 +392,7 @@ public class Columnarfile {
             }
             position++;
         }
-        columnScan.closescan();
+        columnScan.close();
         bitMapFile.close();
 
         addIndexToColumnar(1, indexName);

@@ -46,9 +46,7 @@ public class ColumnarColumnScan extends Iterator {
             setTargetHeapFiles(file_name, targetedCols);
             setTargetColumnAttributeTypes(targetedCols);
             setTargetColumnStringSizes(targetedCols);
-            _attrsize = columnarfile.getAttrSizes()[columnNo];
-            if(attrType.attrType == AttrType.attrString)
-                _attrsize += 2;
+            _attrsize = strSize;
         } catch (Exception e) {
             e.printStackTrace();
             return;
@@ -150,10 +148,10 @@ public class ColumnarColumnScan extends Iterator {
 
             Tuple tuple1= new Tuple(_tuplesize);
             tuple1.setHdr((short)1, _in1, s_sizes);
-            tuple1 = new Tuple(tuple1.size());
             byte[] data = tuple1.getTupleByteArray();
             System.arraycopy(t.getTupleByteArray(), 0, data, 6, _attrsize);
             t.tupleInit(data, 0, data.length);
+            t.setHeaderMetaData();
             if (PredEval.Eval(OutputFilter, t, null, _in1, null) == true) {
                 int position = columnarfile.getColumn(_columnNo).positionOfRecord(rid);
                 if(deletedTuples != null && position > currDeletePos){
