@@ -13,7 +13,7 @@ BINPATH = $(JDKPATH)/bin
 JAVAC = $(JDKPATH)/bin/javac -classpath $(CLASSPATH)
 JAVA  = $(JDKPATH)/bin/java  -classpath $(CLASSPATH)
 
-DOCFILES=bufmgr diskmgr global chainexception heap btree iterator index
+DOCFILES=bufmgr diskmgr global chainexception heap btree iterator index columnar bitmap
 
 ##############  update the above for each assignment in making
 
@@ -37,6 +37,8 @@ db:
 	make -C heap
 	make -C index
 	make -C iterator
+	make -C columnar
+	make -C bitmap
 	
 doc:
 	$(JAVADOC) $(DOCFILES)

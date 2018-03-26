@@ -22,6 +22,7 @@ class DeleteDriver extends TestDriver {
     String expression;
     int bufspace;
     String Accesstype;
+    boolean shouldpurge;
 
     //private boolean delete = true;
     public DeleteDriver(String dBName2, String colfilename2, String projection2, String expression2, int bufspace2, String accesstype2) {
@@ -32,6 +33,7 @@ class DeleteDriver extends TestDriver {
         expression = expression2;
         bufspace = bufspace2;
         Accesstype = accesstype2;
+        shouldpurge = false;
     }
 
     public DeleteDriver() {
@@ -186,7 +188,9 @@ class DeleteDriver extends TestDriver {
                                     e.printStackTrace();
                                 }
                             }
-                            cf.purgeAllDeletedTuples();
+                            if(shouldpurge) {
+                                cf.purgeAllDeletedTuples();
+                            }
                             cis.close();
                         } catch (Exception e) {
                             // TODO Auto-generated catch block
@@ -275,7 +279,9 @@ class DeleteDriver extends TestDriver {
                                     e.printStackTrace();
                                 }
                             }
-                            cf.purgeAllDeletedTuples();
+                            if(shouldpurge) {
+                                cf.purgeAllDeletedTuples();
+                            }
                             cis.close();
                         } catch (Exception e) {
                             // TODO Auto-generated catch block
@@ -375,7 +381,9 @@ class DeleteDriver extends TestDriver {
                     }
 
                 }
-                cf.purgeAllDeletedTuples();
+                if(shouldpurge) {
+                    cf.purgeAllDeletedTuples();
+                }
                 fc.close();
             } catch (FileScanException e) {
                 // TODO Auto-generated catch block
@@ -484,7 +492,9 @@ class DeleteDriver extends TestDriver {
                     }
 
                 }
-                cf.purgeAllDeletedTuples();
+                if(shouldpurge) {
+                    cf.purgeAllDeletedTuples();
+                }
                 ccs.close();
             } catch (Exception e) {
                 // TODO Auto-generated catch block
@@ -519,19 +529,20 @@ public class Delete_query extends TestDriver {
     String expression;
     int bufspace;
     String Accesstype;
+    boolean shouldPurge;
 
     public boolean runTests() {
         DeleteDriver cd = new DeleteDriver(DBName, Colfilename, Projection, expression, bufspace, Accesstype);
         return cd.runTests();
     }
-    Delete_query(String a, String b, String c, String d, int inputsplit, String access){
-        DBName=a;
+    Delete_query(String a, String b, String c, String d, int inputsplit, String access) {
+        DBName = a;
         Colfilename = b;
         Projection = c;
-        expression =d;
+        expression = d;
         bufspace = inputsplit;
         Accesstype = access;
-
+        shouldPurge = false;
     }
 
     @Override
