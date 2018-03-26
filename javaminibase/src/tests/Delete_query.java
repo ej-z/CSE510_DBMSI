@@ -72,7 +72,7 @@ class DeleteDriver extends TestDriver {
         } else if (Accesstype.equals("BITMAP")) {
             _pass = test3(1);
         }
-        System.out.println(columnsAffected + " tuples were deleted.");
+        System.out.println(columnsAffected + " tuple were deleted.");
         try {
             SystemDefs.JavabaseBM.flushAllPages();
             SystemDefs.JavabaseDB.closeDB();
