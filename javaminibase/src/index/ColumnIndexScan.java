@@ -39,7 +39,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
     private short[] givenTargetedCols = null;
     private Boolean isIndexOnlyQuery = false;
     private IndexType indexType;
-    private IndexFile btIndFile;
+    private BTreeFile btIndFile;
     private IndexFileScan btIndScan;
     private CondExpr[] _selects;
     private Heapfile columnFile;
@@ -347,7 +347,12 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
             closeFlag = true;
 
             if(indexType.indexType == IndexType.B_Index){
-                btIndFile = null;
+                try {
+                    btIndFile.close();
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+
                 btIndScan = null;
             }
             else if(indexType.indexType == IndexType.BitMapIndex) {

@@ -445,49 +445,6 @@ public class Columnarfile {
         return true;
     }
 
-    public boolean markTupleDeleted(int position) {
-        String name = getDeletedFileName();
-        try {
-            Heapfile f = new Heapfile(name);
-            Integer pos = position;
-            AttrType[] types = new AttrType[1];
-            types[0] = new AttrType(AttrType.attrInteger);
-            short[] sizes = new short[0];
-            Tuple t = new Tuple(10);
-            t.setHdr((short) 1, types, sizes);
-            t.setIntFld(1, pos);
-            f.insertRecord(t.getTupleByteArray());
-
-            for (int i = 0; i < numColumns; i++) {
-                RID rid = getColumn(i).recordAtPosition(position);
-                Tuple tuple = getColumn(i).getRecord(rid);
-                ValueClass valueClass;
-                KeyClass keyClass;
-                valueClass = ValueFactory.getValueClass(tuple.getTupleByteArray(),
-                        atype[i],
-                        asize[i]);
-                keyClass = KeyFactory.getKeyClass(tuple.getTupleByteArray(),
-                        atype[i],
-                        asize[i]);
-
-                String bTreeFileName = getBTName(i);
-                String bitMapFileName = getBMName(i, valueClass);
-                if (BTMap.containsKey(bTreeFileName)) {
-                    BTreeFile bTreeFile = getBTIndex(bTreeFileName);
-                    bTreeFile.Delete(keyClass, rid);
-                }
-                if (BMMap.containsKey(bitMapFileName)) {
-                    BitMapFile bitMapFile = getBMIndex(bitMapFileName);
-                    bitMapFile.delete(position);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-
     public boolean createAllBitMapIndexForColumn(int columnNo) throws Exception {
         short[] targetedCols = new short[1];
         targetedCols[0] = (short) columnNo;
@@ -544,6 +501,49 @@ public class Columnarfile {
         return true;
     }
 
+    public boolean markTupleDeleted(int position) {
+        String name = getDeletedFileName();
+        try {
+            Heapfile f = new Heapfile(name);
+            Integer pos = position;
+            AttrType[] types = new AttrType[1];
+            types[0] = new AttrType(AttrType.attrInteger);
+            short[] sizes = new short[0];
+            Tuple t = new Tuple(10);
+            t.setHdr((short) 1, types, sizes);
+            t.setIntFld(1, pos);
+            f.insertRecord(t.getTupleByteArray());
+
+            for (int i = 0; i < numColumns; i++) {
+                RID rid = getColumn(i).recordAtPosition(position);
+                Tuple tuple = getColumn(i).getRecord(rid);
+                ValueClass valueClass;
+                KeyClass keyClass;
+                valueClass = ValueFactory.getValueClass(tuple.getTupleByteArray(),
+                        atype[i],
+                        asize[i]);
+                keyClass = KeyFactory.getKeyClass(tuple.getTupleByteArray(),
+                        atype[i],
+                        asize[i]);
+
+                String bTreeFileName = getBTName(i);
+                String bitMapFileName = getBMName(i, valueClass);
+                if (BTMap.containsKey(bTreeFileName)) {
+                    BTreeFile bTreeFile = getBTIndex(bTreeFileName);
+                    bTreeFile.Delete(keyClass, rid);
+                }
+                if (BMMap.containsKey(bitMapFileName)) {
+                    BitMapFile bitMapFile = getBMIndex(bitMapFileName);
+                    bitMapFile.delete(position);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
     public boolean markTupleDeleted(TID tidarg) {
         return markTupleDeleted(tidarg.position);
     }
@@ -571,7 +571,7 @@ public class Columnarfile {
                 short[] sizes = new short[0];
                 FldSpec[] projlist = new FldSpec[1];
                 projlist[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
-                FileScan fs = new FileScan(fname, types, sizes, (short) 1, 1, projlist, null);
+                FileScan fs = new FileScan(getDeletedFileName(), types, sizes, (short) 1, 1, projlist, null);
                 deletedTuples = new Sort(types, (short) 1, sizes, fs, 1, new TupleOrder(TupleOrder.Descending), 4, 10);
 
             } catch (Exception e) {
