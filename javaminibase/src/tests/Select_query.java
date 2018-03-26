@@ -88,7 +88,7 @@ class ColumnarDriver2 extends TestDriver {
     }
 
     protected boolean test3(int id) {
-        IndexType it = new IndexType(1);
+        IndexType it;
         String relName = Colfilename;
         StringBuilder sb = new StringBuilder();
         //BM.ColumnarFileName.0.value
@@ -109,15 +109,17 @@ class ColumnarDriver2 extends TestDriver {
                 sb.append(".");
                 sb.append(String.valueOf(columnNo));
                 indName = sb.toString();
+                it = new IndexType(1);
 			}
 			else{
-				sb.append("BM");
+				sb.append("BM.");
                 sb.append(Colfilename);
                 sb.append(".");
                 sb.append(String.valueOf(columnNo));
                 sb.append(".");
                 sb.append(expression1[2]);
                 indName = sb.toString();
+                it = new IndexType(3);
             }
 
             System.out.println(indName);
@@ -129,8 +131,7 @@ class ColumnarDriver2 extends TestDriver {
                     } else {
                         try {
                             AttrType indexAttrType = cf.getAttrtypeforcolumn(columnNo);
-                            short[] scize = cf.getStrSize();
-                            short csize = scize[columnNo];
+
                             short[] targetedCols = new short[temp.length];
                             boolean indexOnly;
                             if (temp.length == 1) {
@@ -174,21 +175,24 @@ class ColumnarDriver2 extends TestDriver {
                                 expr[0].type2 = new AttrType(AttrType.attrString);
                                 expr[0].operand2.string = expression1[2];
                             }
-                            ColumnIndexScan cis = new ColumnIndexScan(it, relName, indName, indexAttrType, csize, expr, indexOnly, targetedCols);
+                            ColumnIndexScan cis = new ColumnIndexScan(it, relName, indName, indexAttrType, cf.getAttrsizeforcolumn(columnNo), expr, indexOnly, targetedCols);
                             boolean done = false;
                             AttrType[] atype2 = new AttrType[temp.length];
                             for (int i = 0; i < temp.length; i++) {
                                 atype2[i] = cf.getAttrtypeforcolumn(targetedCols[i]);
                             }
+                            int count = 0;
                             while (!done) {
                                 Tuple result = cis.get_next();
                                 if (result == null) {
                                     done = true;
                                     break;
                                 } else {
+                                    count++;
                                     result.print(atype2);
                                 }
                             }
+                            System.out.println("Total count: " +  count);
                         } catch (Exception e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
@@ -218,6 +222,7 @@ class ColumnarDriver2 extends TestDriver {
                         try {
                             AttrType indexAttrType = cf.getAttrtypeforcolumn(columnNo);
                             short csize = cf.getAttrsizeforcolumn(columnNo);
+
                             short[] targetedCols = new short[temp.length];
                             boolean indexOnly;
                             if (temp.length == 1) {
@@ -261,7 +266,7 @@ class ColumnarDriver2 extends TestDriver {
                                 expr[0].type2 = new AttrType(AttrType.attrString);
                                 expr[0].operand2.string = expression1[2];
                             }
-                            ColumnIndexScan cis = new ColumnIndexScan(it, relName, indName, indexAttrType, csize, expr, indexOnly, targetedCols);
+                            ColumnIndexScan cis = new ColumnIndexScan(it, relName, indName, indexAttrType, cf.getAttrsizeforcolumn(columnNo), expr, indexOnly, targetedCols);
                             boolean done = false;
                             AttrType[] atype2 = new AttrType[temp.length];
                             for (int i = 0; i < temp.length; i++) {
@@ -524,7 +529,7 @@ public class Select_query extends TestDriver {
     }
 
     public static void main(String args[]) {
-        String sampleinput = "SELECT cdb file A,B,C,D {A = South_Dakota} 100 BTREE";
+        String sampleinput = "SELECT testColumnDB students C {C > 6} 100 BTREE";
         String[] inputsplit = sampleinput.split(" ");
         for (int i = 0; i < inputsplit.length; i++) {
             System.out.println(inputsplit[i]);
@@ -535,5 +540,4 @@ public class Select_query extends TestDriver {
     }
 
 }
-
 
