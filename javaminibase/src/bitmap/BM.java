@@ -22,7 +22,7 @@ public class BM implements GlobalConst {
     /**
      * Pretty print the bitmap
      *
-     * @param header
+     * @param header bitmap header
      * @throws Exception
      */
     public static void printBitMap(BitMapHeaderPage header) throws Exception {
@@ -64,6 +64,11 @@ public class BM implements GlobalConst {
         }
     }
 
+    /***
+     * Unpin the given page
+     * @param pageno
+     * @throws UnpinPageException
+     */
     private static void unpinPage(PageId pageno)
             throws UnpinPageException {
         try {
@@ -74,6 +79,12 @@ public class BM implements GlobalConst {
         }
     }
 
+    /***
+     * Pin the page passed as input
+     * @param pageno
+     * @return
+     * @throws PinPageException
+     */
     private static Page pinPage(PageId pageno) throws PinPageException {
         try {
             Page page = new Page();
