@@ -23,6 +23,7 @@ class DeleteDriver extends TestDriver {
     int bufspace;
     String Accesstype;
     int ShouldPurge;
+    int columnsAffected = 0;
 
     //private boolean delete = true;
     public DeleteDriver(String dBName2, String colfilename2, String projection2, String expression2, int bufspace2, String accesstype2, int shouldpurge) {
@@ -71,6 +72,7 @@ class DeleteDriver extends TestDriver {
         } else if (Accesstype.equals("BITMAP")) {
             _pass = test3(1);
         }
+        System.out.println(columnsAffected + " tuples were deleted.");
         try {
             SystemDefs.JavabaseBM.flushAllPages();
             SystemDefs.JavabaseDB.closeDB();
@@ -180,7 +182,7 @@ class DeleteDriver extends TestDriver {
                             while(done){
                                 try {
                                     done=cis.delete_next();
-
+                                    columnsAffected++;
                                 } catch (Exception e) {
                                     // TODO Auto-generated catch block
                                     e.printStackTrace();
@@ -270,7 +272,7 @@ class DeleteDriver extends TestDriver {
                             while(done){
                                 try {
                                     done=cis.delete_next();
-
+                                    columnsAffected++;
                                 } catch (Exception e) {
                                     // TODO Auto-generated catch block
                                     e.printStackTrace();
@@ -370,7 +372,7 @@ class DeleteDriver extends TestDriver {
                 while(done){
                     try {
                         done=fc.delete_next();
-
+                        columnsAffected++;
                     } catch (Exception e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
@@ -477,7 +479,7 @@ class DeleteDriver extends TestDriver {
                 while(done){
                     try {
                         done=ccs.delete_next();
-
+                        columnsAffected++;
                     } catch (Exception e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
@@ -544,7 +546,7 @@ public class Delete_query extends TestDriver {
     }
 
     public static void main(String args[]) {
-        String sampleinput = "SELECT testdb columnar A,B,C,D {A = South_Dakota} 100 COLUMNSCAN";
+        String sampleinput = "SELECT cdb file A,B {C > 6} 100 BTREE";
         String[] inputsplit = sampleinput.split(" ");
         String temp = inputsplit[4].replace("{", "") + " " + inputsplit[5] + " " + inputsplit[6].replace("}", "");
         int shouldpurge = 0;
