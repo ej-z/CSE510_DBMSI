@@ -544,7 +544,7 @@ public class Delete_query extends TestDriver {
     }
 
     public static void main(String args[]) {
-        String sampleinput = "SELECT testdb columnar A,B,C,D {A = South_Dakota} 100 COLUMNSCAN";
+        String sampleinput = args[0];
         String[] inputsplit = sampleinput.split(" ");
         String temp = inputsplit[4].replace("{", "") + " " + inputsplit[5] + " " + inputsplit[6].replace("}", "");
         int shouldpurge = 0;
