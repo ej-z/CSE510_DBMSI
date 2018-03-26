@@ -1,32 +1,14 @@
 package tests;
 
 import columnar.Columnarfile;
-import columnar.TID;
-import columnar.TupleScan;
-import columnar.ValueClass;
-import columnar.ValueInt;
-import columnar.ValueString;
-import diskmgr.DiskMgrException;
-import diskmgr.FileIOException;
-import diskmgr.InvalidPageNumberException;
 import diskmgr.PCounter;
 import global.AttrType;
 import global.SystemDefs;
 import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
-import heap.InvalidTupleSizeException;
-import heap.InvalidTypeException;
-import heap.Tuple;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.sql.NClob;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 import static global.GlobalConst.NUMBUF;
 
@@ -101,6 +83,7 @@ class IndexTestDriver extends TestDriver {
 			
 			if (indexType.equals("BitMap")) {
 				//cf.createBitMapIndex(val, value);
+                cf.createAllBitMapIndexForColumn(colno);
 			}
 			else {
 				cf.createBTreeIndex((short)colno);

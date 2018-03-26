@@ -1,25 +1,12 @@
 package tests;
 
 import columnar.Columnarfile;
-import columnar.TID;
-import columnar.TupleScan;
-import columnar.ValueClass;
 import diskmgr.PCounter;
 import global.AttrType;
 import global.SystemDefs;
-import heap.InvalidTupleSizeException;
-import heap.InvalidTypeException;
 import heap.Tuple;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.sql.NClob;
+import java.io.*;
 import java.util.ArrayList;
 
 import static global.GlobalConst.NUMBUF;
@@ -80,12 +67,15 @@ class InsertDriver extends TestDriver {
             System.err.println("error: " + e);
         }
 
+
+
         System.out.print("\n" + "..." + testName() + " tests ");
         System.out.print(_pass == OK ? "completely successfully" : "failed");
         System.out.print(".\n\n");
 
+		System.out.println("Reads: "+  PCounter.rcounter);
+		System.out.println("Writes: "+ PCounter.wcounter);
         return _pass;
-
     }
 
     protected boolean test1(){
@@ -170,6 +160,8 @@ class InsertDriver extends TestDriver {
 			e.printStackTrace();
 		}
 
+
+
         return true;
     }
 
@@ -202,7 +194,8 @@ public class BatchInsert {
             columnarFileName = argvs[2];
             numColumns = Integer.parseInt(argvs[3]);                       
             insertTest.runTests();
-            
+
+
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Error encountered during buffer manager tests:\n");

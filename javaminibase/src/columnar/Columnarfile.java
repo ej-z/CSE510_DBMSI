@@ -4,10 +4,7 @@ import bitmap.BitMapFile;
 import btree.*;
 import global.*;
 import heap.*;
-import iterator.FileScan;
-import iterator.FldSpec;
-import iterator.RelSpec;
-import iterator.Sort;
+import iterator.*;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -437,13 +434,21 @@ public class Columnarfile {
     }
 
     public boolean createAllBitMapIndexForColumn(int columnNo) throws Exception {
-        Scan columnScan = openColumnScan(columnNo);
+        short[] targetedCols = new short[1];
+        targetedCols[0] = (short) columnNo;
+
+        ColumnarColumnScan columnScan = new ColumnarColumnScan(getColumnarFileName(), columnNo,
+                getAttrtypeforcolumn(columnNo),
+                getAttrsizeforcolumn(columnNo),
+                targetedCols,
+                null);
+
         RID rid = new RID();
         Tuple tuple;
         int position = 0;
         Set<BitMapFile> bitMapFiles = new HashSet<>();
         while (true) {
-            tuple = columnScan.getNext(rid);
+            tuple = columnScan.get_next();
             if (tuple == null) {
                 break;
             }
@@ -476,7 +481,7 @@ public class Columnarfile {
 
             position++;
         }
-        columnScan.closescan();
+        columnScan.close();
         for (BitMapFile bitMapFile : bitMapFiles) {
             bitMapFile.close();
         }

@@ -1,12 +1,7 @@
 package iterator;
 
-import bitmap.BitMapFile;
-import btree.BTreeFile;
-import btree.IntegerKey;
-import btree.KeyClass;
-import btree.StringKey;
 import bufmgr.PageNotReadException;
-import columnar.*;
+import columnar.Columnarfile;
 import global.*;
 import heap.*;
 
@@ -61,15 +56,16 @@ public class ColumnarColumnScan extends Iterator {
 
         try {
             scan = columnarfile.openColumnScan(columnNo);
+            _in1 = new AttrType[1];
+            _in1[0] = new AttrType(AttrType.attrInteger);
+            s_sizes = new	short[1];
+            s_sizes[0] = strSize;
+            Tuple t = new Tuple();
+            t.setHdr((short)1, _in1, s_sizes);
+            _tuplesize = t.size();
             PageId pid = SystemDefs.JavabaseDB.get_file_entry(columnarfile.getDeletedFileName());
             if (pid != null) {
-                _in1 = new AttrType[1];
-                _in1[0] = new AttrType(AttrType.attrInteger);
-                s_sizes = new	short[1];
-                s_sizes[0] = strSize;
-                Tuple t = new Tuple();
-                t.setHdr((short)1, _in1, s_sizes);
-                _tuplesize = t.size();
+
                 FldSpec[] projlist = new FldSpec[1];
                 projlist[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
                 FileScan fs = new FileScan(columnarfile.getDeletedFileName(), _in1, s_sizes, (short)1, 1, projlist, null);
@@ -121,10 +117,10 @@ public class ColumnarColumnScan extends Iterator {
             switch (targetAttrTypes[i].attrType) {
                 case AttrType.attrInteger:
                     // Assumed that col heap page will have only one entry
-                    JTuple.setIntFld(i + 1, record.getIntFld(1));
+                    JTuple.setIntFld(i + 1, Convert.getIntValue(0, record.getTupleByteArray()));
                     break;
                 case AttrType.attrString:
-                    JTuple.setStrFld(i + 1, record.getStrFld(1));
+                    JTuple.setStrFld(i + 1, Convert.getStrValue(0, record.getTupleByteArray(), targetShortSizes[i]+2));
                     break;
                 default:
                     throw new Exception("Attribute indexAttrType not supported");
@@ -157,6 +153,7 @@ public class ColumnarColumnScan extends Iterator {
             tuple1 = new Tuple(tuple1.size());
             byte[] data = tuple1.getTupleByteArray();
             System.arraycopy(t.getTupleByteArray(), 0, data, 6, _attrsize);
+            t.tupleInit(data, 0, data.length);
             if (PredEval.Eval(OutputFilter, t, null, _in1, null) == true) {
                 int position = columnarfile.getColumn(_columnNo).positionOfRecord(rid);
                 if(deletedTuples != null && position > currDeletePos){

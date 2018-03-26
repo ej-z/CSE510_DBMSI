@@ -3,11 +3,10 @@ package global;
 import bufmgr.BufMgr;
 import catalog.Catalog;
 import diskmgr.ColumnarDB;
-import diskmgr.DB;
 
 public class SystemDefs {
     public static BufMgr JavabaseBM;
-    public static DB JavabaseDB;
+    public static ColumnarDB JavabaseDB;
     public static Catalog JavabaseCatalog;
 
     public static String JavabaseDBName;
