@@ -546,7 +546,7 @@ public class Delete_query extends TestDriver {
     }
 
     public static void main(String args[]) {
-        String sampleinput = "SELECT cdb file A,B {C > 6} 100 BTREE";
+        String sampleinput = args[0];
         String[] inputsplit = sampleinput.split(" ");
         String temp = inputsplit[4].replace("{", "") + " " + inputsplit[5] + " " + inputsplit[6].replace("}", "");
         int shouldpurge = 0;
