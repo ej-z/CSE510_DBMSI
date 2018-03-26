@@ -275,6 +275,8 @@ class DeleteDriver extends TestDriver {
                                     e.printStackTrace();
                                 }
                             }
+                            cf.purgeAllDeletedTuples();
+                            cis.close();
                         } catch (Exception e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
@@ -471,16 +473,19 @@ class DeleteDriver extends TestDriver {
                     System.out.println(targetedCols[i]);
                 }
                 ColumnarColumnScan ccs = new ColumnarColumnScan(Colfilename, columnNo, attrtype, cf.getAttrsizeforcolumn(columnNo), targetedCols, expr);
-                boolean done = false;
-                while (!done) {
-                    //RID rid = new RID();
-                    Tuple result = ccs.get_next();
-                    if (result == null) {
-                        done = true;
-                        break;
+                boolean done=true;
+                while(done){
+                    try {
+                        done=ccs.delete_next();
+
+                    } catch (Exception e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
                     }
-                    result.print(atype2);
+
                 }
+                cf.purgeAllDeletedTuples();
+                ccs.close();
             } catch (Exception e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
