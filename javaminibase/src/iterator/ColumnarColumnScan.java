@@ -55,7 +55,7 @@ public class ColumnarColumnScan extends Iterator {
         try {
             scan = columnarfile.openColumnScan(columnNo);
             _in1 = new AttrType[1];
-            _in1[0] = new AttrType(AttrType.attrInteger);
+            _in1[0] = attrType;
             s_sizes = new	short[1];
             s_sizes[0] = strSize;
             Tuple t = new Tuple();

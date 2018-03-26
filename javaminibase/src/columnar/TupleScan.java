@@ -106,8 +106,10 @@ public class TupleScan {
             int size = asize[i];
             System.arraycopy(t.getTupleByteArray(), 0, data, offset, size);
             offset += asize[i];
+            if(i+1 == numColumns)
+                position = sc[i].positionOfRecord(rids[i]);
         }
-        position = sc[0].positionOfRecord(rids[0]);
+
         tid.numRIDs = sc.length;
         tid.recordIDs = rids;
         tid.setPosition(position);

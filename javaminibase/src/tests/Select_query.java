@@ -217,8 +217,7 @@ class ColumnarDriver2 extends TestDriver {
                     } else {
                         try {
                             AttrType indexAttrType = cf.getAttrtypeforcolumn(columnNo);
-                            short[] scize = cf.getStrSize();
-                            short csize = scize[columnNo];
+                            short csize = cf.getAttrsizeforcolumn(columnNo);
                             short[] targetedCols = new short[temp.length];
                             boolean indexOnly;
                             if (temp.length == 1) {
@@ -525,7 +524,7 @@ public class Select_query extends TestDriver {
     }
 
     public static void main(String args[]) {
-        String sampleinput = "SELECT columndb columnarfile A,B,C,D {A != South_Dakota} 100 BTREE";
+        String sampleinput = "SELECT cdb file A,B,C,D {A = South_Dakota} 100 BTREE";
         String[] inputsplit = sampleinput.split(" ");
         for (int i = 0; i < inputsplit.length; i++) {
             System.out.println(inputsplit[i]);

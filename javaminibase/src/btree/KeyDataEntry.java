@@ -21,6 +21,8 @@ public class KeyDataEntry {
      */
     public DataClass data;
 
+    public KeyDataEntry(){}
+
     /**
      * Class constructor
      */
