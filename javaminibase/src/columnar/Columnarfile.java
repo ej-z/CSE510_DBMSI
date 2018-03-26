@@ -578,8 +578,6 @@ public class Columnarfile {
                 if (BTMap.containsKey(bTreeFileName)) {
                     BTreeFile bTreeFile = getBTIndex(bTreeFileName);
                     boolean scc = bTreeFile.Delete(keyClass, rid);
-                    if(!scc)
-                        System.out.println("Not succeded");
                 }
                 if (BMMap.containsKey(bitMapFileName)) {
                     BitMapFile bitMapFile = getBMIndex(bitMapFileName);
