@@ -23,6 +23,10 @@ public class BitMapHeaderPage extends HFPage {
     public static final int COLUMNNAR_FILE_NAME_POSITION = ATTR_TYPE_POSITION + ATTR_TYPE_SIZE;
     public static final int VALUE_POSITION = COLUMNNAR_FILE_NAME_POSITION + COLUMNNAR_FILE_NAME_SIZE;
 
+    /***
+     * Pretty print the header page contents
+     * @throws Exception
+     */
     public void dumpHeaderPage() throws Exception {
         System.out.println("Dump Header Page");
         System.out.println("Colmnnar File Name= " + getColumnarFileName());
@@ -33,42 +37,87 @@ public class BitMapHeaderPage extends HFPage {
         System.out.println("Header Page Id= " + getPageId());
     }
 
+    /***
+     * Setter for column number
+     * @param columnNumber
+     * @throws Exception
+     */
     public void setColumnNumber(int columnNumber) throws Exception {
         Convert.setShortValue((short) columnNumber, COLUMN_NUMBER_POSITION, data);
     }
 
+    /***
+     * Setter for attribute type
+     * @param attrType
+     * @throws Exception
+     */
     public void setAttrType(AttrType attrType) throws Exception {
         Convert.setShortValue((short) attrType.attrType, ATTR_TYPE_POSITION, data);
     }
 
+    /***
+     * Setter for columnnar file name
+     * @param columnnarFileName
+     * @throws Exception
+     */
     public void setColumnarFileName(String columnnarFileName) throws Exception {
         Convert.setStrValue(columnnarFileName, COLUMNNAR_FILE_NAME_POSITION, data);
     }
 
+    /***
+     * Setter for value
+     * @param value
+     * @throws Exception
+     */
     public void setValue(String value) throws Exception {
         Convert.setStrValue(value, VALUE_POSITION, data);
     }
 
+    /***
+     * getter for column number
+     * @return
+     * @throws Exception
+     */
     public Integer getColumnNumber() throws Exception {
         short val = Convert.getShortValue(COLUMN_NUMBER_POSITION, data);
         return (int) val;
     }
 
+    /***
+     * getter for attribute type
+     * @return
+     * @throws Exception
+     */
     public AttrType getAttrType() throws Exception {
         short val = Convert.getShortValue(ATTR_TYPE_POSITION, data);
         return new AttrType(val);
     }
 
+    /***
+     * getter for columnar file name
+     * @return
+     * @throws Exception
+     */
     public String getColumnarFileName() throws Exception {
         String val = Convert.getStrValue(COLUMNNAR_FILE_NAME_POSITION, data, COLUMNNAR_FILE_NAME_SIZE);
         return val.trim();
     }
 
+    /***
+     * getter for value
+     * @return
+     * @throws Exception
+     */
     public String getValue() throws Exception {
         String val = Convert.getStrValue(VALUE_POSITION, data, VALUE_SIZE);
         return val.trim();
     }
 
+    /***
+     * opens the header file for the page id passed as input
+     * @param pageno
+     * @throws ConstructPageException
+     */
     public BitMapHeaderPage(PageId pageno)
             throws ConstructPageException {
         super();
@@ -80,10 +129,18 @@ public class BitMapHeaderPage extends HFPage {
         }
     }
 
+    /***
+     * open the bitmap header page passed as input
+     * @param page
+     */
     public BitMapHeaderPage(Page page) {
         super(page);
     }
 
+    /***
+     * Default constructor. Creates a new header page.
+     * @throws ConstructPageException
+     */
     public BitMapHeaderPage() throws ConstructPageException {
         super();
         try {
@@ -98,20 +155,40 @@ public class BitMapHeaderPage extends HFPage {
         }
     }
 
+    /***
+     * getter for page id
+     * @return
+     * @throws IOException
+     */
     public PageId getPageId() throws IOException {
         return getCurPage();
     }
 
+    /***
+     * setter for page id
+     * @param pageno
+     * @throws IOException
+     */
     void setPageId(PageId pageno)
             throws IOException {
         setCurPage(pageno);
     }
 
+    /***
+     * getter for root id
+     * @return
+     * @throws IOException
+     */
     public PageId get_rootId()
             throws IOException {
         return getNextPage();
     }
 
+    /***
+     * setter for rootid
+     * @param rootID
+     * @throws IOException
+     */
     void set_rootId(PageId rootID)
             throws IOException {
         setNextPage(rootID);

@@ -26,41 +26,74 @@ public class BitMapFile implements GlobalConst {
     private ValueClass value;
 
     /***
-     * Get
+     * Getter for columnNumber
      * @return
      */
     public Integer getColumnNumber() {
         return columnNumber;
     }
 
+    /***
+     * Setter got cokumnNumber
+     * @param columnNumber
+     */
     public void setColumnNumber(Integer columnNumber) {
         this.columnNumber = columnNumber;
     }
 
+    /***
+     * Getter for value
+     * @return
+     */
     public ValueClass getValue() {
         return value;
     }
 
+    /***
+     * Setter for value
+     * @param value
+     */
     public void setValue(ValueClass value) {
         this.value = value;
     }
 
+    /***
+     * getter fine name
+     * @return
+     */
     public String getFileName() {
         return fileName;
     }
 
+    /***
+     * setter for file name
+     * @param fileName
+     */
     public void setFileName(String fileName) {
         this.fileName = fileName;
     }
 
+    /***
+     * getter for header page
+     * @return
+     */
     public BitMapHeaderPage getHeaderPage() {
         return headerPage;
     }
 
+    /***
+     * setter for header page
+     * @param headerPage
+     */
     public void setHeaderPage(BitMapHeaderPage headerPage) {
         this.headerPage = headerPage;
     }
 
+    /***
+     * opens an existing bitmap index file
+     * @param fileName
+     * @throws Exception
+     */
     public BitMapFile(String fileName) throws Exception {
         this.fileName = fileName;
         headerPageId = get_file_entry(fileName);
@@ -79,6 +112,14 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * creates a new bitmap file
+     * @param filename
+     * @param columnarFile
+     * @param columnNo
+     * @param value
+     * @throws Exception
+     */
     public BitMapFile(String filename, Columnarfile columnarFile, Integer columnNo, ValueClass value) throws Exception {
         headerPageId = get_file_entry(filename);
         if (headerPageId == null) //file does not exist
@@ -101,6 +142,10 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * closes the bitmap file
+     * @throws Exception
+     */
     public void close() throws Exception {
         if (headerPage != null) {
             SystemDefs.JavabaseBM.unpinPage(headerPageId, true);
@@ -108,6 +153,10 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * delete all the bitmap related data
+     * @throws Exception
+     */
     public void destroyBitMapFile() throws Exception {
         if (headerPage != null) {
             PageId pgId = headerPage.get_rootId();
@@ -126,6 +175,12 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * Update the bitmap value at the position specified.
+     * @param set
+     * @param position
+     * @throws Exception
+     */
     private void setValueAtPosition(boolean set, int position) throws Exception {
         List<PageId> pinnedPages = new ArrayList<>();
         if (headerPage == null) {
@@ -174,6 +229,12 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * delete bit at the posiition and re-organise the bitmap
+     * @param position
+     * @return
+     * @throws Exception
+     */
     public Boolean fullDelete(int position) throws Exception {
         if (headerPage == null) {
             throw new Exception("Bitmap header page is null");
@@ -213,6 +274,11 @@ public class BitMapFile implements GlobalConst {
         return Boolean.TRUE;
     }
 
+    /***
+     * delete bit at the posiition and re-organise the bitmap
+     * @param pageId
+     * @return
+     */
     private boolean _fullDelete(PageId pageId){
         if(pageId.pid == INVALID_PAGE)
             return false;
@@ -235,17 +301,34 @@ public class BitMapFile implements GlobalConst {
 
     }
 
+    /***
+     * mark postion with value 0
+     * @param position
+     * @return
+     * @throws Exception
+     */
     public Boolean delete(int position) throws Exception {
         setValueAtPosition(false, position);
         return Boolean.TRUE;
     }
 
-
+    /***
+     * mark postion with value 1
+     * @param position
+     * @return
+     * @throws Exception
+     */
     public Boolean insert(int position) throws Exception {
         setValueAtPosition(true, position);
         return Boolean.TRUE;
     }
 
+    /***
+     * Allocate new BMPage to the doubly linked list
+     * @param prevPageId
+     * @return
+     * @throws Exception
+     */
     private PageId getNewBMPage(PageId prevPageId) throws Exception {
         Page apage = new Page();
         PageId pageId = newPage(apage, 1);
@@ -256,6 +339,12 @@ public class BitMapFile implements GlobalConst {
         return pageId;
     }
 
+    /***
+     * Get file entry from DB
+     * @param filename
+     * @return
+     * @throws GetFileEntryException
+     */
     private PageId get_file_entry(String filename)
             throws GetFileEntryException {
         try {
@@ -266,6 +355,12 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * Add file entry to the DB
+     * @param fileName
+     * @param pageno
+     * @throws AddFileEntryException
+     */
     private void add_file_entry(String fileName, PageId pageno)
             throws AddFileEntryException {
         try {
@@ -276,6 +371,11 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * delete file entry from DB
+     * @param filename
+     * @throws DeleteFileEntryException
+     */
     private void delete_file_entry(String filename)
             throws DeleteFileEntryException {
         try {
@@ -286,6 +386,11 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * Unpin pagefrom buffer
+     * @param pageno
+     * @throws UnpinPageException
+     */
     private void unpinPage(PageId pageno)
             throws UnpinPageException {
         try {
@@ -296,6 +401,12 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * Unpin pagefrom buffer
+     * @param pageno
+     * @param dirty
+     * @throws UnpinPageException
+     */
     private void unpinPage(PageId pageno, boolean dirty)
             throws UnpinPageException {
         try {
@@ -306,6 +417,11 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * free page passed as input
+     * @param pageno
+     * @throws FreePageException
+     */
     private void freePage(PageId pageno)
             throws FreePageException {
         try {
@@ -317,6 +433,12 @@ public class BitMapFile implements GlobalConst {
 
     }
 
+    /***
+     * pin page passed as input
+     * @param pageno
+     * @return
+     * @throws PinPageException
+     */
     private Page pinPage(PageId pageno)
             throws PinPageException {
         try {
@@ -329,6 +451,13 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * Allocate new page
+     * @param page
+     * @param num
+     * @return
+     * @throws HFBufMgrException
+     */
     private PageId newPage(Page page, int num)
             throws HFBufMgrException {
 
