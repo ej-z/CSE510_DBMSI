@@ -177,10 +177,12 @@ public class ColumnarColumnScan extends Iterator {
      * implement the abstract method close() from super class Iterator
      * to finish cleaning up
      */
-    public void close() {
+    public void close() throws IOException, SortException {
 
         if (!closeFlag) {
             scan.closescan();
+            if(deletedTuples != null)
+                deletedTuples.close();
             closeFlag = true;
         }
     }
