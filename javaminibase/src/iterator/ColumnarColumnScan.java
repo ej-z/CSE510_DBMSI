@@ -11,10 +11,10 @@ public class ColumnarColumnScan extends Iterator {
 
     private Columnarfile columnarfile;
     private Scan scan;
-    private CondExpr[] OutputFilter;
+    private CondExpr[] OutputFilter;//conditional expression to evaluate the expression
     public FldSpec[] perm_mat;
-    private AttrType[] _in1 = null;
-    private short[] s_sizes = null;
+    private AttrType[] _in1 = null;//get the attribute type of the attribute
+    private short[] s_sizes = null;//the size of each attribute
     private Heapfile[] targetHeapFiles = null;
     private AttrType[] targetAttrTypes = null;
     private short[] targetShortSizes = null;
@@ -24,7 +24,7 @@ public class ColumnarColumnScan extends Iterator {
     int _columnNo;
     Sort deletedTuples;
     private int currDeletePos = -1;
-
+	/*file_name specifying the name of the columnar file, columnNo to indicate the column to be scanned, attrType to indicate the type of the attribute, strSize to indicate the size of the particular column, targetedCols to indicate the proje*/
     public ColumnarColumnScan(String file_name,
                               int columnNo,
                               AttrType attrType,

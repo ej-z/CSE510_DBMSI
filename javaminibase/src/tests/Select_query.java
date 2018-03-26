@@ -45,7 +45,7 @@ class ColumnarDriver2 extends TestDriver {
         //assumption give only numbers
         try {
             int chumma = Integer.parseInt(s);
-            System.out.println(s);
+            
         } catch (NumberFormatException e) {
             return false;
         }
@@ -122,7 +122,7 @@ class ColumnarDriver2 extends TestDriver {
                 it = new IndexType(3);
             }
 
-            System.out.println(indName);
+            
             if (id == 1) {
                 try {
                     BitMapFile bf = cf.getBMIndex(indName);
@@ -146,7 +146,13 @@ class ColumnarDriver2 extends TestDriver {
                             for (String i : temp) {
                                 targetedCols[index++] = (short) cf.getAttributePosition(i);
                             }
-                            CondExpr[] expr = new CondExpr[2];
+                            CondExpr[] expr;
+                            if(expression1.length<2){
+                            	expr=new CondExpr[1];
+                            	expr[0]=null;
+                            }
+                            else{
+                            expr = new CondExpr[2];
                             expr[0] = new CondExpr();
                             expr[0].next = null;
                             expr[0].type1 = new AttrType(AttrType.attrSymbol);
@@ -168,12 +174,13 @@ class ColumnarDriver2 extends TestDriver {
                                 expr[0].op = new AttrOperator(AttrOperator.aopGE);
                             }
                             if (isInteger(expression1[2])) {
-                                System.out.println("hi");
+                                
                                 expr[0].type2 = new AttrType(AttrType.attrInteger);
                                 expr[0].operand2.integer = Integer.parseInt(expression1[2]);
                             } else {
                                 expr[0].type2 = new AttrType(AttrType.attrString);
                                 expr[0].operand2.string = expression1[2];
+                            }
                             }
                             ColumnIndexScan cis = new ColumnIndexScan(it, relName, indName, indexAttrType, cf.getAttrsizeforcolumn(columnNo), expr, indexOnly, targetedCols);
                             boolean done = false;
@@ -192,7 +199,7 @@ class ColumnarDriver2 extends TestDriver {
                                     result.print(atype2);
                                 }
                             }
-                            System.out.println("Total count: " +  count);
+                            
                         } catch (Exception e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
@@ -221,8 +228,6 @@ class ColumnarDriver2 extends TestDriver {
                     } else {
                         try {
                             AttrType indexAttrType = cf.getAttrtypeforcolumn(columnNo);
-                            short csize = cf.getAttrsizeforcolumn(columnNo);
-
                             short[] targetedCols = new short[temp.length];
                             boolean indexOnly;
                             if (temp.length == 1) {
@@ -237,13 +242,18 @@ class ColumnarDriver2 extends TestDriver {
                             for (String i : temp) {
                                 targetedCols[index++] = (short) cf.getAttributePosition(i);
                             }
-                            CondExpr[] expr = new CondExpr[2];
+                            CondExpr[] expr;
+                            if(expression1.length<2){
+                            	expr=new CondExpr[1];
+                            	expr[0]=null;
+                            }
+                            else{
+                            expr= new CondExpr[2];
                             expr[0] = new CondExpr();
                             expr[0].next = null;
                             expr[0].type1 = new AttrType(AttrType.attrSymbol);
                             expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), cf.getAttributePosition(expression1[0]) + 1);
                             expr[1] = null;
-                            //System.out.println("here");
 
                             if (expression1[1].equals("=")) {
                                 expr[0].op = new AttrOperator(AttrOperator.aopEQ);
@@ -259,12 +269,13 @@ class ColumnarDriver2 extends TestDriver {
                                 expr[0].op = new AttrOperator(AttrOperator.aopGE);
                             }
                             if (isInteger(expression1[2])) {
-                                System.out.println("hi");
+                                
                                 expr[0].type2 = new AttrType(AttrType.attrInteger);
                                 expr[0].operand2.integer = Integer.parseInt(expression1[2]);
                             } else {
                                 expr[0].type2 = new AttrType(AttrType.attrString);
                                 expr[0].operand2.string = expression1[2];
+                            }
                             }
                             ColumnIndexScan cis = new ColumnIndexScan(it, relName, indName, indexAttrType, cf.getAttrsizeforcolumn(columnNo), expr, indexOnly, targetedCols);
                             boolean done = false;
@@ -319,14 +330,19 @@ class ColumnarDriver2 extends TestDriver {
 			Columnarfile cf=new Columnarfile(Colfilename);
 			short len_in1=cf.getnumColumns();
 			AttrType[] in1=cf.getAttributes();
-			short[] s1_sizes=cf.getStrSize();
+			short[] s1_sizes=cf.getAttrSizes();
 			String[] temp=Projection.split(",");
-			String[] expression1=expression.split(" ");
-			expression1[0]=expression1[0].replace("{","");
-			expression1[2]=expression1[2].replace("}", "");
-
 			int n_out_flds=temp.length;
-			CondExpr[] expr=new CondExpr[2];
+			String[] expression1=expression.split(" ");
+			CondExpr[] expr;
+			if(expression1.length<=2){
+				expr=new CondExpr[1];
+				expr[0]=null;
+			}			
+			else{
+				expression1[0]=expression1[0].replace("{","");
+				expression1[2]=expression1[2].replace("}", "");
+			expr=new CondExpr[2];
 			expr[0]=new CondExpr();
 			expr[0].next = null;
 			expr[0].type1 = new AttrType(AttrType.attrSymbol);
@@ -353,13 +369,14 @@ class ColumnarDriver2 extends TestDriver {
 				expr[0].op = new AttrOperator(AttrOperator.aopGE);
 			}
             if (isInteger(expression1[2])) {
-				System.out.println("hi");
+				
 				expr[0].type2 = new AttrType(AttrType.attrInteger);
                 expr[0].operand2.integer = Integer.parseInt(expression1[2]);
 			}
 			else{
 				expr[0].type2 = new AttrType(AttrType.attrString);
                 expr[0].operand2.string = expression1[2];
+			}
 			}
 			//System.out.println("here");
 			FldSpec[] projectionlist=new FldSpec[n_out_flds];
@@ -416,6 +433,7 @@ class ColumnarDriver2 extends TestDriver {
             //assumption no nested conditions
 			Columnarfile cf=new Columnarfile(Colfilename);
 			String[] expression1=expression.split(" ");
+			CondExpr[] expr;
 			int columnNo=cf.getAttributePosition((expression1[0]).replace("{", ""));
 			try {
 				AttrType attrtype = cf.getAttrtypeforcolumn(columnNo);
@@ -427,9 +445,8 @@ class ColumnarDriver2 extends TestDriver {
 				}
 				expression1[0]=expression1[0].replace("{","");
 				expression1[2]=expression1[2].replace("}", "");
-				for(int i=0;i<expression1.length;i++)
-                    System.out.println(expression1[i]);
-				CondExpr[] expr=new CondExpr[2];
+				
+				expr=new CondExpr[2];
 				expr[0]=new CondExpr();
 				expr[0].next = null;
                 //assuming it is always variable to left and it is a character
@@ -462,14 +479,12 @@ class ColumnarDriver2 extends TestDriver {
 					expr[0].type2 = new AttrType(AttrType.attrString);
                     expr[0].operand2.string = expression1[2];
 				}
+				
                 AttrType[] atype2 = new AttrType[temp.length];
                 for (int i = 0; i < temp.length; i++) {
                     atype2[i] = cf.getAttrtypeforcolumn(targetedCols[i]);
                 }
-                System.out.println(Colfilename + " " + columnNo + " " + attrtype.attrType);
-                for (int i = 0; i < targetedCols.length; i++) {
-                    System.out.println(targetedCols[i]);
-                }
+                
                 ColumnarColumnScan ccs = new ColumnarColumnScan(Colfilename, columnNo, attrtype, cf.getAttrsizeforcolumn(columnNo), targetedCols, expr);
                 boolean done = false;
                 while (!done) {
@@ -498,7 +513,7 @@ class ColumnarDriver2 extends TestDriver {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return false;
+		return true;
     }
 
     protected String testName() {
@@ -529,15 +544,21 @@ public class Select_query extends TestDriver {
     }
 
     public static void main(String args[]) {
-        String sampleinput = "SELECT testColumnDB students C {C > 6} 100 BTREE";
+        String sampleinput = "SELECT columndb columnarfile A,B,C,D {A = South_Dakota} 100 BTREE";
         String[] inputsplit = sampleinput.split(" ");
-        for (int i = 0; i < inputsplit.length; i++) {
-            System.out.println(inputsplit[i]);
+        
+        if(inputsplit[4].equals("{}")){
+        	String temp=inputsplit[4];
+        	Select_query sq = new Select_query(inputsplit[1], inputsplit[2], inputsplit[3], temp, Integer.parseInt(inputsplit[5]), "FILESCAN");
+        	sq.runTests();
         }
+        else{
         String temp = inputsplit[4].replace("{", "") + " " + inputsplit[5] + " " + inputsplit[6].replace("}", "");
         Select_query sq = new Select_query(inputsplit[1], inputsplit[2], inputsplit[3], temp, Integer.parseInt(inputsplit[7]), inputsplit[8]);
         sq.runTests();
+        }
     }
 
 }
+
 
