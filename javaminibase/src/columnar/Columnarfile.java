@@ -548,7 +548,7 @@ public class Columnarfile {
         return markTupleDeleted(tidarg.position);
     }
 
-    public boolean purgeAllDeletedTuples() throws HFDiskMgrException, InvalidTupleSizeException, IOException, InvalidSlotNumberException, FileAlreadyDeletedException, HFBufMgrException {
+    public boolean purgeAllDeletedTuples() throws HFDiskMgrException, InvalidTupleSizeException, IOException, InvalidSlotNumberException, FileAlreadyDeletedException, HFBufMgrException, SortException {
 
         boolean status = OK;
         Sort deletedTuples = null;
@@ -589,8 +589,9 @@ public class Columnarfile {
                     rid = new RID();
                     tuple = deletedTuples.get_next();
                     if (tuple == null) {
+                        deletedTuples.close();
                         done = true;
-                        return true;
+                        break;
                     }
                     pos_marked = Convert.getIntValue(6, tuple.getTupleByteArray());
                     for (int j = 0; j < numColumns; j++) {
@@ -608,6 +609,9 @@ public class Columnarfile {
 
                 } catch (Exception e) {
                     e.printStackTrace();
+                    if(deletedTuples != null)
+                        deletedTuples.close();
+                    f.deleteFile();
                     return false;
                 }
             }
