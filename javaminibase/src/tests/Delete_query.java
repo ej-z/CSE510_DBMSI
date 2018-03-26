@@ -22,18 +22,16 @@ class DeleteDriver extends TestDriver {
     String expression;
     int bufspace;
     String Accesstype;
-    boolean shouldpurge;
 
     //private boolean delete = true;
     public DeleteDriver(String dBName2, String colfilename2, String projection2, String expression2, int bufspace2, String accesstype2) {
-        super("BatchInsert");
+        super(dBName2);
         DBName = dBName2;
         Colfilename = colfilename2;
         Projection = projection2;
         expression = expression2;
         bufspace = bufspace2;
         Accesstype = accesstype2;
-        shouldpurge = false;
     }
 
     public DeleteDriver() {
@@ -45,7 +43,6 @@ class DeleteDriver extends TestDriver {
         //assumption give only numbers
         try {
             int chumma = Integer.parseInt(s);
-            System.out.println(s);
         } catch (NumberFormatException e) {
             return false;
         }
@@ -166,7 +163,6 @@ class DeleteDriver extends TestDriver {
                                 expr[0].op = new AttrOperator(AttrOperator.aopGE);
                             }
                             if (isInteger(expression1[2])) {
-                                System.out.println("hi");
                                 expr[0].type2 = new AttrType(AttrType.attrInteger);
                                 expr[0].operand2.integer = Integer.parseInt(expression1[2]);
                             } else {
@@ -188,9 +184,7 @@ class DeleteDriver extends TestDriver {
                                     e.printStackTrace();
                                 }
                             }
-                            if(shouldpurge) {
-                                cf.purgeAllDeletedTuples();
-                            }
+                            cf.purgeAllDeletedTuples();
                             cis.close();
                         } catch (Exception e) {
                             // TODO Auto-generated catch block
@@ -257,7 +251,6 @@ class DeleteDriver extends TestDriver {
                                 expr[0].op = new AttrOperator(AttrOperator.aopGE);
                             }
                             if (isInteger(expression1[2])) {
-                                System.out.println("hi");
                                 expr[0].type2 = new AttrType(AttrType.attrInteger);
                                 expr[0].operand2.integer = Integer.parseInt(expression1[2]);
                             } else {
@@ -279,9 +272,7 @@ class DeleteDriver extends TestDriver {
                                     e.printStackTrace();
                                 }
                             }
-                            if(shouldpurge) {
-                                cf.purgeAllDeletedTuples();
-                            }
+                            cf.purgeAllDeletedTuples();
                             cis.close();
                         } catch (Exception e) {
                             // TODO Auto-generated catch block
@@ -355,7 +346,6 @@ class DeleteDriver extends TestDriver {
                 expr[0].op = new AttrOperator(AttrOperator.aopGE);
             }
             if (isInteger(expression1[2])) {
-                System.out.println("hi");
                 expr[0].type2 = new AttrType(AttrType.attrInteger);
                 expr[0].operand2.integer = Integer.parseInt(expression1[2]);
             }
@@ -381,9 +371,7 @@ class DeleteDriver extends TestDriver {
                     }
 
                 }
-                if(shouldpurge) {
-                    cf.purgeAllDeletedTuples();
-                }
+                cf.purgeAllDeletedTuples();
                 fc.close();
             } catch (FileScanException e) {
                 // TODO Auto-generated catch block
@@ -437,8 +425,7 @@ class DeleteDriver extends TestDriver {
                 }
                 expression1[0]=expression1[0].replace("{","");
                 expression1[2]=expression1[2].replace("}", "");
-                for(int i=0;i<expression1.length;i++)
-                    System.out.println(expression1[i]);
+
                 CondExpr[] expr=new CondExpr[2];
                 expr[0]=new CondExpr();
                 expr[0].next = null;
@@ -476,10 +463,7 @@ class DeleteDriver extends TestDriver {
                 for (int i = 0; i < temp.length; i++) {
                     atype2[i] = cf.getAttrtypeforcolumn(targetedCols[i]);
                 }
-                System.out.println(Colfilename + " " + columnNo + " " + attrtype.attrType);
-                for (int i = 0; i < targetedCols.length; i++) {
-                    System.out.println(targetedCols[i]);
-                }
+
                 ColumnarColumnScan ccs = new ColumnarColumnScan(Colfilename, columnNo, attrtype, cf.getAttrsizeforcolumn(columnNo), targetedCols, expr);
                 boolean done=true;
                 while(done){
@@ -492,9 +476,7 @@ class DeleteDriver extends TestDriver {
                     }
 
                 }
-                if(shouldpurge) {
-                    cf.purgeAllDeletedTuples();
-                }
+                cf.purgeAllDeletedTuples();
                 ccs.close();
             } catch (Exception e) {
                 // TODO Auto-generated catch block
@@ -513,12 +495,12 @@ class DeleteDriver extends TestDriver {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        return false;
+        return true;
     }
 
     protected String testName() {
 
-        return "Columnar Tests";
+        return "Delete Query ";
     }
 }
 
@@ -529,20 +511,20 @@ public class Delete_query extends TestDriver {
     String expression;
     int bufspace;
     String Accesstype;
-    boolean shouldPurge;
+
 
     public boolean runTests() {
         DeleteDriver cd = new DeleteDriver(DBName, Colfilename, Projection, expression, bufspace, Accesstype);
         return cd.runTests();
     }
-    Delete_query(String a, String b, String c, String d, int inputsplit, String access) {
-        DBName = a;
+    Delete_query(String a, String b, String c, String d, int inputsplit, String access){
+        DBName=a;
         Colfilename = b;
         Projection = c;
-        expression = d;
+        expression =d;
         bufspace = inputsplit;
         Accesstype = access;
-        shouldPurge = false;
+
     }
 
     @Override
@@ -551,11 +533,8 @@ public class Delete_query extends TestDriver {
     }
 
     public static void main(String args[]) {
-        String sampleinput = "SELECT cdb file A,B,C,D {C = 6} 100 BITMAP";
+        String sampleinput = "SELECT testdb columnar A,B,C,D {A = South_Dakota} 100 COLUMNSCAN";
         String[] inputsplit = sampleinput.split(" ");
-        for (int i = 0; i < inputsplit.length; i++) {
-            System.out.println(inputsplit[i]);
-        }
         String temp = inputsplit[4].replace("{", "") + " " + inputsplit[5] + " " + inputsplit[6].replace("}", "");
         Delete_query sq = new Delete_query(inputsplit[1], inputsplit[2], inputsplit[3], temp, Integer.parseInt(inputsplit[7]), inputsplit[8]);
         sq.runTests();

@@ -21,25 +21,25 @@ class IndexTestDriver extends TestDriver {
     private String indexType;
     private int numCols;
     AttrType[] types;
-	short[] sizes;
-	
+    short[] sizes;
+
     //private boolean delete = true;
     public IndexTestDriver() {
         super("BatchInsert");
     }
 
     public IndexTestDriver(String columnName, String columnDBName, String columnarFileName, String indexTypeVal) {
-    	super("BatchInsert");
-    	colName = columnName;
-    	dbName = columnDBName;
-    	colFilename = columnarFileName;
-    	indexType = indexTypeVal;
+        super(columnDBName);
+        colName = columnName;
+        dbName = columnDBName;
+        colFilename = columnarFileName;
+        indexType = indexTypeVal;
     }
-    
+
     public boolean runTests() {
 
         System.out.println("\n" + "Running " + testName() + " tests...." + dbpath+"\n");
-        
+
         SystemDefs sysdef = new SystemDefs(dbpath, 0, NUMBUF, "Clock");
 
         // Kill anything that might be hanging around
@@ -60,11 +60,11 @@ class IndexTestDriver extends TestDriver {
             SystemDefs.JavabaseBM.flushAllPages();
             SystemDefs.JavabaseDB.closeDB();
         }catch (Exception e) {
-        	System.out.println("coming from here");
+            System.out.println("coming from here");
             System.err.println("error: " + e);
         }
 
-        
+
         System.out.println("Reads: "+PCounter.rcounter);
         System.out.println("Writes: "+PCounter.wcounter);
         System.out.print("\n" + "..." + testName() + " tests ");
@@ -76,42 +76,42 @@ class IndexTestDriver extends TestDriver {
     }
 
     protected boolean test1(){
-        
-    	try {
-			Columnarfile cf = new Columnarfile(colFilename);
-			int colno = cf.getAttributePosition(colName);
-			
-			if (indexType.equals("BITMAP")) {
-				//cf.createBitMapIndex(val, value);
+
+        try {
+            Columnarfile cf = new Columnarfile(colFilename);
+            int colno = cf.getAttributePosition(colName);
+
+            if (indexType.equals("BITMAP")) {
+                //cf.createBitMapIndex(val, value);
                 cf.createAllBitMapIndexForColumn(colno);
-			}
-			else {
-				cf.createBTreeIndex((short)colno);
-			}
-		} catch (HFException | HFBufMgrException | HFDiskMgrException | IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	 
+            }
+            else {
+                cf.createBTreeIndex((short)colno);
+            }
+        } catch (HFException | HFBufMgrException | HFDiskMgrException | IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
         return true;
     }
 
     protected String testName() {
 
-        return "Index Tests";
+        return "Index ";
     }
 }
 
 public class IndexCreateTest {
-	
-	public static String columnDBName;
-	public static String columnarFileName;
-	public static String columnName;
-	public static String indexType;
-	
+
+    public static String columnDBName;
+    public static String columnarFileName;
+    public static String columnName;
+    public static String indexType;
+
     public static void runTests() {
 
         IndexTestDriver cd = new IndexTestDriver(columnName, columnDBName, columnarFileName, indexType);
@@ -122,13 +122,13 @@ public class IndexCreateTest {
 
         try {
             IndexCreateTest indexTest = new IndexCreateTest();
-            
+
             columnName = argvs[2];
             columnDBName = argvs[0];
             columnarFileName = argvs[1];
             indexType = argvs[3];
             indexTest.runTests();
-            
+
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Error encountered during buffer manager tests:\n");
