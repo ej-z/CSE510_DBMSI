@@ -201,8 +201,10 @@ public class Columnarfile {
                 position = getColumn(i).positionOfRecord(rids[i]);
                 getBMIndex(bmIndexname).insert(position);
             }
+            if(i+1 == numColumns){
+                position = getColumn(1).positionOfRecord(rids[1]);
+            }
         }
-        position = getColumn(0).positionOfRecord(rids[0]);
         TID tid = new TID(numColumns, position, rids);
         return tid;
     }
