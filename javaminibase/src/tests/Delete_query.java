@@ -22,9 +22,10 @@ class DeleteDriver extends TestDriver {
     String expression;
     int bufspace;
     String Accesstype;
+    int ShouldPurge;
 
     //private boolean delete = true;
-    public DeleteDriver(String dBName2, String colfilename2, String projection2, String expression2, int bufspace2, String accesstype2) {
+    public DeleteDriver(String dBName2, String colfilename2, String projection2, String expression2, int bufspace2, String accesstype2, int shouldpurge) {
         super(dBName2);
         DBName = dBName2;
         Colfilename = colfilename2;
@@ -32,6 +33,7 @@ class DeleteDriver extends TestDriver {
         expression = expression2;
         bufspace = bufspace2;
         Accesstype = accesstype2;
+        ShouldPurge = shouldpurge;
     }
 
     public DeleteDriver() {
@@ -184,7 +186,9 @@ class DeleteDriver extends TestDriver {
                                     e.printStackTrace();
                                 }
                             }
-                            cf.purgeAllDeletedTuples();
+                            if(ShouldPurge == 1) {
+                                cf.purgeAllDeletedTuples();
+                            }
                             cis.close();
                         } catch (Exception e) {
                             // TODO Auto-generated catch block
@@ -272,7 +276,9 @@ class DeleteDriver extends TestDriver {
                                     e.printStackTrace();
                                 }
                             }
-                            cf.purgeAllDeletedTuples();
+                            if(ShouldPurge == 1) {
+                                cf.purgeAllDeletedTuples();
+                            }
                             cis.close();
                         } catch (Exception e) {
                             // TODO Auto-generated catch block
@@ -371,7 +377,9 @@ class DeleteDriver extends TestDriver {
                     }
 
                 }
-                cf.purgeAllDeletedTuples();
+                if(ShouldPurge == 1) {
+                    cf.purgeAllDeletedTuples();
+                }
                 fc.close();
             } catch (FileScanException e) {
                 // TODO Auto-generated catch block
@@ -476,7 +484,9 @@ class DeleteDriver extends TestDriver {
                     }
 
                 }
-                cf.purgeAllDeletedTuples();
+                if(ShouldPurge == 1) {
+                    cf.purgeAllDeletedTuples();
+                }
                 ccs.close();
             } catch (Exception e) {
                 // TODO Auto-generated catch block
@@ -511,20 +521,21 @@ public class Delete_query extends TestDriver {
     String expression;
     int bufspace;
     String Accesstype;
+    int ShouldPurge;
 
 
     public boolean runTests() {
-        DeleteDriver cd = new DeleteDriver(DBName, Colfilename, Projection, expression, bufspace, Accesstype);
+        DeleteDriver cd = new DeleteDriver(DBName, Colfilename, Projection, expression, bufspace, Accesstype, ShouldPurge);
         return cd.runTests();
     }
-    Delete_query(String a, String b, String c, String d, int inputsplit, String access){
+    Delete_query(String a, String b, String c, String d, int inputsplit, String access, int shouldpurge){
         DBName=a;
         Colfilename = b;
         Projection = c;
         expression =d;
         bufspace = inputsplit;
         Accesstype = access;
-
+        ShouldPurge = shouldpurge;
     }
 
     @Override
@@ -536,7 +547,8 @@ public class Delete_query extends TestDriver {
         String sampleinput = "SELECT testdb columnar A,B,C,D {A = South_Dakota} 100 COLUMNSCAN";
         String[] inputsplit = sampleinput.split(" ");
         String temp = inputsplit[4].replace("{", "") + " " + inputsplit[5] + " " + inputsplit[6].replace("}", "");
-        Delete_query sq = new Delete_query(inputsplit[1], inputsplit[2], inputsplit[3], temp, Integer.parseInt(inputsplit[7]), inputsplit[8]);
+        int shouldpurge = 0;
+        Delete_query sq = new Delete_query(inputsplit[1], inputsplit[2], inputsplit[3], temp, Integer.parseInt(inputsplit[7]), inputsplit[8], 0);
         sq.runTests();
     }
 
