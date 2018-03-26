@@ -530,7 +530,9 @@ public class Columnarfile {
                 String bitMapFileName = getBMName(i, valueClass);
                 if (BTMap.containsKey(bTreeFileName)) {
                     BTreeFile bTreeFile = getBTIndex(bTreeFileName);
-                    bTreeFile.Delete(keyClass, rid);
+                    boolean scc = bTreeFile.Delete(keyClass, rid);
+                    if(!scc)
+                        System.out.println("Not succeded");
                 }
                 if (BMMap.containsKey(bitMapFileName)) {
                     BitMapFile bitMapFile = getBMIndex(bitMapFileName);
@@ -599,7 +601,7 @@ public class Columnarfile {
                         getColumn(j).deleteRecord(rid);
 
                         for (String fileName : BMMap.keySet()) {
-                            int columnNo = Integer.parseInt(fileName.split(".")[2]);
+                            int columnNo = Integer.parseInt(fileName.split("\\.")[2]);
                             if (columnNo == i) {
                                 BitMapFile bitMapFile = getBMIndex(fileName);
                                 bitMapFile.fullDelete(pos_marked);

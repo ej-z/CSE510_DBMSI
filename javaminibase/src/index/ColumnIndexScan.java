@@ -208,7 +208,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
     }
 
     private boolean delete_next_BT() throws IndexException, UnknownKeyTypeException {
-        KeyDataEntry nextentry = null;
+        KeyDataEntry nextentry = new KeyDataEntry();
         int position = -1;
         try {
             position = getNextBTPosition(nextentry);
@@ -216,7 +216,7 @@ public class ColumnIndexScan extends Iterator implements GlobalConst {
             throw new IndexException(e, "IndexScan.java: BTree error");
         }
 
-        if (nextentry == null || position < 0)
+        if (position < 0)
             return false;
 
         return columnarfile.markTupleDeleted(position);
