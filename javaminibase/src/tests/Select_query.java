@@ -1,36 +1,19 @@
 package tests;
 
-import static global.GlobalConst.NUMBUF;
+import columnar.Columnarfile;
+import diskmgr.PCounter;
 import global.AttrOperator;
 import global.AttrType;
 import global.IndexType;
-import global.RID;
 import global.SystemDefs;
 import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
 import heap.Tuple;
 import index.ColumnIndexScan;
-import iterator.ColumnarColumnScan;
-import iterator.ColumnarFileScan;
-import iterator.CondExpr;
-import iterator.FileScanException;
-import iterator.FldSpec;
-import iterator.InvalidRelation;
-import iterator.RelSpec;
-import iterator.TupleUtilsException;
+import iterator.*;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-
-import columnar.Columnarfile;
-import columnar.TID;
-import columnar.TupleScan;
-import diskmgr.PCounter;
 class ColumnarDriver2 extends TestDriver {
 
 	String DBName;
@@ -439,7 +422,7 @@ public class Select_query extends TestDriver {
 	}
 	
 public static void main(String args[]){
-	String sampleinput = "SELECT columndb columnfile A,B,C,D {A != South_Dakota} 100 COLUMNSCAN";
+	String sampleinput = "SELECT testColumnDB students A,B,C,D {C != 5} 100 COLUMNSCAN";
 	String[] inputsplit=sampleinput.split(" ");
 	for(int i=0;i<inputsplit.length;i++){
 		System.out.println(inputsplit[i]);
