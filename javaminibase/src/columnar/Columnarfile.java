@@ -477,7 +477,7 @@ public class Columnarfile {
                 addIndexToColumnar(1, bitMapFileName);
                 BMMap.put(bitMapFileName, bitMapFile);
             } else {
-                bitMapFile = BMMap.get(bitMapFileName);
+                bitMapFile = getBMIndex(bitMapFileName);
             }
             bitMapFiles.add(bitMapFile);
 
