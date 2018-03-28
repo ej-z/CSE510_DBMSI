@@ -553,8 +553,8 @@ public class Delete_query extends TestDriver {
         String sampleinput = args[0];
         String[] inputsplit = sampleinput.split(" ");
         String temp = inputsplit[4].replace("{", "") + " " + inputsplit[5] + " " + inputsplit[6].replace("}", "");
-        int shouldpurge = 0;
-        Delete_query sq = new Delete_query(inputsplit[1], inputsplit[2], inputsplit[3], temp, Integer.parseInt(inputsplit[7]), inputsplit[8], 0);
+        int shouldpurge = inputsplit.length == 10? Integer.parseInt(inputsplit[9]) : 0;
+        Delete_query sq = new Delete_query(inputsplit[1], inputsplit[2], inputsplit[3], temp, Integer.parseInt(inputsplit[7]), inputsplit[8], shouldpurge);
         sq.runTests();
     }
 

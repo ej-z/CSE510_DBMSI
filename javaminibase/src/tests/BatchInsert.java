@@ -13,7 +13,7 @@ import static global.GlobalConst.NUMBUF;
 
 class InsertDriver extends TestDriver {
 
-	private  int numPages = 10000;
+	private  int numPages;
 	private String dataFile;
 	private String dbName;
 	private String colFilename;
@@ -43,6 +43,7 @@ class InsertDriver extends TestDriver {
 	public boolean runTests() {
 
 		System.out.println("\n" + "Running " + testName() + " tests...." + dbpath+"\n");
+        numPages = new File(dbpath).exists()? 0 : 10000;
 
 		SystemDefs sysdef = new SystemDefs(dbpath, numPages, NUMBUF, "Clock");
 
@@ -79,8 +80,6 @@ class InsertDriver extends TestDriver {
 	}
 
 	protected boolean test1(){
-		if(numPages == 0)
-			return true;
 
 		FileInputStream fstream;
 		try {
