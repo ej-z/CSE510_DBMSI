@@ -24,7 +24,6 @@ class ColumnarDriver2 extends TestDriver {
     String expression;
     int bufspace;
     String Accesstype;
-    int cnt = 0;
 
     //private boolean delete = true;
     public ColumnarDriver2(String dBName2, String colfilename2, String projection2, String expression2, int bufspace2, String accesstype2) {
@@ -64,7 +63,6 @@ class ColumnarDriver2 extends TestDriver {
         String remove_dbcmd;
         String remove_cmd = isUnix() ? "/bin/rm -rf " : "cmd /c del /f ";
         boolean _pass = true;
-
         if (Accesstype.equals("FILESCAN")) {
             _pass = test1();
         } else if (Accesstype.equals("COLUMNSCAN")) {
@@ -74,7 +72,6 @@ class ColumnarDriver2 extends TestDriver {
         } else if (Accesstype.equals("BITMAP")) {
             _pass = test3(1);
         }
-        System.out.println(cnt +" tuples selected");
         try {
             SystemDefs.JavabaseBM.flushAllPages();
             SystemDefs.JavabaseDB.closeDB();
@@ -90,247 +87,131 @@ class ColumnarDriver2 extends TestDriver {
 
     }
 
-    protected boolean test3(int id) {
-        IndexType it;
-        String relName = Colfilename;
-        StringBuilder sb = new StringBuilder();
-        //BM.ColumnarFileName.0.value
-        //BT.ColumnarFileName.0.value
+    protected boolean test3(int id){
+    	/*
+    	indexName
+    	//BM.ColumnarFileName.0.value
+    	//BT.ColumnarFileName.0
+    	*/
         Columnarfile cf;
-        try {
-            cf = new Columnarfile(Colfilename);
-
+        try{
+            cf=new Columnarfile(Colfilename);
+            String indName="";
+            IndexType it;
+            StringBuilder sb = new StringBuilder();
             String[] temp=Projection.split(",");
             String[] expression1=expression.split(" ");
             expression1[0]=expression1[0].replace("{","");
             expression1[2]=expression1[2].replace("}", "");
             int columnNo=cf.getAttributePosition(expression1[0]);
-            String indName = "";
-            if(id==0){
-                sb.append("BT.");
-                sb.append(Colfilename);
-                sb.append(".");
-                sb.append(String.valueOf(columnNo));
-                indName = sb.toString();
-                it = new IndexType(1);
+            AttrType indexAttrType = cf.getAttrtypeforcolumn(columnNo);
+            short[] targetedCols = new short[temp.length];
+            boolean indexOnly;
+            if (temp.length == 1) {
+                if (temp[0].equals(expression1[0]))
+                    indexOnly = true;
+                else
+                    indexOnly = false;
+            }
+            else {
+                indexOnly = false;
+            }
+            int index = 0;
+            for (String i : temp) {
+                targetedCols[index++] = (short) cf.getAttributePosition(i);
+            }
+            CondExpr[] expr;
+            if(expression1.length<2){
+                expr=new CondExpr[1];
+                expr[0]=null;
             }
             else{
-                sb.append("BM.");
-                sb.append(Colfilename);
-                sb.append(".");
-                sb.append(String.valueOf(columnNo));
-                sb.append(".");
-                sb.append(expression1[2]);
-                indName = sb.toString();
-                it = new IndexType(3);
-            }
+                expr = new CondExpr[2];
+                expr[0] = new CondExpr();
+                expr[0].next = null;
+                expr[0].type1 = new AttrType(AttrType.attrSymbol);
+                expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), cf.getAttributePosition(expression1[0]) + 1);
+                expr[1] = null;
 
 
-            if (id == 1) {
-                try {
-                    BitMapFile bf = cf.getBMIndex(indName);
-                    if (bf == null) {
-                        throw new Exception("No BMfile");
-                    } else {
-                        try {
-                            AttrType indexAttrType = cf.getAttrtypeforcolumn(columnNo);
-
-                            short[] targetedCols = new short[temp.length];
-                          //  AttrType[] opattr=new AttrType[temp.length];
-                            boolean indexOnly;
-                            if (temp.length == 1) {
-                                if (temp[0].equals(expression1[0]))
-                                    indexOnly = true;
-                                else
-                                    indexOnly = false;
-                            } else {
-                                indexOnly = false;
-                            }
-                            int index = 0;
-                            for (String i : temp) {
-                                targetedCols[index] = (short) cf.getAttributePosition(i);
-                        //        opattr[index]=new AttrType(cf.getAttrsizeforcolumn(targetedCols[index]));
-                                index++;
-                            }
-                            CondExpr[] expr;
-                            if(expression1.length<2){
-                                expr=new CondExpr[1];
-                                expr[0]=null;
-                            }
-                            else{
-                                expr = new CondExpr[2];
-                                expr[0] = new CondExpr();
-                                expr[0].next = null;
-                                expr[0].type1 = new AttrType(AttrType.attrSymbol);
-                                expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), cf.getAttributePosition(expression1[0]) + 1);
-                                expr[1] = null;
-                                //System.out.println("here");
-
-                                if (expression1[1].equals("=")) {
-                                    expr[0].op = new AttrOperator(AttrOperator.aopEQ);
-                                } else if (expression1[1].equals(">")) {
-                                    expr[0].op = new AttrOperator(AttrOperator.aopGT);
-                                } else if (expression1[1].equals("<")) {
-                                    expr[0].op = new AttrOperator(AttrOperator.aopLT);
-                                } else if (expression1[1].equals("!=")) {
-                                    expr[0].op = new AttrOperator(AttrOperator.aopNE);
-                                } else if (expression1[1].equals("<=")) {
-                                    expr[0].op = new AttrOperator(AttrOperator.aopLE);
-                                } else if (expression1[1].equals(">=")) {
-                                    expr[0].op = new AttrOperator(AttrOperator.aopGE);
-                                }
-                                if (isInteger(expression1[2])) {
-
-                                    expr[0].type2 = new AttrType(AttrType.attrInteger);
-                                    expr[0].operand2.integer = Integer.parseInt(expression1[2]);
-                                } else {
-                                    expr[0].type2 = new AttrType(AttrType.attrString);
-                                    expr[0].operand2.string = expression1[2];
-                                }
-                            }
-                            ColumnIndexScan cis = new ColumnIndexScan(it, relName, indName, indexAttrType, cf.getAttrsizeforcolumn(columnNo), expr, indexOnly, targetedCols);
-                            boolean done = false;
-                            AttrType[] atype2 = new AttrType[temp.length];
-                            for (int i = 0; i < temp.length; i++) {
-                                atype2[i] = cf.getAttrtypeforcolumn(targetedCols[i]);
-                            }
-                            int count = 0;
-                            while (!done) {
-                                Tuple result = cis.get_next();
-                                if (result == null) {
-                                    done = true;
-                                    break;
-                                } else {
-                                    cnt++;
-                                    result.print(atype2);
-                                }
-                            }
-                            cis.close();
-                            cf.close();
-
-                        } catch (Exception e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
-                    }
-                } catch (HFException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (HFBufMgrException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (HFDiskMgrException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                if (expression1[1].equals("=")) {
+                    expr[0].op = new AttrOperator(AttrOperator.aopEQ);
+                } else if (expression1[1].equals(">")) {
+                    expr[0].op = new AttrOperator(AttrOperator.aopGT);
+                } else if (expression1[1].equals("<")) {
+                    expr[0].op = new AttrOperator(AttrOperator.aopLT);
+                } else if (expression1[1].equals("!=")) {
+                    expr[0].op = new AttrOperator(AttrOperator.aopNE);
+                } else if (expression1[1].equals("<=")) {
+                    expr[0].op = new AttrOperator(AttrOperator.aopLE);
+                } else if (expression1[1].equals(">=")) {
+                    expr[0].op = new AttrOperator(AttrOperator.aopGE);
                 }
-            } else {
-                try {
-                    //cf.createAllBitMapIndexForColumn((short)cf.getAttributePosition(expression1[0]));
-                    //BM.printBitMap(cf.getBTIndex(cf.getBMName(cf.getAttributePosition(expression1[0]), expression1[2])).getHeaderPage());
-                    BTreeFile bf = cf.getBTIndex(indName);
-                    if (bf == null) {
-                        throw new Exception("No BTfile");
-                    } else {
-                        try {
-                            AttrType indexAttrType = cf.getAttrtypeforcolumn(columnNo);
-                            short[] targetedCols = new short[temp.length];
-                            boolean indexOnly;
-                            if (temp.length == 1) {
-                                if (temp[0].equals(expression1[0]))
-                                    indexOnly = true;
-                                else
-                                    indexOnly = false;
-                            } else {
-                                indexOnly = false;
-                            }
-                            int index = 0;
-
-                            for (String i : temp) {
-                                targetedCols[index++] = (short) cf.getAttributePosition(i);
-                            }
-                            CondExpr[] expr;
-                            if(expression1.length<2){
-                                expr=new CondExpr[1];
-                                expr[0]=null;
-                            }
-                            else{
-                                expr= new CondExpr[2];
-                                expr[0] = new CondExpr();
-                                expr[0].next = null;
-                                expr[0].type1 = new AttrType(AttrType.attrSymbol);
-                                expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), cf.getAttributePosition(expression1[0]) + 1);
-                                expr[1] = null;
-
-                                if (expression1[1].equals("=")) {
-                                    expr[0].op = new AttrOperator(AttrOperator.aopEQ);
-                                } else if (expression1[1].equals(">")) {
-                                    expr[0].op = new AttrOperator(AttrOperator.aopGT);
-                                } else if (expression1[1].equals("<")) {
-                                    expr[0].op = new AttrOperator(AttrOperator.aopLT);
-                                } else if (expression1[1].equals("!=")) {
-                                    expr[0].op = new AttrOperator(AttrOperator.aopNE);
-                                } else if (expression1[1].equals("<=")) {
-                                    expr[0].op = new AttrOperator(AttrOperator.aopLE);
-                                } else if (expression1[1].equals(">=")) {
-                                    expr[0].op = new AttrOperator(AttrOperator.aopGE);
-                                }
-                                if (isInteger(expression1[2])) {
-
-                                    expr[0].type2 = new AttrType(AttrType.attrInteger);
-                                    expr[0].operand2.integer = Integer.parseInt(expression1[2]);
-                                } else {
-                                    expr[0].type2 = new AttrType(AttrType.attrString);
-                                    expr[0].operand2.string = expression1[2];
-                                }
-                            }
-                            ColumnIndexScan cis = new ColumnIndexScan(it, relName, indName, indexAttrType, cf.getAttrsizeforcolumn(columnNo), expr, indexOnly, targetedCols);
-                            boolean done = false;
-                            AttrType[] atype2 = new AttrType[temp.length];
-                            for (int i = 0; i < temp.length; i++) {
-                                atype2[i] = cf.getAttrtypeforcolumn(targetedCols[i]);
-                            }
-                            while (!done) {
-                                Tuple result = cis.get_next();
-                                if (result == null) {
-                                    done = true;
-                                    break;
-                                } else {
-                                    result.print(atype2);
-                                }
-                            }
-                            cis.close();
-                            cf.close();
-                        } catch (Exception e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
-                    }
-                } catch (HFException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (HFBufMgrException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (HFDiskMgrException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                if (isInteger(expression1[2])) {
+                    expr[0].type2 = new AttrType(AttrType.attrInteger);
+                    expr[0].operand2.integer = Integer.parseInt(expression1[2]);
+                } else {
+                    expr[0].type2 = new AttrType(AttrType.attrString);
+                    expr[0].operand2.string = expression1[2];
                 }
             }
-        } catch (Exception e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
+
+            if(id==1){
+                //Bitmap
+                //build index name
+
+                BitMapFile bf = cf.getBMIndex(indName);
+                if(bf==null){
+                    throw new Exception("Bitmap file does not exists");
+                }
+                else{
+                    sb.append("BM.");
+                    sb.append(Colfilename);
+                    sb.append(".");
+                    sb.append(String.valueOf(columnNo));
+                    sb.append(".");
+                    sb.append(expression1[2]);
+                    indName = sb.toString();
+                    it=new IndexType(3);
+                }
+            }
+            else{
+                //Btree
+
+                BTreeFile bf = cf.getBTIndex(indName);
+                if(bf==null){
+                    throw new Exception("Btree file does not exists");
+                }
+                else{
+                    sb.append("BT.");
+                    sb.append(Colfilename);
+                    sb.append(".");
+                    sb.append(String.valueOf(columnNo));
+                    indName = sb.toString();
+                    it=new IndexType(1);
+                }
+            }
+            ColumnIndexScan cis = new ColumnIndexScan(it, Colfilename, indName, indexAttrType, cf.getAttrsizeforcolumn(columnNo), expr, indexOnly, targetedCols);
+            boolean done = false;
+            AttrType[] atype2 = new AttrType[temp.length];
+            for (int i = 0; i < temp.length; i++) {
+                atype2[i] = cf.getAttrtypeforcolumn(targetedCols[i]);
+            }
+            while (!done) {
+                Tuple result = cis.get_next();
+                if (result == null) {
+                    done = true;
+                    break;
+                } else {
+                    result.print(atype2);
+                }
+            }
         }
-
-
+        catch(Exception e){
+            e.printStackTrace();
+        }
         return true;
     }
-
     protected boolean test4() {
         return true;
     }
@@ -407,8 +288,7 @@ class ColumnarDriver2 extends TestDriver {
                     try {
                         Tuple result=fc.get_next();
                         if(result!=null){
-                            //result.print(opattr);
-                            cnt++;
+                            result.print(opattr);
                         }
                         else{
                             done=true;
@@ -419,8 +299,6 @@ class ColumnarDriver2 extends TestDriver {
                         e.printStackTrace();
                     }
                 }
-                fc.close();
-                cf.close();
             } catch (FileScanException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -429,8 +307,6 @@ class ColumnarDriver2 extends TestDriver {
                 e.printStackTrace();
             } catch (InvalidRelation e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (SortException e) {
                 e.printStackTrace();
             }
 
@@ -517,10 +393,7 @@ class ColumnarDriver2 extends TestDriver {
                         break;
                     }
                     result.print(atype2);
-                    cnt++;
                 }
-                ccs.close();
-                cf.close();
             } catch (Exception e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -570,6 +443,7 @@ public class Select_query extends TestDriver {
 
     public static void main(String args[]) {
         String sampleinput = args[0];
+        //String sampleinput="SELECT columnDB columnarfile A,C {C = 6} 100 BITMAP";
         String[] inputsplit = sampleinput.split(" ");
 
         if(inputsplit[4].equals("{}")){

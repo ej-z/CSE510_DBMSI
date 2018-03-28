@@ -137,7 +137,6 @@ public class ColumnarFileScan extends Iterator {
         if (position < 0)
             return null;
 
-        System.out.println(position);
         Projection.Project(tuple1, _in1, Jtuple, perm_mat, nOutFlds);
         return Jtuple;
     }
