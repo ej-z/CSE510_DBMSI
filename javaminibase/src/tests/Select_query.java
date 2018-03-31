@@ -210,7 +210,7 @@ class ColumnarDriver2 extends TestDriver {
         return true;
     }
 
-    protected boolean test1() {
+    protected boolean test1()  {
         try {
             //System.out.println("here");
             Columnarfile cf=new Columnarfile(Colfilename);
@@ -293,7 +293,13 @@ class ColumnarDriver2 extends TestDriver {
                         e.printStackTrace();
                     }
                 }
-            } catch (FileScanException e) {
+                    fc.close();
+
+
+            } catch (SortException l) {
+                l.printStackTrace();
+            }
+            catch (FileScanException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             } catch (TupleUtilsException e) {
