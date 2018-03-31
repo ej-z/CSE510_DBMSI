@@ -9,7 +9,7 @@ import global.AttrType;
 import global.IndexType;
 import global.SystemDefs;
 import heap.*;
-import index.ColumnIndexScan;
+import index.ColumnarIndexScan;
 import iterator.*;
 
 import java.io.IOException;
@@ -173,7 +173,7 @@ class DeleteDriver extends TestDriver {
                                 expr[0].type2 = new AttrType(AttrType.attrString);
                                 expr[0].operand2.string = expression1[2];
                             }
-                            ColumnIndexScan cis = new ColumnIndexScan(it, relName, indName, indexAttrType, csize, expr, indexOnly, targetedCols);
+                            ColumnarIndexScan cis = new ColumnarIndexScan(it, relName, indName, indexAttrType, csize, expr, indexOnly, targetedCols);
                             boolean done = true;
                             AttrType[] atype2 = new AttrType[temp.length];
                             for (int i = 0; i < temp.length; i++) {
@@ -264,7 +264,7 @@ class DeleteDriver extends TestDriver {
                                 expr[0].type2 = new AttrType(AttrType.attrString);
                                 expr[0].operand2.string = expression1[2];
                             }
-                            ColumnIndexScan cis = new ColumnIndexScan(it, relName, indName, indexAttrType, csize, expr, indexOnly, targetedCols);
+                            ColumnarIndexScan cis = new ColumnarIndexScan(it, relName, indName, indexAttrType, csize, expr, indexOnly, targetedCols);
                             boolean done = true;
                             AttrType[] atype2 = new AttrType[temp.length];
                             for (int i = 0; i < temp.length; i++) {

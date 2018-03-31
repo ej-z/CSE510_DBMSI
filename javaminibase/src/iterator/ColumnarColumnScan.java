@@ -7,7 +7,7 @@ import heap.*;
 
 import java.io.IOException;
 
-public class ColumnarColumnScan extends Iterator {
+public class ColumnarColumnScan extends Iterator{
 
     private Columnarfile columnarfile;
     private Scan scan;

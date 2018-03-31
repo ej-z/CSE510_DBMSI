@@ -4,15 +4,12 @@ import bufmgr.PageNotReadException;
 import columnar.Columnarfile;
 import columnar.TID;
 import columnar.TupleScan;
-import global.AttrType;
-import global.PageId;
-import global.SystemDefs;
-import global.TupleOrder;
+import global.*;
 import heap.*;
 
 import java.io.IOException;
 
-public class ColumnarFileScan extends Iterator {
+public class ColumnarFileScan extends Iterator{
 
     private AttrType[] _in1;
     private short in1_len;

@@ -1,41 +1,22 @@
 package tests;
 
-import btree.BTreeFile;
-import btree.IntegerKey;
-import btree.StringKey;
-import bufmgr.PageNotReadException;
 import columnar.Columnarfile;
 import diskmgr.PCounter;
 import global.*;
 import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
-import heap.Heapfile;
-import heap.InvalidTupleSizeException;
-import heap.InvalidTypeException;
-import heap.Scan;
 import heap.Tuple;
-import index.ColumnIndexScan;
+import index.ColumnarIndexScan;
 import index.IndexException;
-import index.IndexScan;
 import index.UnknownIndexTypeException;
 import iterator.ColumnarFileScan;
 import iterator.CondExpr;
 import iterator.FldSpec;
 import iterator.Iterator;
-import iterator.JoinsException;
-import iterator.LowMemException;
-import iterator.PredEvalException;
 import iterator.RelSpec;
-import iterator.SortException;
-import iterator.TupleUtilsException;
-import iterator.UnknowAttrType;
-import iterator.UnknownKeyTypeException;
 
 import java.io.IOException;
-import java.security.KeyStore.Entry.Attribute;
-import java.util.Arrays;
-import java.util.Random;
 
 
 class QueryingDriver extends TestDriver
@@ -212,11 +193,11 @@ class QueryingDriver extends TestDriver
         	switch (accessType) {
 			case "Bitmap":
 				indtype = new IndexType(IndexType.BitMapIndex);
-				iscan = new ColumnIndexScan(indtype, columnarFileName, inputExpr[0], attval , strsize, expr, false, targetcolnums);
+				iscan = new ColumnarIndexScan(indtype, columnarFileName, inputExpr[0], attval , strsize, expr, false, targetcolnums);
 				break;
 			case "Btree":
 				indtype = new IndexType(IndexType.B_Index);
-				iscan = new ColumnIndexScan(indtype, columnarFileName, inputExpr[0], attval , strsize, expr, false, targetcolnums);
+				iscan = new ColumnarIndexScan(indtype, columnarFileName, inputExpr[0], attval , strsize, expr, false, targetcolnums);
 				break;
 			case "Filescan":
 				iscan = new ColumnarFileScan(columnarFileName, cf.getAttributes(), cf.getAttrSizes(),(short)cf.getAttributes().length, targetcolnums.length, Sprojection, expr, targetcolnums);

@@ -12,7 +12,7 @@ import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
 import heap.Tuple;
-import index.ColumnIndexScan;
+import index.ColumnarIndexScan;
 import iterator.*;
 
 import java.io.IOException;
@@ -159,39 +159,33 @@ class ColumnarDriver2 extends TestDriver {
             if(id==1){
                 //Bitmap
                 //build index name
-
+                sb.append("BM.");
+                sb.append(Colfilename);
+                sb.append(".");
+                sb.append(String.valueOf(columnNo));
+                sb.append(".");
+                sb.append(expression1[2]);
+                indName = sb.toString();
+                it=new IndexType(3);
                 BitMapFile bf = cf.getBMIndex(indName);
                 if(bf==null){
                     throw new Exception("Bitmap file does not exists");
                 }
-                else{
-                    sb.append("BM.");
-                    sb.append(Colfilename);
-                    sb.append(".");
-                    sb.append(String.valueOf(columnNo));
-                    sb.append(".");
-                    sb.append(expression1[2]);
-                    indName = sb.toString();
-                    it=new IndexType(3);
-                }
             }
             else{
                 //Btree
-
+                sb.append("BT.");
+                sb.append(Colfilename);
+                sb.append(".");
+                sb.append(String.valueOf(columnNo));
+                indName = sb.toString();
+                it=new IndexType(1);
                 BTreeFile bf = cf.getBTIndex(indName);
                 if(bf==null){
                     throw new Exception("Btree file does not exists");
                 }
-                else{
-                    sb.append("BT.");
-                    sb.append(Colfilename);
-                    sb.append(".");
-                    sb.append(String.valueOf(columnNo));
-                    indName = sb.toString();
-                    it=new IndexType(1);
-                }
             }
-            ColumnIndexScan cis = new ColumnIndexScan(it, Colfilename, indName, indexAttrType, cf.getAttrsizeforcolumn(columnNo), expr, indexOnly, targetedCols);
+            ColumnarIndexScan cis = new ColumnarIndexScan(it, Colfilename, indName, indexAttrType, cf.getAttrsizeforcolumn(columnNo), expr, indexOnly, targetedCols);
             boolean done = false;
             AttrType[] atype2 = new AttrType[temp.length];
             for (int i = 0; i < temp.length; i++) {

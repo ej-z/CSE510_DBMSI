@@ -1,41 +1,20 @@
 package tests;
 
-import btree.BTreeFile;
-import btree.IntegerKey;
-import btree.StringKey;
-import bufmgr.PageNotReadException;
 import columnar.Columnarfile;
 import diskmgr.PCounter;
 import global.*;
 import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
-import heap.Heapfile;
-import heap.InvalidTupleSizeException;
-import heap.InvalidTypeException;
-import heap.Scan;
 import heap.Tuple;
-import index.ColumnIndexScan;
 import index.IndexException;
-import index.IndexScan;
 import index.UnknownIndexTypeException;
 import iterator.ColumnarFileScan;
 import iterator.CondExpr;
 import iterator.FldSpec;
-import iterator.Iterator;
-import iterator.JoinsException;
-import iterator.LowMemException;
-import iterator.PredEvalException;
 import iterator.RelSpec;
-import iterator.SortException;
-import iterator.TupleUtilsException;
-import iterator.UnknowAttrType;
-import iterator.UnknownKeyTypeException;
 
 import java.io.IOException;
-import java.security.KeyStore.Entry.Attribute;
-import java.util.Arrays;
-import java.util.Random;
 
 
 class DeleteQueryingDriver extends TestDriver

@@ -7,7 +7,7 @@ import diskmgr.PCounter;
 import global.*;
 import heap.Scan;
 import heap.Tuple;
-import index.ColumnIndexScan;
+import index.ColumnarIndexScan;
 import iterator.ColumnarFileScan;
 import iterator.CondExpr;
 import iterator.FldSpec;
@@ -245,7 +245,7 @@ class ColumnarDriver extends TestDriver {
 
             IndexType index = new IndexType(1);
 
-            ColumnIndexScan cis = new ColumnIndexScan(index, "file1", cf.getBTName(0),
+            ColumnarIndexScan cis = new ColumnarIndexScan(index, "file1", cf.getBTName(0),
                     new AttrType(AttrType.attrInteger), (short) 0, expr, true, targetedCols);
 
             t = cis.get_next();
@@ -325,7 +325,7 @@ class ColumnarDriver extends TestDriver {
 
             IndexType indexType = new IndexType(3);
 
-            ColumnIndexScan columnIndexScan = new ColumnIndexScan(indexType, cf.getColumnarFileName(),
+            ColumnarIndexScan columnIndexScan = new ColumnarIndexScan(indexType, cf.getColumnarFileName(),
 
                     cf.getBMName(0, new ValueInt<>(4)), new AttrType(AttrType.attrInteger), (short) 1, null, false, targetedCols);
 
@@ -420,7 +420,7 @@ class ColumnarDriver extends TestDriver {
             AttrType[] attrTypes = new AttrType[1];
             attrTypes[0] = new AttrType(AttrType.attrInteger);
 
-            ColumnIndexScan columnIndexScan = new ColumnIndexScan(indexType,
+            ColumnarIndexScan columnIndexScan = new ColumnarIndexScan(indexType,
                     name,
                     cf.getBMName(0, new ValueInt<>(4)),
                     new AttrType(AttrType.attrInteger),
@@ -681,7 +681,7 @@ class ColumnarDriver extends TestDriver {
             IndexType indexType = new IndexType(3);
 
 
-            ColumnIndexScan columnIndexScan = new ColumnIndexScan(indexType, columnarName,
+            ColumnarIndexScan columnIndexScan = new ColumnarIndexScan(indexType, columnarName,
                     bmName, null, (short) 1, null, false, targetedCols);
 
 
@@ -702,7 +702,7 @@ class ColumnarDriver extends TestDriver {
 
             cf.purgeAllDeletedTuples();
 
-            columnIndexScan = new ColumnIndexScan(indexType, columnarName,
+            columnIndexScan = new ColumnarIndexScan(indexType, columnarName,
                     bmName, null, (short) 1, null, false, targetedCols);
 
 
