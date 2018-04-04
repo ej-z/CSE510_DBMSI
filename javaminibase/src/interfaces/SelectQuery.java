@@ -1,4 +1,4 @@
-package tests;
+package interfaces;
 
 import bitmap.BitMapFile;
 import btree.BTreeFile;
@@ -14,6 +14,7 @@ import heap.HFException;
 import heap.Tuple;
 import index.ColumnarIndexScan;
 import iterator.*;
+import tests.TestDriver;
 
 import java.io.IOException;
 class ColumnarDriver2 extends TestDriver {
@@ -53,6 +54,7 @@ class ColumnarDriver2 extends TestDriver {
     }
 
     public boolean runTests() {
+
 
         SystemDefs sysdef = new SystemDefs(dbpath, 0, bufspace, "Clock");
 
@@ -419,7 +421,8 @@ class ColumnarDriver2 extends TestDriver {
         return "Select Query";
     }
 }
-public class Select_query extends TestDriver {
+
+public class SelectQuery extends TestDriver {
     String DBName;
     String Colfilename;
     String Projection;
@@ -431,7 +434,8 @@ public class Select_query extends TestDriver {
         ColumnarDriver2 cd = new ColumnarDriver2(DBName, Colfilename, Projection, expression, bufspace, Accesstype);
         return cd.runTests();
     }
-    Select_query(String a, String b, String c, String d, int inputsplit, String access){
+
+    SelectQuery(String a, String b, String c, String d, int inputsplit, String access) {
         DBName=a;
         Colfilename = b;
         Projection = c;
@@ -448,12 +452,12 @@ public class Select_query extends TestDriver {
 
         if(inputsplit[4].equals("{}")){
             String temp=inputsplit[4];
-            Select_query sq = new Select_query(inputsplit[1], inputsplit[2], inputsplit[3], temp, Integer.parseInt(inputsplit[5]), "FILESCAN");
+            SelectQuery sq = new SelectQuery(inputsplit[1], inputsplit[2], inputsplit[3], temp, Integer.parseInt(inputsplit[5]), "FILESCAN");
             sq.runTests();
         }
         else{
             String temp = inputsplit[4].replace("{", "") + " " + inputsplit[5] + " " + inputsplit[6].replace("}", "");
-            Select_query sq = new Select_query(inputsplit[1], inputsplit[2], inputsplit[3], temp, Integer.parseInt(inputsplit[7]), inputsplit[8]);
+            SelectQuery sq = new SelectQuery(inputsplit[1], inputsplit[2], inputsplit[3], temp, Integer.parseInt(inputsplit[7]), inputsplit[8]);
             sq.runTests();
         }
     }
