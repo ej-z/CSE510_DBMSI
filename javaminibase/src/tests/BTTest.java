@@ -128,11 +128,12 @@ class BTDriver implements GlobalConst {
 
 
     protected void runAllTests() {
-        PageId pageno = new PageId();
+        //PageId pageno = new PageId();
         int key, n, m, num, choice, lowkeyInt, hikeyInt;
         KeyClass lowkey, hikey;
         KeyDataEntry entry;
-        RID rid;
+        //RID rid;
+        int position = -1;
         choice = 1;
         deleteFashion = 1; //full delete
         try {
@@ -179,18 +180,16 @@ class BTDriver implements GlobalConst {
                         System.out.println("Please input the integer key to insert: ");
                         key = GetStuff.getChoice();
                         if (key < 0) break;
-                        pageno.pid = key;
-                        rid = new RID(pageno, key);
-                        file.insert(new IntegerKey(key), rid);
+                        position = key;
+                        file.insert(new IntegerKey(key), position);
                         break;
                     case 6:
                         keyType = AttrType.attrInteger;
                         System.out.println("Please input the integer key to delete: ");
                         key = GetStuff.getChoice();
                         if (key < 0) break;
-                        pageno.pid = key;
-                        rid = new RID(pageno, key);
-                        file.Delete(new IntegerKey(key), rid);
+                        position = key;
+                        file.Delete(new IntegerKey(key), position);
                         break;
                     case 7:
                         file.close();
@@ -240,9 +239,8 @@ class BTDriver implements GlobalConst {
                         if (hikeyInt < 0 || lowkeyInt < 0)
                             break;
                         for (key = lowkeyInt; key <= hikeyInt; key++) {
-                            pageno.pid = key;
-                            rid = new RID(pageno, key);
-                            file.Delete(new IntegerKey(key), rid);
+                            position = key;
+                            file.Delete(new IntegerKey(key), position);
                         }
                         break;
 
@@ -327,14 +325,12 @@ class BTDriver implements GlobalConst {
             file.traceFilename("TRACE");
 
             KeyClass key;
-            RID rid = new RID();
-            PageId pageno = new PageId();
+            int position = -1;
             for (int i = 0; i < n; i++) {
                 key = new IntegerKey(i);
-                pageno.pid = i;
-                rid = new RID(pageno, i);
+                position = i;
 
-                file.insert(key, rid);
+                file.insert(key, position);
 
             }
 
@@ -355,14 +351,12 @@ class BTDriver implements GlobalConst {
             file.traceFilename("TRACE");
 
             KeyClass key;
-            RID rid = new RID();
-            PageId pageno = new PageId();
+            int position = -1;
             for (int i = 0; i < n; i++) {
                 key = new IntegerKey(n - i);
-                pageno.pid = n - i;
-                rid = new RID(pageno, n - i);
+                position = n - i;
 
-                file.insert(key, rid);
+                file.insert(key, position);
 
             }
 
@@ -404,14 +398,12 @@ class BTDriver implements GlobalConst {
 
 
             KeyClass key;
-            RID rid = new RID();
-            PageId pageno = new PageId();
+            int position = -1;
             for (int i = 0; i < n; i++) {
                 key = new IntegerKey(k[i]);
-                pageno.pid = k[i];
-                rid = new RID(pageno, k[i]);
+                position = k[i];
 
-                file.insert(key, rid);
+                file.insert(key, position);
 
             }
 
@@ -452,14 +444,12 @@ class BTDriver implements GlobalConst {
 
 
             KeyClass key;
-            RID rid = new RID();
-            PageId pageno = new PageId();
+            int position = -1;
             for (int i = 0; i < n; i++) {
                 key = new IntegerKey(k[i]);
-                pageno.pid = k[i];
-                rid = new RID(pageno, k[i]);
+                position = k[i];
 
-                file.insert(key, rid);
+                file.insert(key, position);
 
             }
 
@@ -480,10 +470,9 @@ class BTDriver implements GlobalConst {
 
             for (int i = 0; i < m; i++) {
                 key = new IntegerKey(k[i]);
-                pageno.pid = k[i];
-                rid = new RID(pageno, k[i]);
+                position = k[i];
 
-                if (file.Delete(key, rid) == false) {
+                if (file.Delete(key, position) == false) {
                     System.out.println("*********************************************************");
                     System.out.println("*     Your delete method has bug!!!                     *");
                     System.out.println("*     You insert a record, But you failed to delete it. *");
@@ -531,14 +520,12 @@ class BTDriver implements GlobalConst {
 
 
             KeyClass key;
-            RID rid = new RID();
-            PageId pageno = new PageId();
+            int position = -1;
             for (int i = 0; i < n; i++) {
                 key = new StringKey("**" + k[i]);
-                pageno.pid = k[i];
-                rid = new RID(pageno, k[i]);
+                position = k[i];
 
-                file.insert(key, rid);
+                file.insert(key, position);
 
             }
 
@@ -559,10 +546,9 @@ class BTDriver implements GlobalConst {
 
             for (int i = 0; i < m; i++) {
                 key = new StringKey("**" + k[i]);
-                pageno.pid = k[i];
-                rid = new RID(pageno, k[i]);
+                position = k[i];
 
-                if (file.Delete(key, rid) == false) {
+                if (file.Delete(key, position) == false) {
                     System.out.println("*********************************************************");
                     System.out.println("*     Your delete method has bug!!!                     *");
                     System.out.println("*     You insert a record, But you failed to delete it. *");

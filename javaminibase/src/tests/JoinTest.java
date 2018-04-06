@@ -857,7 +857,7 @@ class JoinsDriver implements GlobalConst {
             }
 
             try {
-                btf.insert(new IntegerKey(key), rid);
+                btf.insert(new IntegerKey(key),f.positionOfRecord(rid));
             } catch (Exception e) {
                 status = FAIL;
                 e.printStackTrace();

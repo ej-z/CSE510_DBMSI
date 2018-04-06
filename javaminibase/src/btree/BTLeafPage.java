@@ -83,19 +83,19 @@ public class BTLeafPage extends BTSortedPage {
      * Parameters:
      *
      * @param key     - the key value of the data record. Input parameter.
-     * @param dataRid - the rid of the data record. This is
+     * @param position - the position of the data record. This is
      *                stored on the leaf page along with the
      *                corresponding key value. Input parameter.
      * @return - the rid of the inserted leaf record data entry,
      * i.e., the <key, dataRid> pair.
      * @throws LeafInsertRecException error when insert
      */
-    public RID insertRecord(KeyClass key, RID dataRid)
+    public RID insertRecord(KeyClass key, int position)
             throws LeafInsertRecException {
         KeyDataEntry entry;
 
         try {
-            entry = new KeyDataEntry(key, dataRid);
+            entry = new KeyDataEntry(key, position);
 
             return insertRecord(entry);
         } catch (Exception e) {

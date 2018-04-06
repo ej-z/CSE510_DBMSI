@@ -221,7 +221,7 @@ class IndexDriver extends TestDriver
             }
 
             try {
-                btf.insert(new StringKey(key), rid);
+                btf.insert(new StringKey(key), f.positionOfRecord(rid));
             } catch (Exception e) {
                 status = FAIL;
                 e.printStackTrace();
@@ -658,7 +658,7 @@ class IndexDriver extends TestDriver
             }
 
             try {
-                btf.insert(new IntegerKey(key), rid);
+                btf.insert(new IntegerKey(key), f.positionOfRecord(rid));
             } catch (Exception e) {
                 status = FAIL;
                 e.printStackTrace();

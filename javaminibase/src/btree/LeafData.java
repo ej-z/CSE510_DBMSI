@@ -7,21 +7,20 @@ import global.RID;
  * It defines the data "rid" for leaf node in B++ tree.
  */
 public class LeafData extends DataClass {
-    private RID myRid;
+    private int myPosition;
 
     /**
      * Class constructor
      *
      * @param rid the data rid
      */
-    LeafData(RID rid) {
-        myRid = new RID(rid.pageNo, rid.slotNo);
+    LeafData(int position) {
+        myPosition = position;
     }
 
     public String toString() {
         String s;
-        s = "[ " + (new Integer(myRid.pageNo.pid)).toString() + " "
-                + (new Integer(myRid.slotNo)).toString() + " ]";
+        s = "[ " + Integer.toString(myPosition) + " ]";
         return s;
     }
 
@@ -32,8 +31,8 @@ public class LeafData extends DataClass {
      *
      * @return the reference of the copy
      */
-    public RID getData() {
-        return new RID(myRid.pageNo, myRid.slotNo);
+    public int getData() {
+        return myPosition;
     }
 
     ;
@@ -41,8 +40,8 @@ public class LeafData extends DataClass {
     /**
      * set the rid
      */
-    public void setData(RID rid) {
-        myRid = new RID(rid.pageNo, rid.slotNo);
+    public void setData(int position) {
+        myPosition = position;
     }
 
     ;

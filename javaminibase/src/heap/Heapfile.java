@@ -768,6 +768,9 @@ public class Heapfile implements Filetype, GlobalConst {
         return true;
     }
 
+    public Tuple getRecord(int position){
+        return null;
+    }
 
     /**
      * Read record from file, returning pointer and length.

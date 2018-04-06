@@ -345,7 +345,7 @@ public class BTreeFile extends IndexFile
      * @throws LeafDeleteException     error when delete in leaf page
      * @throws InsertException         error when insert in index page
      */
-    public void insert(KeyClass key, RID rid)
+    public void insert(KeyClass key, int position)
             throws KeyTooLongException,
             KeyNotMatchException,
             LeafInsertRecException,
@@ -389,8 +389,8 @@ public class BTreeFile extends IndexFile
 
 
         if (trace != null) {
-            trace.writeBytes("INSERT " + rid.pageNo + " "
-                    + rid.slotNo + " " + key + lineSep);
+            trace.writeBytes("INSERT " + position + " "
+                    + key + lineSep);
             trace.writeBytes("DO" + lineSep);
             trace.flush();
         }
@@ -418,7 +418,7 @@ public class BTreeFile extends IndexFile
             // ASSERTIONS:
             // - newRootPage, newRootPageId valid and pinned
 
-            newRootPage.insertRecord(key, rid);
+            newRootPage.insertRecord(key, position);
 
             if (trace != null) {
                 trace.writeBytes("PUTIN node " + newRootPageId + lineSep);
@@ -449,7 +449,7 @@ public class BTreeFile extends IndexFile
         }
 
 
-        newRootEntry = _insert(key, rid, headerPage.get_rootId());
+        newRootEntry = _insert(key, position, headerPage.get_rootId());
 
         // TWO CASES:
         // - newRootEntry != null: a leaf split propagated up to the root
@@ -508,7 +508,7 @@ public class BTreeFile extends IndexFile
     }
 
 
-    private KeyDataEntry _insert(KeyClass key, RID rid,
+    private KeyDataEntry _insert(KeyClass key, int position,
                                  PageId currentPageId)
             throws PinPageException,
             IOException,
@@ -560,7 +560,7 @@ public class BTreeFile extends IndexFile
             // now unpin the page, recurse and then pin it again
             unpinPage(currentIndexPageId);
 
-            upEntry = _insert(key, rid, nextPageId);
+            upEntry = _insert(key, position, nextPageId);
 
             // two cases:
             // - upEntry == null: one level lower no split has occurred:
@@ -748,7 +748,7 @@ public class BTreeFile extends IndexFile
                     BT.getKeyDataLength(key, NodeType.LEAF)) {
                 // no split has occurred
 
-                currentLeafPage.insertRecord(key, rid);
+                currentLeafPage.insertRecord(key, position);
 
                 unpinPage(currentLeafPageId, true /* DIRTY */);
 
@@ -856,7 +856,7 @@ public class BTreeFile extends IndexFile
 
             if (BT.keyCompare(key, undoEntry.key) >= 0) {
                 // the new data entry belongs on the new Leaf page
-                newLeafPage.insertRecord(key, rid);
+                newLeafPage.insertRecord(key, position);
 
 
                 if (trace != null) {
@@ -866,7 +866,7 @@ public class BTreeFile extends IndexFile
 
 
             } else {
-                currentLeafPage.insertRecord(key, rid);
+                currentLeafPage.insertRecord(key, position);
             }
 
             unpinPage(currentLeafPageId, true /* dirty */);
@@ -899,8 +899,8 @@ public class BTreeFile extends IndexFile
      * delete leaf entry  given its <key, rid> pair.
      * `rid' is IN the data entry; it is not the id of the data entry)
      *
-     * @param key the key in pair <key, rid>. Input Parameter.
-     * @param rid the rid in pair <key, rid>. Input Parameter.
+     * @param key the key in pair <key, position>. Input Parameter.
+     * @param position the position in pair <key, position>. Input Parameter.
      * @return true if deleted. false if no such record.
      * @throws DeleteFashionException    neither full delete nor naive delete
      * @throws LeafRedistributeException redistribution error in leaf pages
@@ -920,7 +920,7 @@ public class BTreeFile extends IndexFile
      * @throws IndexSearchException      error in search in index pages
      * @throws IOException               error from the lower layer
      */
-    public boolean Delete(KeyClass key, RID rid)
+    public boolean Delete(KeyClass key, int position)
             throws DeleteFashionException,
             LeafRedistributeException,
             RedistributeException,
@@ -939,9 +939,9 @@ public class BTreeFile extends IndexFile
             IndexSearchException,
             IOException {
         if (headerPage.get_deleteFashion() == DeleteFashion.FULL_DELETE)
-            return FullDelete(key, rid);
+            return FullDelete(key, position);
         else if (headerPage.get_deleteFashion() == DeleteFashion.NAIVE_DELETE)
-            return NaiveDelete(key, rid);
+            return NaiveDelete(key, position);
         else
             throw new DeleteFashionException(null, "");
     }
@@ -1099,7 +1099,7 @@ public class BTreeFile extends IndexFile
      * BTLeafPage::delUserRid.
      */
 
-    private boolean NaiveDelete(KeyClass key, RID rid)
+    private boolean NaiveDelete(KeyClass key, int position)
             throws LeafDeleteException,
             KeyNotMatchException,
             PinPageException,
@@ -1118,7 +1118,7 @@ public class BTreeFile extends IndexFile
         KeyDataEntry entry;
 
         if (trace != null) {
-            trace.writeBytes("DELETE " + rid.pageNo + " " + rid.slotNo + " "
+            trace.writeBytes("DELETE " + position + " "
                     + key + lineSep);
             trace.writeBytes("DO" + lineSep);
             trace.writeBytes("SEARCH" + lineSep);
@@ -1148,7 +1148,7 @@ public class BTreeFile extends IndexFile
             if (BT.keyCompare(key, entry.key) > 0)
                 break;
 
-            if (leafPage.delEntry(new KeyDataEntry(key, rid)) == true) {
+            if (leafPage.delEntry(new KeyDataEntry(key, position)) == true) {
 
                 // successfully found <key, rid> on this page and deleted it.
                 // unpin dirty page and return OK.
@@ -1201,7 +1201,7 @@ public class BTreeFile extends IndexFile
      *@return false if no such record; true if succees
      */
 
-    private boolean FullDelete(KeyClass key, RID rid)
+    private boolean FullDelete(KeyClass key, int position)
             throws IndexInsertRecException,
             RedistributeException,
             IndexSearchException,
@@ -1223,7 +1223,7 @@ public class BTreeFile extends IndexFile
         try {
 
             if (trace != null) {
-                trace.writeBytes("DELETE " + rid.pageNo + " " + rid.slotNo
+                trace.writeBytes("DELETE " + position
                         + " " + key + lineSep);
                 trace.writeBytes("DO" + lineSep);
                 trace.writeBytes("SEARCH" + lineSep);
@@ -1231,7 +1231,7 @@ public class BTreeFile extends IndexFile
             }
 
 
-            _Delete(key, rid, headerPage.get_rootId(), null);
+            _Delete(key, position, headerPage.get_rootId(), null);
 
 
             if (trace != null) {
@@ -1248,7 +1248,7 @@ public class BTreeFile extends IndexFile
     }
 
     private KeyClass _Delete(KeyClass key,
-                             RID rid,
+                             int position,
                              PageId currentPageId,
                              PageId parentPageId)
             throws IndexInsertRecException,
@@ -1299,7 +1299,7 @@ public class BTreeFile extends IndexFile
                 // WriteUpdateLog is done in the btleafpage level - to log the
                 // deletion of the rid.
 
-                if (leafPage.delEntry(new KeyDataEntry(key, rid))) {
+                if (leafPage.delEntry(new KeyDataEntry(key, position))) {
                     // successfully found <key, rid> on this page and deleted it.
 
 
@@ -1480,7 +1480,7 @@ public class BTreeFile extends IndexFile
             // now unpin the page, recurse and then pin it again
             unpinPage(currentPageId);
 
-            KeyClass oldChildKey = _Delete(key, rid, childPageId, currentPageId);
+            KeyClass oldChildKey = _Delete(key, position, childPageId, currentPageId);
 
             // two cases:
             // - oldChildKey == null: one level lower no merge has occurred:

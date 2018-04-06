@@ -249,7 +249,8 @@ public class Columnarfile {
             String btIndexname = getBTName(i);
             String bmIndexname = getBMName(i, ValueFactory.getValueClass(data, atype[i], asize[i]));
             if (BTMap != null && BTMap.containsKey(btIndexname)) {
-                getBTIndex(btIndexname).insert(KeyFactory.getKeyClass(data, atype[i], asize[i]), rids[i]);
+                position = getColumn(i).positionOfRecord(rids[i]);
+                getBTIndex(btIndexname).insert(KeyFactory.getKeyClass(data, atype[i], asize[i]), position);
             }
             if (BMMap != null && BMMap.containsKey(bmIndexname)) {
                 position = getColumn(i).positionOfRecord(rids[i]);
@@ -430,7 +431,8 @@ public class Columnarfile {
             if (tuple == null) {
                 break;
             }
-            bTreeFile.insert(KeyFactory.getKeyClass(tuple.getTupleByteArray(), atype[columnNo], asize[columnNo]), rid);
+            int position = getColumn(columnNo).positionOfRecord(rid);
+            bTreeFile.insert(KeyFactory.getKeyClass(tuple.getTupleByteArray(), atype[columnNo], asize[columnNo]), position);
         }
         columnScan.closescan();
         addIndexToColumnar(0, indexName);
@@ -562,8 +564,7 @@ public class Columnarfile {
             f.insertRecord(t.getTupleByteArray());
 
             for (int i = 0; i < numColumns; i++) {
-                RID rid = getColumn(i).recordAtPosition(position);
-                Tuple tuple = getColumn(i).getRecord(rid);
+                Tuple tuple = getColumn(i).getRecord(position);
                 ValueClass valueClass;
                 KeyClass keyClass;
                 valueClass = ValueFactory.getValueClass(tuple.getTupleByteArray(),
@@ -577,7 +578,7 @@ public class Columnarfile {
                 String bitMapFileName = getBMName(i, valueClass);
                 if (BTMap.containsKey(bTreeFileName)) {
                     BTreeFile bTreeFile = getBTIndex(bTreeFileName);
-                    bTreeFile.Delete(keyClass, rid);
+                    bTreeFile.Delete(keyClass, position);
                 }
                 if (BMMap.containsKey(bitMapFileName)) {
                     BitMapFile bitMapFile = getBMIndex(bitMapFileName);

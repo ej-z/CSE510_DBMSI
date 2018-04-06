@@ -161,11 +161,8 @@ public class BT implements GlobalConst {
                 data = new IndexData(Convert.getIntValue(offset + length - 4, from));
             } else if (nodeType == NodeType.LEAF) {
                 n = 8;
-                RID rid = new RID();
-                rid.slotNo = Convert.getIntValue(offset + length - 8, from);
-                rid.pageNo = new PageId();
-                rid.pageNo.pid = Convert.getIntValue(offset + length - 4, from);
-                data = new LeafData(rid);
+                int position = Convert.getIntValue(offset + length - 4, from);
+                data = new LeafData(position);
             } else throw new NodeNotMatchException(null, "node types do not match");
 
             if (keyType == AttrType.attrInteger) {
@@ -206,7 +203,7 @@ public class BT implements GlobalConst {
             if (entry.data instanceof IndexData)
                 n += 4;
             else if (entry.data instanceof LeafData)
-                n += 8;
+                n += 4;
 
             data = new byte[n];
 
@@ -222,10 +219,8 @@ public class BT implements GlobalConst {
                 Convert.setIntValue(((IndexData) entry.data).getData().pid,
                         m, data);
             } else if (entry.data instanceof LeafData) {
-                Convert.setIntValue(((LeafData) entry.data).getData().slotNo,
+                Convert.setIntValue(((LeafData) entry.data).getData(),
                         m, data);
-                Convert.setIntValue(((LeafData) entry.data).getData().pageNo.pid,
-                        m + 4, data);
 
             } else throw new NodeNotMatchException(null, "node types do not match");
             return data;

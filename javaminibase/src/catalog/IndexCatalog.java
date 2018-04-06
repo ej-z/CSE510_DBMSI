@@ -411,6 +411,7 @@ public class IndexCatalog extends Heapfile
             Catalogindexnotfound,
             IndexCatalogException,
             java.lang.Exception {
+        int position = -1;
         RID rid = null;
         IndexDesc indexRec = null;
         AttrDesc attrRec = null;
@@ -583,7 +584,8 @@ public class IndexCatalog extends Heapfile
 
             if (accessType.indexType == IndexType.B_Index) {
                 try {
-                    btree.insert(key, rid);
+                    position = datafile.positionOfRecord(rid);
+                    btree.insert(key, position);
                 } catch (Exception e) {
                     throw new IndexCatalogException(e, "insert failed");
                 }

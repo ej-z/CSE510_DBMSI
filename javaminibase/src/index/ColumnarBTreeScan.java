@@ -181,8 +181,7 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
         }
 
         try {
-            rid = ((LeafData) nextentry.data).getData();
-            int position = columnFile.positionOfRecord(rid);
+            int position = ((LeafData) nextentry.data).getData();
             return position;
         } catch (Exception e) {
             throw new IndexException(e, "IndexScan.java: getRecord failed");

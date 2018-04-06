@@ -55,7 +55,7 @@ public class Utility implements Catalogglobal {
             Catalogbadtype,
             Exception {
         RelDesc relRec = null;
-        RID rid = null;
+        int position = -1;
         int status;
         AttrType attrType = new AttrType(AttrType.attrInteger);
         int attrPos = 0;
@@ -233,7 +233,7 @@ public class Utility implements Catalogglobal {
                     btree = new BTreeFile(indexName);
                     if (btree == null)
                         throw new Catalognomem(null, "Catalog: No Enough Memory!");
-                    btree.insert(key, rid);
+                    btree.insert(key, position);
                 } catch (Exception e1) {
                     throw e1;
                 }
