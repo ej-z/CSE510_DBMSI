@@ -1,5 +1,5 @@
 package tests;
-
+/*
 import bitmap.BitMapFile;
 import btree.BTreeFile;
 import columnar.Columnarfile;
@@ -88,11 +88,11 @@ class ColumnarDriver2 extends TestDriver {
     }
 
     protected boolean test3(int id){
-    	/*
-    	indexName
+
+    	//indexName
     	//BM.ColumnarFileName.0.value
     	//BT.ColumnarFileName.0
-    	*/
+    	
         Columnarfile cf;
         try{
             cf=new Columnarfile(Colfilename);
@@ -459,5 +459,5 @@ public class Select_query extends TestDriver {
     }
 
 }
-
+*/
 

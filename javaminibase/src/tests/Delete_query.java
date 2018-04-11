@@ -1,5 +1,5 @@
 package tests;
-
+/*
 import bitmap.BitMapFile;
 import btree.BTreeFile;
 import columnar.Columnarfile;
@@ -558,4 +558,4 @@ public class Delete_query extends TestDriver {
         sq.runTests();
     }
 
-}
+}*/

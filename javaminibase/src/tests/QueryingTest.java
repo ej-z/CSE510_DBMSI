@@ -1,5 +1,5 @@
 package tests;
-
+/*
 import columnar.Columnarfile;
 import diskmgr.PCounter;
 import global.*;
@@ -311,4 +311,4 @@ public class QueryingTest {
         }
     }
 }
-
+*/

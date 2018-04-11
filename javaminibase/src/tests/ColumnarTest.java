@@ -245,8 +245,8 @@ class ColumnarDriver extends TestDriver {
 
             IndexType index = new IndexType(1);
 
-            ColumnarIndexScan cis = new ColumnarIndexScan(index, "file1", cf.getBTName(0),
-                    new AttrType(AttrType.attrInteger), (short) 0, expr, true, targetedCols);
+            ColumnarIndexScan cis = new ColumnarIndexScan(index, "file1", 0,
+                    new AttrType(AttrType.attrInteger), (short) 0, expr, null, true, targetedCols);
 
             t = cis.get_next();
             while (t != null){
@@ -325,9 +325,20 @@ class ColumnarDriver extends TestDriver {
 
             IndexType indexType = new IndexType(3);
 
+            CondExpr[] expr = new CondExpr[2];
+            expr[0] = new CondExpr();
+            expr[0].op = new AttrOperator(AttrOperator.aopGT);
+            expr[0].next = null;
+            expr[0].type1 = new AttrType(AttrType.attrSymbol);
+            expr[0].type2 = new AttrType(AttrType.attrInteger);
+            expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), 1);
+            expr[0].operand2.integer = 4;
+            expr[1] = new CondExpr();
+            expr[1] = null;
+
             ColumnarIndexScan columnIndexScan = new ColumnarIndexScan(indexType, cf.getColumnarFileName(),
 
-                    cf.getBMName(0, new ValueInt<>(4)), new AttrType(AttrType.attrInteger), (short) 1, null, false, targetedCols);
+                    0, new AttrType(AttrType.attrInteger), (short) 1, expr, null, false, targetedCols);
 
 
             System.out.println("Starting Index Scan");
@@ -392,7 +403,7 @@ class ColumnarDriver extends TestDriver {
                 t.setStrFld(5, "C" + i);
                 cf.insertTuple(t.getTupleByteArray());
             }
-            cf.createBitMapIndex(0,new ValueInt(4));
+            cf.createAllBitMapIndexForColumn(0);
             /*BitMapFile bitMapFile = new BitMapFile("bitmap-file-5", cf, 1, new ValueInt(4));
             TupleScan scan = cf.openTupleScan();
             TID tid = new TID();
@@ -417,14 +428,26 @@ class ColumnarDriver extends TestDriver {
 
             IndexType indexType = new IndexType(3);
 
+            CondExpr[] expr = new CondExpr[2];
+            expr[0] = new CondExpr();
+            expr[0].op = new AttrOperator(AttrOperator.aopGT);
+            expr[0].next = null;
+            expr[0].type1 = new AttrType(AttrType.attrSymbol);
+            expr[0].type2 = new AttrType(AttrType.attrInteger);
+            expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), 1);
+            expr[0].operand2.integer = 4;
+            expr[1] = new CondExpr();
+            expr[1] = null;
+
             AttrType[] attrTypes = new AttrType[1];
             attrTypes[0] = new AttrType(AttrType.attrInteger);
 
             ColumnarIndexScan columnIndexScan = new ColumnarIndexScan(indexType,
                     name,
-                    cf.getBMName(0, new ValueInt<>(4)),
+                    0,
                     new AttrType(AttrType.attrInteger),
                     (short) 1,
+                    expr,
                     null,
                     true,
                      targetedCols);
@@ -614,7 +637,7 @@ class ColumnarDriver extends TestDriver {
     // then run a columnIndex scan
     // should not yield the delete ones
     protected boolean test8()  {
-
+/*
         System.out.println("####################################");
         System.out.println("#### T E S T 8 ####################");
         System.out.println("####################################");
@@ -727,7 +750,7 @@ class ColumnarDriver extends TestDriver {
         }
 
         System.out.println("Reads: "+  PCounter.rcounter);
-        System.out.println("Writes: "+ PCounter.wcounter);
+        System.out.println("Writes: "+ PCounter.wcounter);*/
         return true;
 
     }
