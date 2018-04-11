@@ -11,7 +11,7 @@ import java.io.IOException;
 
 public class ColumnarBTreeScan extends Iterator implements GlobalConst{
 
-    private final String indName;
+    private String indName;
     private final AttrType indexAttrType;
     private final short str_sizes;
     private Columnarfile columnarfile;
@@ -22,13 +22,14 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
     private BTreeFile btIndFile;
     private IndexFileScan btIndScan;
     private CondExpr[] _selects;
-    private Heapfile columnFile;
+    private CondExpr[] _btreeSelects;
     private boolean index_only;
 
     public ColumnarBTreeScan (String relName,
-                             String indName,
+                             int columnNo,
                              AttrType indexAttrType,
                              short str_sizes,
+                              CondExpr[] btreeSelects,
                              CondExpr[] selects,
                              boolean indexOnly,
                              short[] targetedCols) throws IndexException {
@@ -37,15 +38,16 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
         targetAttrTypes = new AttrType[targetedCols.length];
         targetShortSizes = new short[targetedCols.length];
         givenTargetedCols = targetedCols;
-        this.indName = indName;
+        //this.indName = indName;
         this.indexAttrType = indexAttrType;
         this.str_sizes = str_sizes;
         _selects = selects;
         index_only = indexOnly;
-
+        _btreeSelects = btreeSelects;
         try {
 
             columnarfile = new Columnarfile(relName);
+            indName = columnarfile.getBTName(columnNo);
             setTargetHeapFiles(relName, targetedCols);
             setTargetColumnAttributeTypes(targetedCols);
             setTargetColumnStringSizes(targetedCols);
@@ -61,9 +63,7 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
         }
 
         try {
-            btIndScan = IndexUtils.BTree_scan(selects, btIndFile);
-            int columnNo = Integer.parseInt(indName.substring(columnarfile.getColumnarFileName().length() + 4));
-            columnFile = columnarfile.getColumn(columnNo);
+            btIndScan = IndexUtils.BTree_scan(_btreeSelects, btIndFile);
         } catch (Exception e) {
             throw new IndexException(e, "IndexScan.java: BTreeFile exceptions caught from IndexUtils.BTree_scan().");
         }
@@ -82,77 +82,79 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
     private Tuple get_next_BT() throws IndexException, UnknownKeyTypeException {
         RID rid;
         KeyDataEntry nextentry = new KeyDataEntry();
-        int position = -1;
-        try {
-            position = getNextBTPosition(nextentry);
-        } catch (Exception e) {
-            throw new IndexException(e, "IndexScan.java: BTree error");
-        }
-
-        if (position < 0)
-            return null;
-        Tuple JTuple = null;
-        try {
-            JTuple = new Tuple();
-            JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
-            JTuple = new Tuple(JTuple.size());
-            JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
-        } catch (Exception e){
-            e.printStackTrace();
-            return null;
-        }
-
-        if (index_only) {
-            if (indexAttrType.attrType == AttrType.attrInteger) {
-                try {
-                    JTuple.setIntFld(1, ((IntegerKey) nextentry.key).getKey().intValue());
-                } catch (Exception e) {
-                    throw new IndexException(e, "IndexScan.java: Heapfile error");
-                }
-            } else if (indexAttrType.attrType == AttrType.attrString) {
-                try {
-                    JTuple.setStrFld(1, ((StringKey) nextentry.key).getKey());
-                } catch (Exception e) {
-                    throw new IndexException(e, "IndexScan.java: Heapfile error");
-                }
-            } else {
-                // attrReal not supported for now
-                throw new UnknownKeyTypeException("Only Integer and String keys are supported so far");
+        int position = 0;
+        while (position != -1) {
+            try {
+                position = get_next_position(nextentry);
+            } catch (Exception e) {
+                throw new IndexException(e, "IndexScan.java: BTree error");
             }
-            return JTuple;
-        }
 
-        try {
-            for (int i = 0; i < targetHeapFiles.length; i++) {
-                RID r = targetHeapFiles[i].recordAtPosition(position);
-                Tuple record = targetHeapFiles[i].getRecord(r);
-                switch (targetAttrTypes[i].attrType) {
-                    case AttrType.attrInteger:
-                        // Assumed that col heap page will have only one entry
-                        JTuple.setIntFld(i + 1,
-                                Convert.getIntValue(0, record.getTupleByteArray()));
-                        break;
-                    case AttrType.attrString:
-                        JTuple.setStrFld(i + 1,
-                                Convert.getStrValue(0, record.getTupleByteArray(),targetShortSizes[i]+2));
-                        break;
-                    default:
-                        throw new Exception("Attribute indexAttrType not supported");
-                }
+            if (position < 0)
+                return null;
+            Tuple JTuple = null;
+            try {
+                JTuple = new Tuple();
+                JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+                JTuple = new Tuple(JTuple.size());
+                JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
             }
-            return JTuple;
-        } catch (Exception e) {
-            throw new IndexException(e, "IndexScan.java: getRecord failed");
-        }
 
-        //return null;
+            if (index_only) {
+                if (indexAttrType.attrType == AttrType.attrInteger) {
+                    try {
+                        JTuple.setIntFld(1, ((IntegerKey) nextentry.key).getKey().intValue());
+                    } catch (Exception e) {
+                        throw new IndexException(e, "IndexScan.java: Heapfile error");
+                    }
+                } else if (indexAttrType.attrType == AttrType.attrString) {
+                    try {
+                        JTuple.setStrFld(1, ((StringKey) nextentry.key).getKey());
+                    } catch (Exception e) {
+                        throw new IndexException(e, "IndexScan.java: Heapfile error");
+                    }
+                } else {
+                    // attrReal not supported for now
+                    throw new UnknownKeyTypeException("Only Integer and String keys are supported so far");
+                }
+                return JTuple;
+            }
+
+            try {
+                for (int i = 0; i < targetHeapFiles.length; i++) {
+                    RID r = targetHeapFiles[i].recordAtPosition(position);
+                    Tuple record = targetHeapFiles[i].getRecord(r);
+                    switch (targetAttrTypes[i].attrType) {
+                        case AttrType.attrInteger:
+                            // Assumed that col heap page will have only one entry
+                            JTuple.setIntFld(i + 1,
+                                    Convert.getIntValue(0, record.getTupleByteArray()));
+                            break;
+                        case AttrType.attrString:
+                            JTuple.setStrFld(i + 1,
+                                    Convert.getStrValue(0, record.getTupleByteArray(), targetShortSizes[i] + 2));
+                            break;
+                        default:
+                            throw new Exception("Attribute indexAttrType not supported");
+                    }
+                }
+                if(PredEval.Eval(_selects,JTuple,null, targetAttrTypes,null))
+                    return JTuple;
+            } catch (Exception e) {
+                throw new IndexException(e, "IndexScan.java: getRecord failed");
+            }
+        }
+        return null;
     }
 
     private boolean delete_next_BT() throws IndexException, UnknownKeyTypeException {
         KeyDataEntry nextentry = new KeyDataEntry();
         int position = -1;
         try {
-            position = getNextBTPosition(nextentry);
+            position = get_next_position(nextentry);
         } catch (Exception e) {
             throw new IndexException(e, "IndexScan.java: BTree error");
         }
@@ -163,8 +165,7 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
         return columnarfile.markTupleDeleted(position);
     }
 
-    private int getNextBTPosition(KeyDataEntry key) throws IndexException, UnknownKeyTypeException {
-        RID rid;
+    private int get_next_position(KeyDataEntry key) throws IndexException, UnknownKeyTypeException {
         KeyDataEntry nextentry;
         try {
             nextentry = btIndScan.get_next();
@@ -179,6 +180,25 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
             key.key = nextentry.key;
             return -1;
         }
+
+        try {
+            int position = ((LeafData) nextentry.data).getData();
+            return position;
+        } catch (Exception e) {
+            throw new IndexException(e, "IndexScan.java: getRecord failed");
+        }
+    }
+
+    private int get_next_position() throws IndexException, UnknownKeyTypeException {
+        KeyDataEntry nextentry;
+        try {
+            nextentry = btIndScan.get_next();
+        } catch (Exception e) {
+            throw new IndexException(e, "IndexScan.java: BTree error");
+        }
+
+        if (nextentry == null)
+            return -1;
 
         try {
             int position = ((LeafData) nextentry.data).getData();

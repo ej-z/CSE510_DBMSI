@@ -386,6 +386,15 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /**
+     *
+     * @return scan object
+     * @throws Exception
+     */
+    public BitmapFileScan new_scan() throws Exception {
+        return new BitmapFileScan(this);
+    }
+
     /***
      * Unpin pagefrom buffer
      * @param pageno

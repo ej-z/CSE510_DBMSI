@@ -29,9 +29,10 @@ public class ColumnarIndexScan extends Iterator{
 
     public ColumnarIndexScan(IndexType index,
                              String relName,
-                             String indName,
+                             int columnNo,
                              AttrType indexAttrType,
                              short str_sizes,
+                             CondExpr[] index_selects,
                              CondExpr[] selects,
                              boolean indexOnly,
                              short[] targetedCols) throws IndexException, UnknownIndexTypeException {
@@ -41,10 +42,10 @@ public class ColumnarIndexScan extends Iterator{
         _index = index;
         switch (_index.indexType) {
             case IndexType.B_Index:
-                scan = new ColumnarBTreeScan(relName, indName, indexAttrType, str_sizes, selects, indexOnly, targetedCols);
+                scan = new ColumnarBTreeScan(relName, columnNo, indexAttrType, str_sizes, index_selects, selects, indexOnly, targetedCols);
                 break;
             case IndexType.BitMapIndex:
-                scan = new ColumnarBitmapScan(relName, indName, indexAttrType, str_sizes, selects, indexOnly, targetedCols);
+                scan = new ColumnarBitmapScan(relName, columnNo, indexAttrType, str_sizes, index_selects, selects, indexOnly, targetedCols);
                 break;
             case IndexType.None:
             default:

@@ -7,9 +7,7 @@ import heap.*;
 import iterator.*;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static tests.TestDriver.FAIL;
 import static tests.TestDriver.OK;
@@ -884,6 +882,17 @@ public class Columnarfile {
      */
     public String getBMName(int columnNo, ValueClass value) {
         return "BM" + "." + fname + "." + columnNo + "." + value.toString();
+    }
+
+    public String[] getAvailableBM(int columnNo) {
+        List<String> bmName = new ArrayList<>();
+        String prefix = "BM" + "." + fname + "." + columnNo + ".";
+        for(String s : BMMap.keySet()){
+            if(s.substring(0,prefix.length()).equals(prefix)){
+                bmName.add(s);
+            }
+        }
+        return  bmName.toArray(new String[bmName.size()]);
     }
 
     public String getDeletedFileName() {

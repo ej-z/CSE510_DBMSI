@@ -1,3 +1,4 @@
+import tests.BTTest;
 import tests.ColumnarTest;
 
 public class Main {
@@ -10,6 +11,6 @@ public class Main {
         //JoinTest.runTests();
         //SortTest.runTests();
         //SM_JoinTest.runTests();
-        ColumnarTest.runTests();
+        //ColumnarTest.runTests();
     }
 }
