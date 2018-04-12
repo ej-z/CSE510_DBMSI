@@ -11,6 +11,6 @@ public class Main {
         //JoinTest.runTests();
         //SortTest.runTests();
         //SM_JoinTest.runTests();
-        //ColumnarTest.runTests();
+        ColumnarTest.runTests();
     }
 }

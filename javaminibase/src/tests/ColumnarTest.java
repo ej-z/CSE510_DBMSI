@@ -313,7 +313,7 @@ class ColumnarDriver extends TestDriver {
 
             System.out.println("Reads: "+PCounter.rcounter);
             System.out.println("Writes: "+PCounter.wcounter);
-            cf.createBitMapIndex(0,new ValueInt<>(4));
+            cf.createAllBitMapIndexForColumn(0);
 
             BitMapFile bitMapFile = new BitMapFile(cf.getBMName(0,new ValueInt<>(4)));
             BM.printBitMap(bitMapFile.getHeaderPage());

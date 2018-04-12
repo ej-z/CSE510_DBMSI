@@ -17,15 +17,11 @@ import java.util.List;
 
 public class ColumnarBitmapScan extends Iterator implements GlobalConst{
 
-    //private final String indName;
     private final AttrType indexAttrType;
     private final short str_sizes;
-    private BitMapFile bmIndFile;
     private List<BitmapFileScan> scans;
-    private PageId currentPageId;
     private Columnarfile columnarfile;
     private BitSet bitMaps;
-    private BMPage currentBMPage;
     private int counter;
     private int scanCounter = 0;
     private Heapfile[] targetHeapFiles = null;
@@ -160,13 +156,13 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
             if (scanCounter == 0 || scanCounter > counter) {
                 bitMaps = new BitSet();
                 for(BitmapFileScan s : scans){
-                    if(s == null) {
-                        for(BitmapFileScan ss : scans){
-                            ss.close();
+                    BitSet bs = s.get_next_bitmap();
+                    if(bs == null) {
                             return -1;
-                        }
                     }
-                    bitMaps.or(s.get_next_bitmap());
+                    else {
+                        bitMaps.or(bs);
+                    }
                 }
             }
             while (scanCounter <= counter) {
@@ -188,18 +184,9 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
     public void close() throws IOException, JoinsException, SortException, IndexException, HFBufMgrException {
         if (!closeFlag) {
             closeFlag = true;
-            unpinPage(currentPageId, false);
-        }
-    }
-
-    private Page pinPage(PageId pageno) throws PinPageException {
-        try {
-            Page page = new Page();
-            SystemDefs.JavabaseBM.pinPage(pageno, page, false/*Rdisk*/);
-            return page;
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new PinPageException(e, "");
+            for(BitmapFileScan s : scans){
+                s.close();
+            }
         }
     }
 
@@ -225,22 +212,6 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
             return true;
 
         return false;
-    }
-
-    /**
-     * short cut to access the unpinPage function in bufmgr package.
-     *
-     * @see bufmgr.unpinPage
-     */
-    private void unpinPage(PageId pageno, boolean dirty)
-            throws HFBufMgrException {
-
-        try {
-            SystemDefs.JavabaseBM.unpinPage(pageno, dirty);
-        } catch (Exception e) {
-            throw new HFBufMgrException(e, "Heapfile.java: unpinPage() failed");
-        }
-
     }
 
     /*

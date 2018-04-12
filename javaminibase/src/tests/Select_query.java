@@ -92,7 +92,7 @@ class ColumnarDriver2 extends TestDriver {
     	//indexName
     	//BM.ColumnarFileName.0.value
     	//BT.ColumnarFileName.0
-    	
+
         Columnarfile cf;
         try{
             cf=new Columnarfile(Colfilename);
