@@ -1,4 +1,4 @@
-package tests;
+package interfaces;
 
 import columnar.Columnarfile;
 import diskmgr.PCounter;
@@ -7,6 +7,7 @@ import global.SystemDefs;
 import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
+import tests.TestDriver;
 
 import java.io.IOException;
 
@@ -105,7 +106,7 @@ class IndexTestDriver extends TestDriver {
     }
 }
 
-public class IndexCreateTest {
+public class CreateIndex {
 
     public static String columnDBName;
     public static String columnarFileName;
@@ -121,7 +122,7 @@ public class IndexCreateTest {
     public static void main(String[] argvs) {
 
         try {
-            IndexCreateTest indexTest = new IndexCreateTest();
+            CreateIndex indexTest = new CreateIndex();
 
             columnName = argvs[2];
             columnDBName = argvs[0];
