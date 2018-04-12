@@ -22,7 +22,7 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
     private List<BitmapFileScan> scans;
     private Columnarfile columnarfile;
     private BitSet bitMaps;
-    private int counter;
+    private int counter = 0;
     private int scanCounter = 0;
     private Heapfile[] targetHeapFiles = null;
     private AttrType[] targetAttrTypes = null;
@@ -156,6 +156,7 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
             if (scanCounter == 0 || scanCounter > counter) {
                 bitMaps = new BitSet();
                 for(BitmapFileScan s : scans){
+                    counter = s.counter;
                     BitSet bs = s.get_next_bitmap();
                     if(bs == null) {
                             return -1;
@@ -181,7 +182,7 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
         return -1;
     }
 
-    public void close() throws IOException, JoinsException, SortException, IndexException, HFBufMgrException {
+    public void close() throws Exception {
         if (!closeFlag) {
             closeFlag = true;
             for(BitmapFileScan s : scans){
@@ -200,10 +201,14 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
         _types[0] = columnarfile.getAttrtypeforcolumn(_columnNo);
 
         byte[] data = new byte[6+_sizes[0]];
-
-        String val = s.split(".")[3];
-        Convert.setStrValue(val, 6,data);
-        Tuple jTuple = new Tuple(data,6,data.length);
+        String val = s.split("\\.")[3];
+        if(_types[0].attrType == AttrType.attrInteger) {
+            int t = Integer.parseInt(val);
+            Convert.setIntValue(t,6, data);
+        }else {
+            Convert.setStrValue(val, 6, data);
+        }
+        Tuple jTuple = new Tuple(data,0,data.length);
         _sizes[0] -= 2;
 
         jTuple.setHdr((short)1,_types, _sizes);

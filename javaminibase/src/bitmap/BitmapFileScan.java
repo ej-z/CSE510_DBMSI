@@ -19,7 +19,7 @@ public class BitmapFileScan {
     private PageId currentPageId;
     private BitSet bitMaps;
     private BMPage currentBMPage;
-    private int counter;
+    public int counter;
     private int scanCounter = 0;
 
     public BitmapFileScan(BitMapFile f) throws Exception {
@@ -99,10 +99,11 @@ public class BitmapFileScan {
                     currentBMPage = new BMPage(pinPage(currentPageId));
                     counter = currentBMPage.getCounter();
                     bitMaps = BitSet.valueOf(currentBMPage.getBMpageArray());
-                    return currentBitMap;
                 } else {
                     bitMaps = null;
+                    currentPageId.copyPageId(nextPage);
                 }
+                return currentBitMap;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -110,7 +111,8 @@ public class BitmapFileScan {
         return null;
     }
 
-    public void close() throws IOException, JoinsException, SortException, IndexException, HFBufMgrException {
+    public void close() throws Exception {
+        file.close();
         if(currentPageId != null && currentPageId.pid != INVALID_PAGE)
             unpinPage(currentPageId, false);
     }

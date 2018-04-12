@@ -298,14 +298,15 @@ class ColumnarDriver extends TestDriver {
                 int s = t.size();
                 t = new Tuple(s);
                 t.setHdr((short) 5, types, sizes);
-                if(i%2 == 0) {
-                    t.setIntFld(1, 4);
-                } else {
-                    t.setIntFld(1, 5);
-                }
+                //if(i%2 == 0) {
+                    t.setIntFld(1, i%10);
+                //} else {
+                //    t.setIntFld(1, 5);
+                //}
 
                 t.setIntFld(2, 6);
-                t.setStrFld(3, "A" + i);
+                String asd = i % 5 == 0 ? "C" : i % 3 == 0? "B" : i % 2 == 0? "A" : "D";
+                t.setStrFld(3, asd);
                 t.setStrFld(4, "B" + i);
                 t.setStrFld(5, "C" + i);
                 cf.insertTuple(t.getTupleByteArray());
@@ -321,7 +322,7 @@ class ColumnarDriver extends TestDriver {
             short[] targetedCols = new short[2];
 
             targetedCols[0] = 0;
-            //targetedCols[1] = 2;
+            targetedCols[1] = 2;
 
             IndexType indexType = new IndexType(3);
 
@@ -332,21 +333,43 @@ class ColumnarDriver extends TestDriver {
             expr[0].type1 = new AttrType(AttrType.attrSymbol);
             expr[0].type2 = new AttrType(AttrType.attrInteger);
             expr[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), 1);
-            expr[0].operand2.integer = 4;
+            expr[0].operand2.integer = 7;
             expr[1] = new CondExpr();
             expr[1] = null;
 
+            CondExpr[] selects = new CondExpr[2];
+            selects[0] = new CondExpr();
+            selects[0].op = new AttrOperator(AttrOperator.aopEQ);
+            selects[0].next = new CondExpr();
+            selects[0].type1 = new AttrType(AttrType.attrSymbol);
+            selects[0].type2 = new AttrType(AttrType.attrString);
+            selects[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), 2);
+            selects[0].operand2.string = "A";
+            selects[1] = new CondExpr();
+            selects[1] = null;
+            selects[0].next.op = new AttrOperator(AttrOperator.aopEQ);
+            selects[0].next.next = null;
+            selects[0].next.type1 = new AttrType(AttrType.attrSymbol);
+            selects[0].next.type2 = new AttrType(AttrType.attrString);
+            selects[0].next.operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), 2);
+            selects[0].next.operand2.string = "B";
+
             ColumnarIndexScan columnIndexScan = new ColumnarIndexScan(indexType, cf.getColumnarFileName(),
 
-                    0, new AttrType(AttrType.attrInteger), (short) 1, expr, null, false, targetedCols);
+                    0, new AttrType(AttrType.attrInteger), (short) 1, expr, selects, false, targetedCols);
 
 
+            System.out.println("Select 0,2 where 0 > 7 and (2 = 'A' || 2 = 'B')");
+            System.out.println("0 > 7 is handled at bitmap level");
             System.out.println("Starting Index Scan");
             Tuple tuples = columnIndexScan.get_next();
 
 
             while (tuples != null){
-                System.out.println(tuples.getIntFld(1));
+                System.out.print(tuples.getIntFld(1));
+                System.out.print("  ");
+                System.out.print(tuples.getStrFld(2));
+                System.out.println();
                 //System.out.println(tuples.getStrFld(2));
                 tuples = columnIndexScan.get_next();
             }
@@ -449,7 +472,7 @@ class ColumnarDriver extends TestDriver {
                     (short) 1,
                     expr,
                     null,
-                    true,
+                    false,
                      targetedCols);
 
 
