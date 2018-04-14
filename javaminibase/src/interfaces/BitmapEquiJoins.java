@@ -1,5 +1,6 @@
 package interfaces;
 
+import columnar.ColumnarBitmapEquiJoins;
 import columnar.Columnarfile;
 import diskmgr.PCounter;
 import global.AttrOperator;
@@ -27,7 +28,8 @@ public class BitmapEquiJoins {
         Integer bufferSize = Integer.parseInt(args[7]);
 
         String path = isUnix() ? "/tmp/" : "C:\\Windows\\Temp\\";
-        String dbpath = path + columnDB + ".minibase-db";
+        // TODO: Remove nME
+        String dbpath = path + columnDB + "dixith.minibase-db";
         SystemDefs sysdef = new SystemDefs(dbpath, 0, bufferSize, "Clock");
 
         runInterface(outerColumnarFile, innerColumnarFile, rawOuterConstraint, rawInnerConstraint, rawEquijoinConstraint, targetColumns);
@@ -48,19 +50,44 @@ public class BitmapEquiJoins {
         CondExpr[] equiJoinConstraint = processEquiJoinConditionExpression(rawEquijoinConstraint, inner, outer);
 
         AttrType[] opAttr = new AttrType[targetColumns.length];
-        FldSpec[] projectionList = new FldSpec[targetColumns.length];
-        for (int i = 0; i < targetColumns.length; i++) {
-            String attribute = targetColumns[i].split("\\.")[1];
-            if (targetColumns[i].equals(outerColumnarFile)) {
-                projectionList[i] = new FldSpec(new RelSpec(RelSpec.outer), outer.getAttributePosition(attribute) + 1);
-                opAttr[i] = new AttrType(outer.getAttrtypeforcolumn(outer.getAttributePosition(attribute)).attrType);
-            } else {
-                projectionList[i] = new FldSpec(new RelSpec(RelSpec.innerRel), inner.getAttributePosition(attribute) + 1);
-                opAttr[i] = new AttrType(inner.getAttrtypeforcolumn(inner.getAttributePosition(attribute)).attrType);
-            }
-        }
+        //todO Uncomment this
+//        FldSpec[] projectionList = new FldSpec[targetColumns.length];
+//        for (int i = 0; i < targetColumns.length; i++) {
+//            String attribute = targetColumns[i].split("\\.")[1];
+//            if (targetColumns[i].equals(outerColumnarFile)) {
+//                projectionList[i] = new FldSpec(new RelSpec(RelSpec.outer), outer.getAttributePosition(attribute) + 1);
+//                opAttr[i] = new AttrType(outer.getAttrtypeforcolumn(outer.getAttributePosition(attribute)).attrType);
+//            } else {
+//                projectionList[i] = new FldSpec(new RelSpec(RelSpec.innerRel), inner.getAttributePosition(attribute) + 1);
+//                opAttr[i] = new AttrType(inner.getAttrtypeforcolumn(inner.getAttributePosition(attribute)).attrType);
+//            }
+//        }
 
         // Call the equijoin interface
+        /*
+        *
+        * AttrType[] in1,
+            int len_in1,
+            short[] t1_str_sizes,
+            AttrType[] in2,
+            int len_in2,
+            short[] t2_str_sizes,
+            int amt_of_mem,
+            String leftColumnarFileName,
+            int leftJoinField,
+            String rightColumnarFileName,
+            int rightJoinField,
+            FldSpec[] proj_list,
+            int n_out_flds,
+            CondExpr[] joinExp,
+            CondExpr[] innerExp,
+            CondExpr[] outerExp
+        * */
+
+        ColumnarBitmapEquiJoins columnarBitmapEquiJoins = new ColumnarBitmapEquiJoins(null, -1, null,
+                null, -1, null, -1, outerColumnarFile, -1,
+                innerColumnarFile, -1, null, -1, equiJoinConstraint,
+                innerColumnarConstraint, outerColumnarConstraint);
 
         outer.close();
         inner.close();

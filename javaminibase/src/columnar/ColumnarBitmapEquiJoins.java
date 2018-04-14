@@ -15,12 +15,9 @@ import java.util.stream.Collectors;
 public class ColumnarBitmapEquiJoins  {
     private final Columnarfile leftColumnarFile;
     private final Columnarfile rightColumnarFile;
-    private final HashMap<String, BitMapFile> leftBitMaps;
-    private final HashMap<String, BitMapFile> rightBitMaps;
     // need to change to ValueClass
-    private final Set<ValueInt> uniqueValues;
 
-    ColumnarBitmapEquiJoins(
+    public ColumnarBitmapEquiJoins(
             AttrType[] in1,
             int len_in1,
             short[] t1_str_sizes,
@@ -42,59 +39,27 @@ public class ColumnarBitmapEquiJoins  {
 
         assert innerExp.length == 1;
         assert outerExp.length == 1;
-//
-//        StringBuilder sbInner = new StringBuilder();
-//        sbInner.append("BM.");
-//        sbInner.append(leftColumnarFileName);
-//        sbInner.append(".");
-//        sbInner.append(String.valueOf(leftJoinField));
-//        sbInner.append(".");
-//
-//        if(innerExp[0].op.attrOperator == AttrOperator.aopEQ) {
-//            Operand operand2 = innerExp[0].operand2;
-//            sbInner.append(operand2.integer);
-//        }
-//
-//
-//        bitmapInner = new BitMapFile(sbInner.toString());
-//        innerCurrentBMPage = new BMPage(pinPage(bitmapInner.getHeaderPage().get_rootId()));
-//        innerCounter = innerCurrentBMPage.getCounter();
-//        innerBitMaps = BitSet.valueOf(innerCurrentBMPage.getBMpageArray());
-//
-//
-//        StringBuilder sbOuter = new StringBuilder();
-//        sbOuter.append("BM.");
-//        sbOuter.append(rightColumnarFileName);
-//        sbOuter.append(".");
-//        sbOuter.append(String.valueOf(rightJoinField));
-//        sbOuter.append(".");
-//
-//
-//
-//        if(outerExp[0].op.attrOperator == AttrOperator.aopEQ) {
-//            sbOuter.append(outerExp[0].operand2.integer);
-//        }
-//
-//
-//        bitmapOuter = new BitMapFile(sbOuter.toString());
-//        outerCurrentBMPage = new BMPage(pinPage(bitmapOuter.getHeaderPage().get_rootId()));
-//        outerCounter = outerCurrentBMPage.getCounter();
-//        outerBitMaps = BitSet.valueOf(innerCurrentBMPage.getBMpageArray());
+
         leftColumnarFile = new Columnarfile(leftColumnarFileName);
         rightColumnarFile = new Columnarfile(rightColumnarFileName);
 
-        leftColumnarFile.createAllBitMapIndexForColumn(leftJoinField);
-        rightColumnarFile.createAllBitMapIndexForColumn(rightJoinField);
 
-       leftBitMaps = leftColumnarFile.getAllBitMaps();
-       rightBitMaps = rightColumnarFile.getAllBitMaps();
+//        leftColumnarFile.createAllBitMapIndexForColumn(leftJoinField);
+//        rightColumnarFile.createAllBitMapIndexForColumn(rightJoinField);
+//
+//       leftBitMaps = leftColumnarFile.getAllBitMaps();
+//       rightBitMaps = rightColumnarFile.getAllBitMaps();
 
-       if(leftColumnarFile.getAttrtypeforcolumn(leftJoinField) != rightColumnarFile.getAttrtypeforcolumn(rightJoinField)) {
-           throw new Exception("Join cannot be done only on same field");
-       } else {
+//       if(leftColumnarFile.getAttrtypeforcolumn(leftJoinField) != rightColumnarFile.getAttrtypeforcolumn(rightJoinField)) {
+//           throw new Exception("Join cannot be done only on same field");
+//       } else {
+//
+//           uniqueValues = new HashSet<>();
+//       }
 
-           uniqueValues = new HashSet<>();
-       }
+        List<HashSet> uniSet = getUniqueSetFromJoin(joinExp, leftColumnarFile, rightColumnarFile);
+
+
 
 
     }
@@ -111,14 +76,21 @@ public class ColumnarBitmapEquiJoins  {
             while(currentCondition != null) {
 
                 FldSpec symbol = currentCondition.operand1.symbol;
-                HashMap<String, BitMapFile> allBitMaps = leftColumnarFile.getAllBitMaps();
                 int offset = symbol.offset;
 
-                AttrType attrtypeforRightColumn = leftColumnarFile.getAttrtypeforcolumn(offset);
-                AttrType attrtypeforLeftcolumn = leftColumnarFile.getAttrtypeforcolumn(offset);
+                // move this is to interface we assume that the colums already have indexes
+                leftColumnarFile.createAllBitMapIndexForColumn(offset - 1);
+                HashMap<String, BitMapFile> allBitMaps = leftColumnarFile.getAllBitMaps();
+
+                FldSpec symbol2 = currentCondition.operand2.symbol;
+                int offset2 = symbol2.offset;
+
+                rightColumnarFile.createAllBitMapIndexForColumn(offset2 -1);
+                AttrType attrtypeforLeftcolumn =  leftColumnarFile.getAttrtypeforcolumn(offset -1);
+                AttrType attrtypeforRightColumn = rightColumnarFile.getAttrtypeforcolumn(offset2 -1);
 
 
-                HashSet<String> set1 = extractUniqueValues(offset, allBitMaps);
+                HashSet<String> set1 = extractUniqueValues(offset - 1, allBitMaps);
                 HashSet<Integer> setLeftInt = null, setRightInt = null;
                 if(attrtypeforLeftcolumn.attrType == AttrType.attrInteger) {
                     setLeftInt = set1.stream().map(Integer::parseInt).collect(Collectors.toCollection(HashSet::new));
@@ -128,9 +100,8 @@ public class ColumnarBitmapEquiJoins  {
 
                 HashMap<String, BitMapFile> allRightRelationBitMaps = rightColumnarFile.getAllBitMaps();
 
-                offset = currentCondition.operand2.symbol.offset;
 
-                HashSet<String> set2 = extractUniqueValues(offset, allRightRelationBitMaps);
+                HashSet<String> set2 = extractUniqueValues(offset2 -1, allRightRelationBitMaps);
                 if(attrtypeforRightColumn.attrType == AttrType.attrInteger) {
                      setRightInt = set2.stream().map(Integer::parseInt).collect(Collectors.toCollection(HashSet::new));
                 }
@@ -142,7 +113,6 @@ public class ColumnarBitmapEquiJoins  {
                     set1.retainAll(set2);
                     uniquesList.add(set1);
                 }
-
 
                 currentCondition = currentCondition.next;
             }
@@ -157,12 +127,13 @@ public class ColumnarBitmapEquiJoins  {
                 keySet()
                 .stream()
                 .filter(e -> {
-                    String[] split = e.split(".");
+                    String[] split = e.split("\\.");
                     if (Integer.parseInt(split[2]) == offset) {
                         return true;
                     }
                     return false;
                 })
+                .map(e -> e.split("\\.")[3])
                 .collect(Collectors.toCollection(HashSet::new));
 
         return collect;

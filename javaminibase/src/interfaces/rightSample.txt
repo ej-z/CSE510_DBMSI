@@ -1,0 +1,5 @@
+C:int	D:char(25)
+7	g
+2	c
+1	a
+1	e
