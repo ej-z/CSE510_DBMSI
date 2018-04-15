@@ -3,6 +3,7 @@ package columnar;
 import bitmap.BitMapFile;
 import btree.PinPageException;
 import diskmgr.Page;
+import global.AttrOperator;
 import global.AttrType;
 import global.PageId;
 import global.SystemDefs;
@@ -15,6 +16,11 @@ import java.util.stream.Collectors;
 public class ColumnarBitmapEquiJoins  {
     private final Columnarfile leftColumnarFile;
     private final Columnarfile rightColumnarFile;
+    private int offset1;
+    private int offset2;
+    private List<AttrOperator> equiOperators = new ArrayList<>();
+    // contains two lists with R1 and R2 offsets
+    private List<List<Integer>> offsets = new ArrayList<>();
     // need to change to ValueClass
 
     public ColumnarBitmapEquiJoins(
@@ -57,44 +63,67 @@ public class ColumnarBitmapEquiJoins  {
 //           uniqueValues = new HashSet<>();
 //       }
 
-        List<HashSet> uniSet = getUniqueSetFromJoin(joinExp, leftColumnarFile, rightColumnarFile);
+        offsets.add(new ArrayList<>());
+        offsets.add(new ArrayList<>());
+        List<HashSet<String>> uniSet = getUniqueSetFromJoin(joinExp, leftColumnarFile, rightColumnarFile);
+        List<List<String>> combinations = getSubs(uniSet);
 
 
 
+        for(List<String> combination: combinations) {
+            for (int i = 0; i < combination.size(); i++) {
+                String bmName = leftColumnarFile.getBMName(offsets.get(0).get(i) - 1, new ValueString<>(combination.get(i)));
+                System.out.println(bmName);
+            }
+        }
+
+        System.out.println("**********************");
+        System.out.println("Right bitmaps");
+        System.out.println("**********************");
+        for(List<String> combination: combinations) {
+            for (int i = 0; i < combination.size(); i++) {
+                String bmName = rightColumnarFile.getBMName(offsets.get(1).get(i) - 1, new ValueString<>(combination.get(i)));
+                System.out.println(bmName);
+            }
+        }
 
     }
 
 
-    private List<HashSet> getUniqueSetFromJoin(CondExpr[] joinEquation, Columnarfile leftColumnarFile,
+    private List<HashSet<String>> getUniqueSetFromJoin(CondExpr[] joinEquation, Columnarfile leftColumnarFile,
                                                Columnarfile rightColumnarFile) throws Exception {
 
-        List<HashSet> uniquesList = new ArrayList<>();
+        List<HashSet<String>> uniquesList = new ArrayList<>();
 
         for(int i = 0; i < joinEquation.length; i++) {
 
             CondExpr currentCondition = joinEquation[i];
             while(currentCondition != null) {
+                equiOperators.add(currentCondition.op);
 
                 FldSpec symbol = currentCondition.operand1.symbol;
-                int offset = symbol.offset;
+                offset1 = symbol.offset;
+
+                offsets.get(0).add(offset1);
 
                 // move this is to interface we assume that the colums already have indexes
-                leftColumnarFile.createAllBitMapIndexForColumn(offset - 1);
+                leftColumnarFile.createAllBitMapIndexForColumn(offset1 - 1);
                 HashMap<String, BitMapFile> allBitMaps = leftColumnarFile.getAllBitMaps();
 
                 FldSpec symbol2 = currentCondition.operand2.symbol;
-                int offset2 = symbol2.offset;
+                offset2 = symbol2.offset;
+                offsets.get(1).add(offset2);
 
                 rightColumnarFile.createAllBitMapIndexForColumn(offset2 -1);
-                AttrType attrtypeforLeftcolumn =  leftColumnarFile.getAttrtypeforcolumn(offset -1);
+                AttrType attrtypeforLeftcolumn =  leftColumnarFile.getAttrtypeforcolumn(offset1 -1);
                 AttrType attrtypeforRightColumn = rightColumnarFile.getAttrtypeforcolumn(offset2 -1);
 
 
-                HashSet<String> set1 = extractUniqueValues(offset - 1, allBitMaps);
+                HashSet<String> set1 = extractUniqueValues(offset1 - 1, allBitMaps);
                 HashSet<Integer> setLeftInt = null, setRightInt = null;
-                if(attrtypeforLeftcolumn.attrType == AttrType.attrInteger) {
-                    setLeftInt = set1.stream().map(Integer::parseInt).collect(Collectors.toCollection(HashSet::new));
-                }
+//                if(attrtypeforLeftcolumn.attrType == AttrType.attrInteger) {
+//                    setLeftInt = set1.stream().map(Integer::parseInt).collect(Collectors.toCollection(HashSet::new));
+//                }
 
                 //inner
 
@@ -102,17 +131,17 @@ public class ColumnarBitmapEquiJoins  {
 
 
                 HashSet<String> set2 = extractUniqueValues(offset2 -1, allRightRelationBitMaps);
-                if(attrtypeforRightColumn.attrType == AttrType.attrInteger) {
-                     setRightInt = set2.stream().map(Integer::parseInt).collect(Collectors.toCollection(HashSet::new));
-                }
+//                if(attrtypeforRightColumn.attrType == AttrType.attrInteger) {
+//                     setRightInt = set2.stream().map(Integer::parseInt).collect(Collectors.toCollection(HashSet::new));
+//                }
 
-                if(setLeftInt != null && setRightInt != null) {
-                    setLeftInt.retainAll(setRightInt);
-                    uniquesList.add(setLeftInt);
-                } else {
+//                if(setLeftInt != null && setRightInt != null) {
+//                    setLeftInt.retainAll(setRightInt);
+//                    uniquesList.add(setLeftInt);
+//                } else {
                     set1.retainAll(set2);
                     uniquesList.add(set1);
-                }
+//                }
 
                 currentCondition = currentCondition.next;
             }
@@ -137,6 +166,29 @@ public class ColumnarBitmapEquiJoins  {
                 .collect(Collectors.toCollection(HashSet::new));
 
         return collect;
+    }
+
+
+    public List<List<String>> getSubs(List<HashSet<String>> uniqueSets)  {
+        List<List<String>> res = new ArrayList<>();
+        bt(uniqueSets, 0,res, new ArrayList<>());
+        return res;
+    }
+
+    private void bt(List<HashSet<String>> uniqueSets, int index, List<List<String>> res, List<String> path) {
+
+        if(path.size() == uniqueSets.size()) {
+            ArrayList<String> k = new ArrayList<>(path);
+            res.add(k);
+            return;
+        }
+
+        HashSet<String> uniqueSet = uniqueSets.get(index);
+        for(String entry: uniqueSet) {
+            path.add(entry);
+            bt(uniqueSets, index+1, res, path);
+            path.remove(path.size() - 1);
+        }
     }
 
     //delete this later
