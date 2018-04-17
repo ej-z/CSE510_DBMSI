@@ -56,6 +56,8 @@ public class InterfaceUtils {
     }
 
     public static CondExpr[] processRawConditionExpression(String expression, Columnarfile cf) {
+        // Sample input
+        // String expression = "([columnarTable1.A = 'RandomTextHere'] v [columnarTable1.B > 2]) ^ ([columnarTable1.C = columnarTable1.D])"
         CondExpr[] condExprs;
 
         if (expression.length() == 0) {
