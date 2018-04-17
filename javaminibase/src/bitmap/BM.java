@@ -7,6 +7,7 @@ import global.GlobalConst;
 import global.PageId;
 import global.SystemDefs;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
@@ -47,7 +48,7 @@ public class BM implements GlobalConst {
                 int count = bmPage.getCounter();
                 BitSet currentBitSet = BitSet.valueOf(bmPage.getBMpageArray());
                 for (int i = 0; i < count; i++) {
-                    System.out.println("Position: " + position + "   Value: " + (currentBitSet.get(i)?1:0));
+                    System.out.println("Position: " + position + "   Value: " + (currentBitSet.get(i) ? 1 : 0));
                     position++;
                 }
                 if (bmPage.getNextPage().pid == INVALID_PAGE) {
@@ -62,6 +63,39 @@ public class BM implements GlobalConst {
                 unpinPage(pageId);
             }
         }
+    }
+
+    public static BitSet getBitMap(BitMapHeaderPage header) throws Exception {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
+
+        if (header == null) {
+            System.out.println("\n Empty Header!!!");
+        } else {
+            List<PageId> pinnedPages = new ArrayList<>();
+            PageId bmPageId = header.get_rootId();
+            if (bmPageId.pid == INVALID_PAGE) {
+                System.out.println("Empty Bitmap File");
+                return null;
+            }
+            Page page = pinPage(bmPageId);
+            pinnedPages.add(bmPageId);
+            BMPage bmPage = new BMPage(page);
+
+            while (true) {
+                outputStream.write(bmPage.getBMpageArray());
+                if (bmPage.getNextPage().pid == INVALID_PAGE) {
+                    break;
+                } else {
+                    page = pinPage(bmPage.getNextPage());
+                    pinnedPages.add(bmPage.getNextPage());
+                    bmPage.openBMpage(page);
+                }
+            }
+            for (PageId pageId : pinnedPages) {
+                unpinPage(pageId);
+            }
+        }
+        return BitSet.valueOf(outputStream.toByteArray());
     }
 
     /***

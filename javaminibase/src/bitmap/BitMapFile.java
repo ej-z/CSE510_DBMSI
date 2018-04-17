@@ -482,4 +482,7 @@ public class BitMapFile implements GlobalConst {
 
     } // end of newPage
 
+    public PageId getHeaderPageId() {
+        return headerPageId;
+    }
 }
