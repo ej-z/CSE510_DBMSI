@@ -9,10 +9,7 @@ import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
 import heap.Tuple;
-import iterator.ColumnarFileScan;
-import iterator.FldSpec;
-import iterator.RelSpec;
-import iterator.Sort;
+import iterator.*;
 import tests.TestDriver;
 
 import java.io.File;
@@ -108,7 +105,7 @@ class SortTestDriver extends TestDriver {
 
             TupleOrder sortOrder = (sortingOrder == "ASC")?order[1]:order[0];
 
-            Sort sort = new Sort(cf.getAttributes(), (short)cf.getAttributes().length, cf.getStrSize(), cfs, sortColNumber, sortOrder, cf.getAttrsizeforcolumn(sortColNumber), bufferSize);
+            ColumnarSort sort = new ColumnarSort(cf.getAttributes(), (short)cf.getAttributes().length, cf.getStrSize(), cfs, sortColNumber, sortOrder, cf.getAttrsizeforcolumn(sortColNumber), bufferSize);
 
 
             Tuple t =new Tuple();
