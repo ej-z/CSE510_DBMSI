@@ -1,0 +1,5 @@
+A:int	B:char(25)
+1	a
+1	b
+2	c
+3	d

@@ -934,4 +934,10 @@ public class Columnarfile {
             throw new Exception("Invalid Column Number");
         }
     }
+
+    //phase 3
+
+    public HashMap<String, BitMapFile> getAllBitMaps() {
+        return BMMap;
+    }
 }
