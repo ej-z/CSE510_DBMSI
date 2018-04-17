@@ -19,7 +19,7 @@ public class InterfaceUtils {
             return condExprs;
         }
 
-        String[] andExpressions = expression.split(" ^ ");
+        String[] andExpressions = expression.split(" \\^ ");
         condExprs = new CondExpr[andExpressions.length + 1];
         for (int i = 0; i < andExpressions.length; i++) {
             String temp = andExpressions[i].replace("(", "");
@@ -67,7 +67,7 @@ public class InterfaceUtils {
             return condExprs;
         }
 
-        String[] andExpressions = expression.split(" ^ ");
+        String[] andExpressions = expression.split(" \\^ ");
         condExprs = new CondExpr[andExpressions.length + 1];
         for (int i = 0; i < andExpressions.length; i++) {
             String temp = andExpressions[i].replace("(", "");
