@@ -145,8 +145,11 @@ public class ColumnarIndexScan extends Iterator{
                             break;
                         }
                         else{
-                            while(max_pos>tempos){
+                            while(tempos!=-1 && max_pos>tempos){
                                 tempos=scan[i].get_next_position();
+                            }
+                            if(tempos==-1){
+                                return false;
                             }
                             if(tempos==max_pos){
                                 result.put(i,tempos);
@@ -166,7 +169,7 @@ public class ColumnarIndexScan extends Iterator{
             if(tempos>max_pos){
                 max_pos=tempos;index=i;
                 result.put(index,max_pos);
-                fun_recurse(result,scan,max_pos,index);
+                return fun_recurse(result,scan,max_pos,index);
             }
         }
         Set<Integer> keyvalue=result.keySet();
@@ -183,6 +186,9 @@ public class ColumnarIndexScan extends Iterator{
             else{
                 prev=result.get(j);
             }
+        }
+        if(keyvalue.size()<scan.length){
+            return false;
         }
         return true;
     }
