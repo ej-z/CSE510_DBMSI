@@ -7,8 +7,6 @@ import global.AttrType;
 import global.SystemDefs;
 import iterator.CondExpr;
 
-import static tests.TestDriver.isUnix;
-
 public class BitmapEquiJoins {
 
     public static void main(String[] args) throws Exception {
@@ -24,9 +22,7 @@ public class BitmapEquiJoins {
         String[] targetColumns = args[6].split(",");
         Integer bufferSize = Integer.parseInt(args[7]);
 
-        String path = isUnix() ? "/tmp/" : "C:\\Windows\\Temp\\";
-        // TODO: Remove nME
-        String dbpath = path + columnDB + "dixith.minibase-db";
+        String dbpath = InterfaceUtils.dbPath(columnDB);
         SystemDefs sysdef = new SystemDefs(dbpath, 0, bufferSize, "Clock");
 
         runInterface(outerColumnarFile, innerColumnarFile, rawOuterConstraint, rawInnerConstraint, rawEquijoinConstraint, targetColumns);
