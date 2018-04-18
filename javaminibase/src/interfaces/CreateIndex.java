@@ -11,7 +11,6 @@ public class CreateIndex {
     public static void main(String[] args) throws Exception {
         // Query Skeleton: COLUMNDB COLUMNARFILE COLUMNNAME INDEXTYPE
         // Example Query: testColumnDB columnarTable columnName BITMAP|BTREE
-        // Last attribute specifies whether to create a new Db or open an existing one
         String columnDB = args[0];
         String columnarFile = args[1];
         String columnName = args[2];
