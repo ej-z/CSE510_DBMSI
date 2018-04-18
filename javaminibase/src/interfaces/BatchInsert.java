@@ -1,93 +1,52 @@
 package interfaces;
 
+import bufmgr.*;
 import columnar.Columnarfile;
 import diskmgr.PCounter;
 import global.AttrType;
 import global.SystemDefs;
 import heap.Tuple;
-import tests.TestDriver;
 
 import java.io.*;
-import java.util.ArrayList;
-
 import static global.GlobalConst.NUMBUF;
 
-class InsertDriver extends TestDriver {
+public class BatchInsert {
+	private static final int NUM_PAGES = 10000;
 
-	private  int numPages;
-	private String dataFile;
-	private String dbName;
-	private String colFilename;
-	private int numCols;
-	AttrType[] types;
-	short[] sizes;
-	ArrayList<String> tuples = new ArrayList<>();
-	String[] names;
+	public static void main(String[] args) throws PageUnpinnedException, PagePinnedException, PageNotFoundException, HashOperationException, BufMgrException, IOException {
+		// Query Skeleton: DATAFILE COLUMNDB COLUMNARFILE NUMCOLUMNS ISNEWDB
+		// Example Query: sampledata.txt testColumnDB columnarTable 4 1
+		// Last attribute specifies whether to create a new Db or open an existing one
+		String dataFileName = args[0];
+		String columnDB = args[1];
+		String columnarFile = args[1];
+		Integer numColumns = Integer.parseInt(args[2]);
+		Integer isNewDb = Integer.parseInt(args[3]);
 
-	//private boolean delete = true;
-	public InsertDriver() {
-		super("BatchInsert");
-	}
-
-	public InsertDriver(String datafileName, String columnDBName, String columnarFileName, int numColumns) {
-
-		super(columnDBName);
-		dataFile = datafileName;
-		dbName = columnDBName;
-		colFilename = columnarFileName;
-		numCols = numColumns;
-		types = new AttrType[numColumns];
-		sizes = new short[numColumns];
-		names  = new String[numColumns];
-	}
-
-	public boolean runTests() {
-
-		System.out.println("\n" + "Running " + testName() + " tests...." + dbpath+"\n");
-        numPages = new File(dbpath).exists()? 0 : 10000;
-
+		String dbpath = InterfaceUtils.dbPath(columnDB);
+		int numPages = isNewDb == 1 ? NUM_PAGES : 0;
 		SystemDefs sysdef = new SystemDefs(dbpath, numPages, NUMBUF, "Clock");
 
-		// Kill anything that might be hanging around
-		String newdbpath;
-		String newlogpath;
-		String remove_logcmd;
-		String remove_dbcmd;
-		String remove_cmd = isUnix()? "/bin/rm -rf " : "cmd /c del /f ";
+		runInterface(dataFileName, columnarFile, numColumns);
 
-		newdbpath = dbpath;
-		newlogpath = logpath;
+		SystemDefs.JavabaseBM.flushAllPages();
+		SystemDefs.JavabaseDB.closeDB();
 
-		remove_logcmd = remove_cmd + logpath;
-		remove_dbcmd = remove_cmd + dbpath;
-
-		boolean _pass = runAllTests();
-		try {
-			SystemDefs.JavabaseBM.flushAllPages();
-			SystemDefs.JavabaseDB.closeDB();
-		}catch (Exception e) {
-			System.err.println("error: " + e);
-		}
-
-
-
-		System.out.print("\n" + "..." + testName() + " tests ");
-		System.out.print(_pass == OK ? "completely successfully" : "failed");
-		System.out.print(".\n\n");
-
-		System.out.println("Reads: "+  PCounter.rcounter);
-		System.out.println("Writes: "+ PCounter.wcounter);
-		return _pass;
+		System.out.println("Reads: " + PCounter.rcounter);
+		System.out.println("Writes: " + PCounter.wcounter);
 	}
 
-	protected boolean test1(){
+	private static void runInterface(String dataFileName, String columnarFile, int numColumns) throws IOException {
 
-		FileInputStream fstream;
+		FileInputStream fstream = null;
+		BufferedReader br = null;
 		try {
-			fstream = new FileInputStream(dataFile);
-			BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
+			fstream = new FileInputStream(dataFileName);
+			br = new BufferedReader(new InputStreamReader(fstream));
 
-
+			AttrType[] types = new AttrType[numColumns];
+			short[] sizes = new short[numColumns];
+			String[] names  = new String[numColumns];
 			String strLine;
 			//Read First Line
 			String attrType = br.readLine();
@@ -110,26 +69,21 @@ class InsertDriver extends TestDriver {
 				}
 			}
 
+			Columnarfile cf = new Columnarfile(columnarFile, numColumns , types, sizes, names);
 
-			while ((strLine = br.readLine()) != null)   {
-				// Print the content on the console
-				tuples.add(strLine);
-			}
-			//Close the input stream
 			br.close();
 
 			int cnt = 1;
-			Columnarfile cf = new Columnarfile(colFilename, numCols , types, sizes, names);
-			for (String s:tuples) {
-				String values[] = s.split("\t");
+
+			while ((strLine = br.readLine()) != null)   {
+				String values[] = strLine.split("\t");
 
 				Tuple t = new Tuple();
-				t.setHdr((short)numCols, types, sizes);
+				t.setHdr((short)numColumns, types, sizes);
 				int size = t.size();
 
-				//System.out.println(size);
 				t = new Tuple(size);
-				t.setHdr((short)numCols, types, sizes);
+				t.setHdr((short)numColumns, types, sizes);
 				int j =0;
 				for (String val:values) {
 					switch(types[j].attrType){
@@ -149,59 +103,15 @@ class InsertDriver extends TestDriver {
 				cf.insertTuple(t.getTupleByteArray());
 				cnt++;
 			}
+			cf.close();
+			br.close();
 			System.out.println(cnt +" tuples inserted");
 
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-
-
-		return true;
-	}
-
-	protected String testName() {
-
-		return "Batch Insert";
-	}
-}
-
-public class BatchInsert {
-
-	public static String datafileName;
-	public static String columnDBName;
-	public static String columnarFileName;
-	public static int numColumns;
-
-	public static void runTests() {
-
-		InsertDriver cd = new InsertDriver(datafileName, columnDBName, columnarFileName, numColumns);
-		cd.runTests();
-	}
-
-	public static void main(String[] argvs) {
-
-		try {
-			BatchInsert insertTest = new BatchInsert();
-
-			datafileName = argvs[0];
-			columnDBName = argvs[1];
-			columnarFileName = argvs[2];
-			numColumns = Integer.parseInt(argvs[3]);
-			insertTest.runTests();
-
-
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.err.println("Error encountered during buffer manager tests:\n");
-			Runtime.getRuntime().exit(1);
+		} finally {
+			fstream.close();
+			br.close();
 		}
 	}
 }
