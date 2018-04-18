@@ -15,7 +15,10 @@ import iterator.*;
 import org.w3c.dom.Attr;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.HashMap;
+import java.util.Set;
 
 
 /**
@@ -24,14 +27,24 @@ import java.util.BitSet;
 
 public class ColumnarIndexScan extends Iterator{
 
-    Iterator scan;
+    Iterator[] scan;
     private Heapfile[] targetHeapFiles = null;
     private AttrType[] targetAttrTypes = null;
     private short[] targetShortSizes = null;
     private short[] givenTargetedCols = null;
     private CondExpr[] _selects;
+    private int index=0,max_pos=0;
     private Columnarfile columnarfile;
-
+    /*
+    * relName: columnarfileName
+    * columnNos: number of columns
+    * indexTypes: for the corresponding columnNos
+    * index_selects: Conditional expressions for columns which has index on it
+    * selects: Conditional expressions for columns that has no index on them
+    * indexOnly: true/false
+    * targetedCols: Columns on which the conditions should be applied
+    * proj_list: Output fields
+    **/
     public ColumnarIndexScan(String relName,
                              int[] columnNos,
                              IndexType[] indexTypes,
@@ -43,6 +56,7 @@ public class ColumnarIndexScan extends Iterator{
 
 
         _selects = selects;
+        scan= new Iterator[columnNos.length];
         columnarfile = new Columnarfile(relName);
         for(int i = 0; i < columnNos.length; i++) {
             switch (indexTypes[i].indexType) {
@@ -51,26 +65,26 @@ public class ColumnarIndexScan extends Iterator{
                     AttrType[] types = new AttrType[1];
                     types[0] = new AttrType(AttrType.attrInteger);
                     short[] sizes = new short[0];
-                    scan = new Sort(types, (short) 1, sizes, im, 1, new TupleOrder(TupleOrder.Ascending), 4, 4);
+                    scan[i] = new Sort(types, (short) 1, sizes, im, 1, new TupleOrder(TupleOrder.Ascending), 4, 4);
                     break;
                 case IndexType.BitMapIndex:
-                    scan = new ColumnarBitmapScan(columnarfile, columnNos[i], index_selects[i], indexOnly);
+                    scan[i] = new ColumnarBitmapScan(columnarfile, columnNos[i], index_selects[i], indexOnly);
                     break;
                 case IndexType.None:
                 default:
                     throw new UnknownIndexTypeException("Only BTree and Bitmap indices is supported so far");
-
             }
         }
     }
 
     @Override
     public Tuple get_next() throws Exception {
-
         int position = 0;
         while (position != -1) {
             try {
-
+                if(scan.length>=1){
+                    max_pos=scan[0].get_next_position();
+                }
                 position = get_next_position();
                 if (position < 0)
                     return null;
@@ -81,8 +95,7 @@ public class ColumnarIndexScan extends Iterator{
                 JTuple = new Tuple(JTuple.size());
                 JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
                 for (int i = 0; i < targetHeapFiles.length; i++) {
-                    RID rid = targetHeapFiles[i].recordAtPosition(position);
-                    Tuple record = targetHeapFiles[i].getRecord(rid);
+                    Tuple record = targetHeapFiles[i].getRecord(position);
                     switch (targetAttrTypes[i].attrType) {
                         case AttrType.attrInteger:
                             // Assumed that col heap page will have only one entry
@@ -108,8 +121,70 @@ public class ColumnarIndexScan extends Iterator{
         //return scan.get_next();
     }
 
-    private int get_next_position(){
-        return -1;
+    /*
+    * get the first matching position in all the scans and return the satisfying position one by one
+    * */
+    public int get_next_position() throws Exception {
+        /*iterate through all the scan objects*/
+        HashMap<Integer,Integer> result=new HashMap<>();
+        boolean retvalue=fun_recurse(result,scan,max_pos,index);
+        if(retvalue==true)
+            return result.get(0);
+        else
+            return -1;
+    }
+
+    private boolean fun_recurse(HashMap<Integer, Integer> result, Iterator[] scan, int max_pos, int index) throws Exception {
+        int tempos=-1,i=0;
+        for(i=0;i<scan.length;i++){
+            if(i!=index){
+                tempos=scan[i].get_next_position();
+                if(tempos!=-1){
+                    if(tempos!=max_pos){
+                        if(max_pos<tempos){
+                            break;
+                        }
+                        else{
+                            while(max_pos>tempos){
+                                tempos=scan[i].get_next_position();
+                            }
+                            if(tempos==max_pos){
+                                result.put(i,tempos);
+                            }
+                            else{
+                                break;
+                            }
+                        }
+                    }
+                    else{
+                        result.put(i,tempos);
+                    }
+                }
+            }
+        }
+        if(tempos!=-1){
+            if(tempos>max_pos){
+                max_pos=tempos;index=i;
+                result.put(index,max_pos);
+                fun_recurse(result,scan,max_pos,index);
+            }
+        }
+        Set<Integer> keyvalue=result.keySet();
+        int prev=-1;
+        for(Integer j:keyvalue){
+            if(prev!=-1){
+                if(prev==result.get(j)){
+                    prev=result.get(j);
+                }
+                else{
+                    return false;
+                }
+            }
+            else{
+                prev=result.get(j);
+            }
+        }
+        return true;
     }
 
     public boolean delete_next() throws Exception {
@@ -129,7 +204,8 @@ public class ColumnarIndexScan extends Iterator{
 
     public void close(){
         try {
-            scan.close();
+            for(int i=0;i<scan.length;i++)
+            scan[i].close();
         } catch (Exception e) {
             e.printStackTrace();
         }

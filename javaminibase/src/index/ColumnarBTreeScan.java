@@ -96,7 +96,7 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
         return columnarfile.markTupleDeleted(position);
     }
 
-    private int get_next_position() throws IndexException, UnknownKeyTypeException {
+    public int get_next_position() throws IndexException, UnknownKeyTypeException {
         KeyDataEntry nextentry;
         try {
             nextentry = btIndScan.get_next();
