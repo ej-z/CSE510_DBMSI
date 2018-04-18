@@ -243,10 +243,16 @@ class ColumnarDriver extends TestDriver {
             Columnarfile cf = new Columnarfile("file1");
             cf.createBTreeIndex(0);
 
-            IndexType index = new IndexType(1);
+            IndexType[] indexTypes = new IndexType[1];
+            indexTypes[0] = new IndexType(1);
 
-            ColumnarIndexScan cis = new ColumnarIndexScan(index, "file1", 0,
-                    new AttrType(AttrType.attrInteger), (short) 0, expr, null, true, targetedCols);
+            int[] columnNos = new int[1];
+            columnNos[0] = 0;
+
+            CondExpr[][] indexExps = new CondExpr[1][1];
+            indexExps[0]= expr;
+
+            ColumnarIndexScan cis = new ColumnarIndexScan("file1", columnNos,indexTypes,indexExps, null, true, targetedCols, null);
 
             t = cis.get_next();
             while (t != null){
@@ -354,9 +360,16 @@ class ColumnarDriver extends TestDriver {
             selects[0].next.operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), 2);
             selects[0].next.operand2.string = "B";
 
-            ColumnarIndexScan columnIndexScan = new ColumnarIndexScan(indexType, cf.getColumnarFileName(),
+            IndexType[] indexTypes = new IndexType[1];
+            indexTypes[0] = new IndexType(1);
 
-                    0, new AttrType(AttrType.attrInteger), (short) 1, expr, selects, false, targetedCols);
+            int[] columnNos = new int[1];
+            columnNos[0] = 0;
+
+            CondExpr[][] indexExps = new CondExpr[1][1];
+            indexExps[0]= expr;
+
+            ColumnarIndexScan columnIndexScan = new ColumnarIndexScan(cf.getColumnarFileName(), columnNos, indexTypes, indexExps, selects, false, targetedCols, null);
 
 
             System.out.println("Select 0,2 where 0 > 7 and (2 = 'A' || 2 = 'B')");
@@ -449,8 +462,6 @@ class ColumnarDriver extends TestDriver {
             targetedCols[1] = 2;
             targetedCols[2] = 3;
 
-            IndexType indexType = new IndexType(3);
-
             CondExpr[] expr = new CondExpr[2];
             expr[0] = new CondExpr();
             expr[0].op = new AttrOperator(AttrOperator.aopGT);
@@ -465,15 +476,16 @@ class ColumnarDriver extends TestDriver {
             AttrType[] attrTypes = new AttrType[1];
             attrTypes[0] = new AttrType(AttrType.attrInteger);
 
-            ColumnarIndexScan columnIndexScan = new ColumnarIndexScan(indexType,
-                    name,
-                    0,
-                    new AttrType(AttrType.attrInteger),
-                    (short) 1,
-                    expr,
-                    null,
-                    false,
-                     targetedCols);
+            IndexType[] indexTypes = new IndexType[1];
+            indexTypes[0] = new IndexType(3);
+
+            int[] columnNos = new int[1];
+            columnNos[0] = 0;
+
+            CondExpr[][] indexExps = new CondExpr[1][1];
+            indexExps[0]= expr;
+
+            ColumnarIndexScan columnIndexScan = new ColumnarIndexScan(name, columnNos, indexTypes, indexExps,null,false, targetedCols, null);
 
 
             System.out.println("Starting Index Scan");
