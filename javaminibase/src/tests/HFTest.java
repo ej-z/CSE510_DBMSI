@@ -177,11 +177,18 @@ class HFDriver extends TestDriver implements GlobalConst {
             int len, i = 0;
             DummyRecord rec = null;
             Tuple tuple = new Tuple();
-
+            Tuple result;
             boolean done = false;
+            int pos = 0;
             while (!done) {
                 try {
                     tuple = scan.getNext(rid);
+
+                    int posnew = f.positionOfRecord(rid);
+                    result = f.getRecord(posnew);
+                    //result.print();
+                    System.out.println(result.getTupleByteArray());
+                    System.out.println(posnew);
                     if (tuple == null) {
                         done = true;
                         break;
@@ -804,7 +811,6 @@ class DummyRecord {
      * constructor: translate a tuple to a DummyRecord object
      * it will make a copy of the data in the tuple
      *
-     * @param atuple: the input tuple
      */
     public DummyRecord(Tuple _atuple)
             throws java.io.IOException {
