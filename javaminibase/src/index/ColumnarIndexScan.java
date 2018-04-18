@@ -79,7 +79,7 @@ public class ColumnarIndexScan extends Iterator{
 
     @Override
     public Tuple get_next() throws Exception {
-        int position = 0;
+        /*int position = 0;
         while (position != -1) {
             try {
                 if(scan.length>=1){
@@ -116,7 +116,7 @@ public class ColumnarIndexScan extends Iterator{
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
+        }*/
         return null;
         //return scan.get_next();
     }
@@ -135,7 +135,7 @@ public class ColumnarIndexScan extends Iterator{
     }
 
     private boolean fun_recurse(HashMap<Integer, Integer> result, Iterator[] scan, int max_pos, int index) throws Exception {
-        int tempos=-1,i=0;
+        /*int tempos=-1,i=0;
         for(i=0;i<scan.length;i++){
             if(i!=index){
                 tempos=scan[i].get_next_position();
@@ -189,7 +189,7 @@ public class ColumnarIndexScan extends Iterator{
         }
         if(keyvalue.size()<scan.length){
             return false;
-        }
+        }*/
         return true;
     }
 

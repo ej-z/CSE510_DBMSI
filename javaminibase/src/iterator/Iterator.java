@@ -60,7 +60,6 @@ public abstract class Iterator implements Flags {
             UnknownKeyTypeException,
             Exception;
 
-    public abstract int get_next_position() throws Exception;
     /**
      * @throws IOException    I/O errors
      * @throws JoinsException some join exception
