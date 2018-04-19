@@ -79,11 +79,13 @@ public class ColumnarIndexScan extends Iterator{
 
     @Override
     public Tuple get_next() throws Exception {
-        /*int position = 0;
+        int position = 0;
+        Tuple t;
         while (position != -1) {
             try {
                 if(scan.length>=1){
-                    max_pos=scan[0].get_next_position();
+                    t=scan[0].get_next();
+                    max_pos=t.getIntFld(1);
                 }
                 position = get_next_position();
                 if (position < 0)
@@ -116,7 +118,7 @@ public class ColumnarIndexScan extends Iterator{
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }*/
+        }
         return null;
         //return scan.get_next();
     }
@@ -135,45 +137,63 @@ public class ColumnarIndexScan extends Iterator{
     }
 
     private boolean fun_recurse(HashMap<Integer, Integer> result, Iterator[] scan, int max_pos, int index) throws Exception {
-        /*int tempos=-1,i=0;
+        int tempos=-1,i=0;
+        Tuple t=null;
         for(i=0;i<scan.length;i++){
             if(i!=index){
-                tempos=scan[i].get_next_position();
-                if(tempos!=-1){
-                    if(tempos!=max_pos){
-                        if(max_pos<tempos){
+                t=scan[i].get_next();
+                if(t!=null) {
+                    tempos = t.getIntFld(1);
+                    if (tempos != max_pos) {
+                        if (max_pos < tempos) {
                             break;
-                        }
-                        else{
-                            while(tempos!=-1 && max_pos>tempos){
-                                tempos=scan[i].get_next_position();
+                        } else {
+                            while (max_pos > tempos) {
+                                t = scan[i].get_next();
+                                if(t!=null) {
+                                    tempos = t.getIntFld(1);
+                                }
+                                else{
+                                    break;
+                                }
                             }
-                            if(tempos==-1){
+                            if (t == null) {
                                 return false;
                             }
-                            if(tempos==max_pos){
-                                result.put(i,tempos);
-                            }
-                            else{
+                            if (tempos == max_pos) {
+                                result.put(i, tempos);
+                            } else {
                                 break;
                             }
                         }
+                    } else {
+                        result.put(i, tempos);
                     }
-                    else{
-                        result.put(i,tempos);
-                    }
+
+                }
+                else{
+                    break;
                 }
             }
         }
-        if(tempos!=-1){
+
+        if(t!=null){
             if(tempos>max_pos){
                 max_pos=tempos;index=i;
                 result.put(index,max_pos);
                 return fun_recurse(result,scan,max_pos,index);
             }
         }
+       /*
+       should check if this can be included
+       else{
+            return false;
+        }*/
         Set<Integer> keyvalue=result.keySet();
         int prev=-1;
+        if(keyvalue.size()<scan.length){
+            return false;
+        }
         for(Integer j:keyvalue){
             if(prev!=-1){
                 if(prev==result.get(j)){
@@ -187,9 +207,7 @@ public class ColumnarIndexScan extends Iterator{
                 prev=result.get(j);
             }
         }
-        if(keyvalue.size()<scan.length){
-            return false;
-        }*/
+
         return true;
     }
 
