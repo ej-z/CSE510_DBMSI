@@ -49,7 +49,14 @@ public class SortInterface {
         for (int i = 0; i < numAttributes; i++) {
             Sprojection[i] = new FldSpec(rel, i + 1);
         }
-        ColumnarFileScan cfs = new ColumnarFileScan(columnarFile, cf.getAttributes(), cf.getStrSize(), (short) cf.getAttributes().length, (short) cf.getAttributes().length, Sprojection, null);
+
+        short[] targets = new short[cf.getnumColumns()];
+
+        for(int i = 0; i<targets.length;i++){
+            targets[i] = (short)i;
+        }
+
+        ColumnarFileScan cfs = new ColumnarFileScan(columnarFile, Sprojection, targets, null);
 
         TupleOrder tupleSortOrder = (sortOrder == "ASC") ? new TupleOrder(TupleOrder.Ascending) : new TupleOrder(TupleOrder.Descending);
 

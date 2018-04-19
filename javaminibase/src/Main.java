@@ -1,5 +1,5 @@
 import tests.BTTest;
-import tests.ColumnarTest;
+//import tests.ColumnarTest;
 
 public class Main {
     public static void main(String[] args) {
@@ -11,6 +11,6 @@ public class Main {
         //JoinTest.runTests();
         //SortTest.runTests();
         //SM_JoinTest.runTests();
-        ColumnarTest.runTests();
+        //ColumnarTest.runTests();
     }
 }

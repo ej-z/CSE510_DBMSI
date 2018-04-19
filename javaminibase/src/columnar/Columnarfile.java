@@ -449,11 +449,12 @@ public class Columnarfile {
         short[] targetedCols = new short[1];
         targetedCols[0] = (short) columnNo;
 
+        FldSpec[] projection = new FldSpec[1];
+        projection[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
         ColumnarColumnScan columnScan = new ColumnarColumnScan(getColumnarFileName(), columnNo,
-                getAttrtypeforcolumn(columnNo),
-                getAttrsizeforcolumn(columnNo),
+                projection,
                 targetedCols,
-                null);
+                null, null);
 
         String indexName = getBMName(columnNo, value);
         BitMapFile bitMapFile = new BitMapFile(indexName, this, columnNo, value);
@@ -490,11 +491,12 @@ public class Columnarfile {
         short[] targetedCols = new short[1];
         targetedCols[0] = (short) columnNo;
 
+        FldSpec[] projection = new FldSpec[1];
+        projection[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
         ColumnarColumnScan columnScan = new ColumnarColumnScan(getColumnarFileName(), columnNo,
-                getAttrtypeforcolumn(columnNo),
-                getAttrsizeforcolumn(columnNo),
+                projection,
                 targetedCols,
-                null);
+                null, null);
 
         RID rid = new RID();
         Tuple tuple;
@@ -826,6 +828,25 @@ public class Columnarfile {
         int cnt = 0;
         for (int i = 0; i < numColumns; i++) {
             if (atype[i].attrType == AttrType.attrString) {
+                strSize[cnt++] = attrsizes[i];
+            }
+        }
+
+        return strSize;
+    }
+
+    public short[] getStrSize(short[] targetColumns) {
+
+        int n = 0;
+        for (int i = 0; i < targetColumns.length; i++) {
+            if (atype[targetColumns[i]].attrType == AttrType.attrString)
+                n++;
+        }
+
+        short[] strSize = new short[n];
+        int cnt = 0;
+        for (int i = 0; i < targetColumns.length; i++) {
+            if (atype[targetColumns[i]].attrType == AttrType.attrString) {
                 strSize[cnt++] = attrsizes[i];
             }
         }

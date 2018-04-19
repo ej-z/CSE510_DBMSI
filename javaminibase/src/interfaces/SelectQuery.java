@@ -421,47 +421,111 @@ class ColumnarDriver2 extends TestDriver {
         return "Select Query";
     }
 }
-
-public class SelectQuery extends TestDriver {
-    String DBName;
-    String Colfilename;
-    String Projection;
-    String expression;
-    int bufspace;
-    String Accesstype;
-
-    public boolean runTests() {
-        ColumnarDriver2 cd = new ColumnarDriver2(DBName, Colfilename, Projection, expression, bufspace, Accesstype);
-        return cd.runTests();
-    }
-
-    SelectQuery(String a, String b, String c, String d, int inputsplit, String access) {
-        DBName=a;
-        Colfilename = b;
-        Projection = c;
-        expression =d;
-        bufspace = inputsplit;
-        Accesstype = access;
-
-    }
-
-    public static void main(String args[]) {
-        String sampleinput = args[0];
-        //String sampleinput="SELECT columnDB columnarfile A,C {C = 6} 100 BITMAP";
-        String[] inputsplit = sampleinput.split(" ");
-
-        if(inputsplit[4].equals("{}")){
-            String temp=inputsplit[4];
-            SelectQuery sq = new SelectQuery(inputsplit[1], inputsplit[2], inputsplit[3], temp, Integer.parseInt(inputsplit[5]), "FILESCAN");
-            sq.runTests();
-        }
-        else{
-            String temp = inputsplit[4].replace("{", "") + " " + inputsplit[5] + " " + inputsplit[6].replace("}", "");
-            SelectQuery sq = new SelectQuery(inputsplit[1], inputsplit[2], inputsplit[3], temp, Integer.parseInt(inputsplit[7]), inputsplit[8]);
-            sq.runTests();
-        }
-    }
-
-}
 */
+
+import bufmgr.*;
+import columnar.Columnarfile;
+import diskmgr.PCounter;
+import global.AttrType;
+import global.SystemDefs;
+import heap.HFBufMgrException;
+import heap.HFDiskMgrException;
+import heap.HFException;
+import heap.Tuple;
+import index.ColumnarIndexScan;
+import iterator.*;
+
+import java.io.IOException;
+
+public class SelectQuery{
+
+    private static String FILESCAN = "FILE";
+    private static String COLUMNSCAN = "COLUMN";
+    private static String BITMAPSCAN = "BITMAP";
+    private static String BTREESCAN = "BTREE";
+
+    public static void main(String args[]) throws Exception {
+        // Query Skeleton: COLUMNDB COLUMNFILE PROJECTION OTHERCONST SCANCOLS [SCANTYPE] [SCANCONST] TARGETCOLUMNS NUMBUF
+        // Example Query: testColumnDB columnarTable A,B,C "C = 5" A,B [BTREE,BITMAP] "(A = 5 v A = 6),(B > 7)" A,B,C 100
+        // In case no constraints need to be applied, pass "" as input.
+        String columnDB = args[0];
+        String columnarFile = args[1];
+        String[] projection = args[2].split(",");
+        String otherConstraints = args[3];
+        String[] scanColumns = args[4].split(",");
+        String[] scanTypes = args[5].split(",");
+        String[] scanConstraints = args[6].split(",");
+        String[] targetColumns = args[7].split(",");
+        Integer bufferSize = Integer.parseInt(args[8]);
+
+        String dbpath = InterfaceUtils.dbPath(columnDB);
+        SystemDefs sysdef = new SystemDefs(dbpath, 0, bufferSize, "Clock");
+
+        runInterface(columnarFile, projection, otherConstraints, scanColumns, scanTypes, scanConstraints, targetColumns);
+
+        SystemDefs.JavabaseBM.flushAllPages();
+        SystemDefs.JavabaseDB.closeDB();
+
+        System.out.println("Reads: " + PCounter.rcounter);
+        System.out.println("Writes: " + PCounter.wcounter);
+    }
+
+    private static void runInterface(String columnarFile, String[] projection, String otherConstraints, String[] scanColumns, String[] scanTypes, String[] scanConstraints, String[] targetColumns) throws Exception {
+
+        Columnarfile cf = new Columnarfile(columnarFile);
+
+        AttrType[] opAttr = new AttrType[projection.length];
+        FldSpec[] projectionList = new FldSpec[projection.length];
+        for (int i = 0; i < projection.length; i++) {
+            String attribute = InterfaceUtils.getAttributeName(projection[i]);
+            projectionList[i] = new FldSpec(new RelSpec(RelSpec.outer), cf.getAttributePosition(attribute) + 1);
+            opAttr[i] = new AttrType(cf.getAttrtypeforcolumn(cf.getAttributePosition(attribute)).attrType);
+        }
+
+        int[] scanCols = new int[scanColumns.length];
+        for (int i = 0; i < scanColumns.length; i++) {
+            if(!scanColumns[i].equals("")) {
+                String attribute = InterfaceUtils.getAttributeName(scanColumns[i]);
+                scanCols[i] = cf.getAttributePosition(attribute);
+            }
+        }
+
+        short[] targets = new short[targetColumns.length];
+        for (int i = 0; i < targetColumns.length; i++) {
+            String attribute = InterfaceUtils.getAttributeName(targetColumns[i]);
+            targets[i] = (short)cf.getAttributePosition(attribute);
+        }
+
+        CondExpr[] otherConstraint = InterfaceUtils.processRawConditionExpression(otherConstraints, cf);
+
+        CondExpr[][] scanConstraint = new CondExpr[scanTypes.length][1];
+
+        for(int i = 0; i < scanTypes.length;i++){
+            scanConstraint[i] = InterfaceUtils.processRawConditionExpression(scanConstraints[i]);
+        }
+        cf.close();
+        Iterator it = null;
+
+        if(scanTypes[0].equals(FILESCAN)){
+            it = new ColumnarFileScan(columnarFile, projectionList, targets, otherConstraint);
+        }
+        else if(scanTypes[0].equals(COLUMNSCAN)){
+            it = new ColumnarColumnScan(columnarFile, scanCols[0], projectionList, targets, scanConstraint[0], otherConstraint);
+        }
+
+        int cnt = 0;
+        while (true) {
+            Tuple result = it.get_next();
+            if (result == null) {
+                break;
+            }
+            cnt++;
+            result.print(opAttr);
+        }
+
+        System.out.println();
+        System.out.println(cnt +" tuples selected");
+        System.out.println();
+    }
+}
 

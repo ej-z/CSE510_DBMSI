@@ -1,4 +1,4 @@
-package tests;
+/*package tests;
 
 import columnar.Columnarfile;
 import diskmgr.PCounter;
@@ -295,4 +295,4 @@ public class DeleteQueryingTest {
         }
     }
 }
-
+*/
