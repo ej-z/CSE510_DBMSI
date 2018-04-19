@@ -40,6 +40,6 @@ public class CreateIndex {
         }
         cf.close();
 
-        System.out.println(indexType + " created successfully on "+columnarFile+":"+columnName);
+        System.out.println(indexType + " created successfully on "+columnarFile+"."+columnName);
     }
 }

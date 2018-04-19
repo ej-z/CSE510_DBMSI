@@ -1,5 +1,5 @@
 package tests;
-
+/*
 import bitmap.BM;
 import bitmap.BitMapFile;
 import columnar.*;
@@ -43,7 +43,7 @@ class ColumnarDriver extends TestDriver {
         remove_logcmd = remove_cmd + logpath;
         remove_dbcmd = remove_cmd + dbpath;
 
-/*
+
         // Commands here is very machine dependent.  We assume
         // user are on UNIX system here
         try {
@@ -73,7 +73,7 @@ class ColumnarDriver extends TestDriver {
             Runtime.getRuntime().exec(remove_dbcmd);
         } catch (IOException e) {
             System.err.println("IO error: " + e);
-        }*/
+        }
 
         boolean _pass = runAllTests();
         try {
@@ -440,7 +440,7 @@ class ColumnarDriver extends TestDriver {
                 cf.insertTuple(t.getTupleByteArray());
             }
             cf.createAllBitMapIndexForColumn(0);
-            /*BitMapFile bitMapFile = new BitMapFile("bitmap-file-5", cf, 1, new ValueInt(4));
+            BitMapFile bitMapFile = new BitMapFile("bitmap-file-5", cf, 1, new ValueInt(4));
             TupleScan scan = cf.openTupleScan();
             TID tid = new TID();
             Tuple t = scan.getNext(tid);
@@ -454,7 +454,7 @@ class ColumnarDriver extends TestDriver {
                 count++;
                 t = scan.getNext(tid);
             }
-            scan.closetuplescan();*/
+            scan.closetuplescan();
 
             short[] targetedCols = new short[3];
 
@@ -785,7 +785,7 @@ class ColumnarDriver extends TestDriver {
         }
 
         System.out.println("Reads: "+  PCounter.rcounter);
-        System.out.println("Writes: "+ PCounter.wcounter);*/
+        System.out.println("Writes: "+ PCounter.wcounter);
         return true;
 
     }
@@ -814,4 +814,4 @@ public class ColumnarTest {
             Runtime.getRuntime().exit(1);
         }
     }
-}
+}*/

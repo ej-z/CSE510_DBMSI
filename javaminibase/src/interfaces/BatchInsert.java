@@ -19,9 +19,9 @@ public class BatchInsert {
 		// Last attribute specifies whether to create a new Db or open an existing one
 		String dataFileName = args[0];
 		String columnDB = args[1];
-		String columnarFile = args[1];
-		Integer numColumns = Integer.parseInt(args[2]);
-		Integer isNewDb = Integer.parseInt(args[3]);
+		String columnarFile = args[2];
+		Integer numColumns = Integer.parseInt(args[3]);
+		Integer isNewDb = Integer.parseInt(args[4]);
 
 		String dbpath = InterfaceUtils.dbPath(columnDB);
 		int numPages = isNewDb == 1 ? NUM_PAGES : 0;
@@ -71,8 +71,6 @@ public class BatchInsert {
 
 			Columnarfile cf = new Columnarfile(columnarFile, numColumns , types, sizes, names);
 
-			br.close();
-
 			int cnt = 1;
 
 			while ((strLine = br.readLine()) != null)   {
@@ -106,6 +104,7 @@ public class BatchInsert {
 			cf.close();
 			br.close();
 			System.out.println(cnt +" tuples inserted");
+			System.out.println();
 
 		} catch (Exception e) {
 			e.printStackTrace();

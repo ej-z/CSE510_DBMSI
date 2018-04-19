@@ -1,0 +1,10 @@
+BATCH INSERT
+
+CREATE INDEX
+
+
+SELECT
+-filescan
+cdb file A,B,C,D "C > 6 ^ D < 5" "" FILE "" A,B,C,D 20
+-columnscan
+cdb file A,B,C,D "D < 5" C COLUMN "C > 6" A,B,C,D 20
