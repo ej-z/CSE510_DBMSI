@@ -229,7 +229,6 @@ public class DB implements GlobalConst {
             DiskMgrException,
             IOException {
 
-        PCounter.readIncrement();
         if(runsize < 0) throw new InvalidRunSizeException(null, "Negative run_size");
 
         int run_size = runsize;
