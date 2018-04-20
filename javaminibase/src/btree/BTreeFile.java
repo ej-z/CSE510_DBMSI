@@ -1758,9 +1758,7 @@ public class BTreeFile extends IndexFile
             trace.writeBytes(lineSep);
             trace.flush();
         }
-
     }
-
 }
 
 
