@@ -950,7 +950,7 @@ public class Columnarfile {
      */
     public short getAttrsizeforcolumn(int columnNo) throws Exception {
         if (columnNo < numColumns) {
-            return asize[columnNo];
+            return attrsizes[columnNo];
         } else {
             throw new Exception("Invalid Column Number");
         }
@@ -970,10 +970,10 @@ public class Columnarfile {
         }
         Tuple JTuple = new Tuple();
         // set the header which attribute types of the targeted columns
-        JTuple.setHdr((short) hf.length, atype, attrsizes);
+        JTuple.setHdr((short) hf.length, atype, getStrSize());
 
         JTuple = new Tuple(JTuple.size());
-        JTuple.setHdr((short) hf.length, atype, attrsizes);
+        JTuple.setHdr((short) hf.length, atype, getStrSize());
         for (int i = 0; i < hf.length; i++) {
             RID rid = hf[i].recordAtPosition(position);
             Tuple record = hf[i].getRecord(rid);

@@ -42,71 +42,42 @@ public class SortInterface {
 
         Columnarfile cf = new Columnarfile(columnarFile);
 
-        int numAttributes = cf.getAttributes().length;
-        FldSpec[] Sprojection = new FldSpec[numAttributes];
+        int numCols = cf.getnumColumns();
+        FldSpec[] Sprojection = new FldSpec[numCols];
         RelSpec rel = new RelSpec(RelSpec.outer);
 
-        for (int i = 0; i < numAttributes; i++) {
+        for (int i = 0; i < numCols; i++) {
             Sprojection[i] = new FldSpec(rel, i + 1);
         }
 
-        short[] targets = new short[cf.getnumColumns()];
+        short[] targets = new short[numCols];
 
-        for(int i = 0; i<targets.length;i++){
+        for(int i = 0; i< numCols;i++){
             targets[i] = (short)i;
         }
 
         ColumnarFileScan cfs = new ColumnarFileScan(columnarFile, Sprojection, targets, null);
 
-        TupleOrder tupleSortOrder = (sortOrder == "ASC") ? new TupleOrder(TupleOrder.Ascending) : new TupleOrder(TupleOrder.Descending);
+        TupleOrder tupleSortOrder = (sortOrder.equals("ASC")) ? new TupleOrder(TupleOrder.Ascending) : new TupleOrder(TupleOrder.Descending);
 
         int sortColNumber = cf.getAttributePosition(columnName);
+        ColumnarSort sort = new ColumnarSort(cf.getAttributes(), (short) cf.getAttributes().length, cf.getStrSize(), cfs, sortColNumber+1, tupleSortOrder, cf.getAttrsizeforcolumn(sortColNumber), bufferSize);
 
-        ColumnarSort sort = new ColumnarSort(cf.getAttributes(), (short) cf.getAttributes().length, cf.getStrSize(), cfs, sortColNumber, tupleSortOrder, cf.getAttrsizeforcolumn(sortColNumber), bufferSize);
-
-
-        Tuple t = null;
-        String[] outval = null;
-
-
-        try {
-            t = sort.get_next();
-        } catch (Exception e) {
-            e.printStackTrace();
+        int cnt = 1;
+        while (true) {
+            Tuple result = sort.get_next();
+            if (result == null) {
+                break;
+            }
+            cnt++;
+            result.print(cf.getAttributes());
         }
 
-        while (t != null) {
-            try {
-                outval = new String[numAttributes];
-                for (int i = 0; i < numAttributes; i++) {
-                    if (cf.getAttrtypeforcolumn(i).attrType == AttrType.attrString) {
-                        outval[i] = t.getStrFld(i + 1);
-
-                    } else {
-                        outval[i] = String.valueOf(t.getIntFld(i + 1));
-                    }
-                    System.out.print(outval[i] + ' ');
-                }
-                System.out.print('\n');
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            try {
-                t = sort.get_next();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
+        System.out.println();
+        System.out.println(cnt + " tuples selected");
+        System.out.println();
         // clean up
-        try {
-            cfs.close();
-            sort.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        sort.close();
 
     }
 }
