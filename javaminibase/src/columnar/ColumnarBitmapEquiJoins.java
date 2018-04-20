@@ -8,12 +8,17 @@ import diskmgr.Page;
 import global.AttrType;
 import global.PageId;
 import global.SystemDefs;
+import heap.Tuple;
 import iterator.CondExpr;
 import iterator.FldSpec;
+import iterator.PredEval;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+//test R1 R2 "([R1.X = 10] v [R1.B > 2])" "([R2.C = 20])" "([R1.A = R2.C]) ^ ([R1.B = R1.D])" R1.A,R1.B,R2.C,R2.D 100
+//test R1 R2 "([R1.B > 2])" "([R2.C = 20])" "([R1.A = R2.C]) ^ ([R1.B = R1.D])" R1.A,R1.B,R2.C,R2.D 100
+//test R1 R2 "([R1.X = A])" "([R2.C = 20])" "([R1.A = R2.C]) ^ ([R1.B = R1.D])" R1.A,R1.B,R2.C,R2.D 100
 public class ColumnarBitmapEquiJoins  {
     private final Columnarfile leftColumnarFile;
     private final Columnarfile rightColumnarFile;
@@ -87,6 +92,35 @@ public class ColumnarBitmapEquiJoins  {
 
         System.out.println(r1Positions);
         System.out.println(r2Positions);
+
+
+        for(int i = 0; i < r1Positions.size(); i++) {
+            List<Integer> leftRelation = r1Positions.get(i);
+            List<Integer> rightRelation = r2Positions.get(i);
+            List<List<Integer>> entries = new ArrayList<>();
+
+            entries.add(leftRelation);
+            entries.add(rightRelation);
+            List<List<Integer>> entriesAfterJoin = nestedLoop(entries);
+
+
+            System.out.println("Nested loop: " +  entriesAfterJoin);
+            for(int k =0; k < entriesAfterJoin.size(); k++) {
+                Tuple tuple = leftColumnarFile.getTuple(entriesAfterJoin.get(k).get(0));
+                tuple.print(leftColumnarFile.getAttributes());
+
+                Tuple tuple1 = rightColumnarFile.getTuple(entriesAfterJoin.get(k).get(1));
+                tuple1.print(rightColumnarFile.getAttributes());
+
+
+                if(PredEval.Eval(outerExp, tuple, null, leftColumnarFile.getAttributes(), null)) {
+                    if(PredEval.Eval(innerExp, tuple, null, rightColumnarFile.getAttributes(), null)) {
+                        //todo
+                    }
+                }
+            }
+
+        }
     }
 
     private List<BitSet> getEquiJoinRelation(List<List<String>> combinations, Columnarfile columnarfile) throws Exception {
@@ -204,6 +238,29 @@ public class ColumnarBitmapEquiJoins  {
         for(String entry: uniqueSet) {
             path.add(entry);
             bt(uniqueSets, index+1, res, path);
+            path.remove(path.size() - 1);
+        }
+    }
+
+
+    public List<List<Integer>> nestedLoop(List<List<Integer>> uniqueSets)  {
+        List<List<Integer>> res = new ArrayList<>();
+        nestedLoopBt(uniqueSets, 0,res, new ArrayList<>());
+        return res;
+    }
+
+    private void nestedLoopBt(List<List<Integer>> uniqueSets, int index, List<List<Integer>> res, List<Integer> path) {
+
+        if(path.size() == uniqueSets.size()) {
+            ArrayList<Integer> k = new ArrayList<>(path);
+            res.add(k);
+            return;
+        }
+
+        List<Integer> uniqueSet = uniqueSets.get(index);
+        for(Integer entry: uniqueSet) {
+            path.add(entry);
+            nestedLoopBt(uniqueSets, index+1, res, path);
             path.remove(path.size() - 1);
         }
     }

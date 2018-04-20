@@ -961,4 +961,38 @@ public class Columnarfile {
     public HashMap<String, BitMapFile> getAllBitMaps() {
         return BMMap;
     }
+
+    public Tuple getTuple(int position) throws
+            Exception {
+
+        for(int i=0; i < hf.length; i++) {
+            hf[i] = new Heapfile(getColumnarFileName() + i);
+        }
+        Tuple JTuple = new Tuple();
+        // set the header which attribute types of the targeted columns
+        JTuple.setHdr((short) hf.length, atype, attrsizes);
+
+        JTuple = new Tuple(JTuple.size());
+        JTuple.setHdr((short) hf.length, atype, attrsizes);
+        for (int i = 0; i < hf.length; i++) {
+            RID rid = hf[i].recordAtPosition(position);
+            Tuple record = hf[i].getRecord(rid);
+            switch (atype[i].attrType) {
+                case AttrType.attrInteger:
+                    // Assumed that col heap page will have only one entry
+                    JTuple.setIntFld(i + 1,
+                            Convert.getIntValue(0, record.getTupleByteArray()));
+                    break;
+                case AttrType.attrString:
+                    JTuple.setStrFld(i + 1,
+                            Convert.getStrValue(0, record.getTupleByteArray(), attrsizes[i] + 2));
+                    break;
+                default:
+                    throw new Exception("Attribute indexAttrType not supported");
+            }
+        }
+
+        return JTuple;
+    }
+
 }
