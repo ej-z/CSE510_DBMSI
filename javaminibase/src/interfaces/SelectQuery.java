@@ -7,10 +7,10 @@ import global.AttrType;
 import global.IndexType;
 import global.SystemDefs;
 import heap.Tuple;
-import index.ColumnarIndexScan;
+import iterator.ColumnarIndexScan;
 import iterator.*;
 
-public class SelectQuery{
+public class SelectQuery {
 
     private static String FILESCAN = "FILE";
     private static String COLUMNSCAN = "COLUMN";
@@ -51,13 +51,13 @@ public class SelectQuery{
         FldSpec[] projectionList = new FldSpec[projection.length];
         for (int i = 0; i < projection.length; i++) {
             String attribute = InterfaceUtils.getAttributeName(projection[i]);
-            projectionList[i] = new FldSpec(new RelSpec(RelSpec.outer), cf.getAttributePosition(attribute) + 1);
+            projectionList[i] = new FldSpec(new RelSpec(RelSpec.outer), InterfaceUtils.getColumnPositionInTargets(attribute, targetColumns) + 1);
             opAttr[i] = new AttrType(cf.getAttrtypeforcolumn(cf.getAttributePosition(attribute)).attrType);
         }
 
         int[] scanCols = new int[scanColumns.length];
         for (int i = 0; i < scanColumns.length; i++) {
-            if(!scanColumns[i].equals("")) {
+            if (!scanColumns[i].equals("")) {
                 String attribute = InterfaceUtils.getAttributeName(scanColumns[i]);
                 scanCols[i] = cf.getAttributePosition(attribute);
             }
@@ -66,53 +66,55 @@ public class SelectQuery{
         short[] targets = new short[targetColumns.length];
         for (int i = 0; i < targetColumns.length; i++) {
             String attribute = InterfaceUtils.getAttributeName(targetColumns[i]);
-            targets[i] = (short)cf.getAttributePosition(attribute);
+            targets[i] = (short) cf.getAttributePosition(attribute);
         }
 
         CondExpr[] otherConstraint = InterfaceUtils.processRawConditionExpression(otherConstraints, targetColumns);
 
         CondExpr[][] scanConstraint = new CondExpr[scanTypes.length][1];
 
-        for(int i = 0; i < scanTypes.length;i++){
+        for (int i = 0; i < scanTypes.length; i++) {
             scanConstraint[i] = InterfaceUtils.processRawConditionExpression(scanConstraints[i]);
         }
         cf.close();
         Iterator it = null;
+        try {
+            if (scanTypes[0].equals(FILESCAN)) {
+                it = new ColumnarFileScan(columnarFile, projectionList, targets, otherConstraint);
+            } else if (scanTypes[0].equals(COLUMNSCAN)) {
+                it = new ColumnarColumnScan(columnarFile, scanCols[0], projectionList, targets, scanConstraint[0], otherConstraint);
+            } else if (scanTypes[0].equals(BITMAPSCAN) || scanTypes[0].equals(BTREESCAN)) {
+                IndexType[] indexType = new IndexType[scanTypes.length];
+                for (int i = 0; i < scanTypes.length; i++) {
+                    if (scanTypes[i].equals(BITMAPSCAN))
+                        indexType[i] = new IndexType(IndexType.BitMapIndex);
+                    else if (scanTypes[i].equals(BTREESCAN))
+                        indexType[i] = new IndexType(IndexType.B_Index);
+                    else
+                        throw new Exception("Scan type <" + scanTypes[i] + "> not recognized.");
+                }
+                it = new ColumnarIndexScan(columnarFile, scanCols, indexType, scanConstraint, otherConstraint, false, targets, projectionList);
+            } else
+                throw new Exception("Scan type <" + scanTypes[0] + "> not recognized.");
 
-        if(scanTypes[0].equals(FILESCAN)){
-            it = new ColumnarFileScan(columnarFile, projectionList, targets, otherConstraint);
-        }
-        else if(scanTypes[0].equals(COLUMNSCAN)){
-            it = new ColumnarColumnScan(columnarFile, scanCols[0], projectionList, targets, scanConstraint[0], otherConstraint);
-        }
-        else if(scanTypes[0].equals(BITMAPSCAN) || scanTypes[0].equals(BTREESCAN)){
-            IndexType[] indexType = new IndexType[scanTypes.length];
-            for(int i = 0; i < scanTypes.length; i++){
-                if(scanTypes[i].equals(BITMAPSCAN))
-                    indexType[i] = new IndexType(IndexType.BitMapIndex);
-                else if (scanTypes[i].equals(BTREESCAN))
-                    indexType[i] = new IndexType(IndexType.B_Index);
-                else
-                    throw new Exception("Scan type <"+scanTypes[i]+"> not recognized.");
+            int cnt = 0;
+            while (true) {
+                Tuple result = it.get_next();
+                if (result == null) {
+                    break;
+                }
+                cnt++;
+                result.print(opAttr);
             }
-            it = new ColumnarIndexScan(columnarFile, scanCols, indexType, scanConstraint, otherConstraint, false, targets, projectionList);
-        }
-        else
-            throw new Exception("Scan type <"+scanTypes[0]+"> not recognized.");
 
-        int cnt = 0;
-        while (true) {
-            Tuple result = it.get_next();
-            if (result == null) {
-                break;
-            }
-            cnt++;
-            result.print(opAttr);
+            System.out.println();
+            System.out.println(cnt + " tuples selected");
+            System.out.println();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            it.close();
         }
-
-        System.out.println();
-        System.out.println(cnt +" tuples selected");
-        System.out.println();
     }
 }
 

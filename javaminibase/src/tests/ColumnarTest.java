@@ -7,7 +7,7 @@ import diskmgr.PCounter;
 import global.*;
 import heap.Scan;
 import heap.Tuple;
-import index.ColumnarIndexScan;
+import iterator.ColumnarIndexScan;
 import iterator.ColumnarFileScan;
 import iterator.CondExpr;
 import iterator.FldSpec;

@@ -265,7 +265,7 @@ public class InterfaceUtils {
         return true;
     }
 
-    private static int getColumnPositionInTargets(String columnName, String[] targetColumns) throws Exception {
+    public static int getColumnPositionInTargets(String columnName, String[] targetColumns) throws Exception {
 
         for(int i = 0; i < targetColumns.length; i++){
             if(columnName.equals(targetColumns[i]))

@@ -7,7 +7,7 @@ import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
 import heap.Tuple;
-import index.ColumnarIndexScan;
+import iterator.ColumnarIndexScan;
 import index.IndexException;
 import index.UnknownIndexTypeException;
 import iterator.ColumnarFileScan;

@@ -9,7 +9,7 @@ import global.AttrType;
 import global.IndexType;
 import global.SystemDefs;
 import heap.*;
-import index.ColumnarIndexScan;
+import iterator.ColumnarIndexScan;
 import iterator.*;
 import tests.TestDriver;
 

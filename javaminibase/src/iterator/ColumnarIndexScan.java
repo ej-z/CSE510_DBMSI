@@ -1,4 +1,4 @@
-package index;
+package iterator;
 
 import bitmap.BMPage;
 import bitmap.BitMapFile;
@@ -11,6 +11,9 @@ import columnar.ValueClass;
 import diskmgr.Page;
 import global.*;
 import heap.*;
+import index.ColumnarBTreeScan;
+import index.ColumnarBitmapScan;
+import index.UnknownIndexTypeException;
 import iterator.*;
 import org.w3c.dom.Attr;
 
@@ -35,6 +38,8 @@ public class ColumnarIndexScan extends Iterator{
     private CondExpr[] _selects;
     private int index=0,max_pos=0;
     private Columnarfile columnarfile;
+    private FldSpec[] perm_mat;
+    private Tuple Jtuple;
     /*
     * relName: columnarfileName
     * columnNos: number of columns
@@ -52,12 +57,18 @@ public class ColumnarIndexScan extends Iterator{
                              CondExpr[] selects,
                              boolean indexOnly,
                              short[] targetedCols,
-                             FldSpec[] proj_list) throws IndexException, UnknownIndexTypeException, IOException, HFException, HFBufMgrException, HFDiskMgrException, SortException {
+                             FldSpec[] proj_list) throws Exception {
 
 
         _selects = selects;
         scan= new Iterator[columnNos.length];
+        perm_mat = proj_list;
         columnarfile = new Columnarfile(relName);
+        givenTargetedCols = targetedCols;
+        targetHeapFiles = ColumnarScanUtils.getTargetHeapFiles(columnarfile, targetedCols);
+        targetAttrTypes = ColumnarScanUtils.getTargetColumnAttributeTypes(columnarfile, targetedCols);
+        targetShortSizes = ColumnarScanUtils.getTargetColumnStringSizes(columnarfile, targetedCols);
+        Jtuple = ColumnarScanUtils.getProjectionTuple(columnarfile, perm_mat);
         for(int i = 0; i < columnNos.length; i++) {
             switch (indexTypes[i].indexType) {
                 case IndexType.B_Index:
@@ -65,7 +76,7 @@ public class ColumnarIndexScan extends Iterator{
                     AttrType[] types = new AttrType[1];
                     types[0] = new AttrType(AttrType.attrInteger);
                     short[] sizes = new short[0];
-                    scan[i] = new Sort(types, (short) 1, sizes, im, 1, new TupleOrder(TupleOrder.Ascending), 4, 4);
+                    scan[i] = new Sort(types, (short) 1, sizes, im, 1, new TupleOrder(TupleOrder.Ascending), 4, 12);
                     break;
                 case IndexType.BitMapIndex:
                     scan[i] = new ColumnarBitmapScan(columnarfile, columnNos[i], index_selects[i], indexOnly);
@@ -91,29 +102,31 @@ public class ColumnarIndexScan extends Iterator{
                 if (position < 0)
                     return null;
                 // tuple that needs to sent
-                Tuple JTuple = new Tuple();
+                Tuple tTuple = new Tuple();
                 // set the header which attribute types of the targeted columns
-                JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
-                JTuple = new Tuple(JTuple.size());
-                JTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+                tTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+                tTuple = new Tuple(tTuple.size());
+                tTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
                 for (int i = 0; i < targetHeapFiles.length; i++) {
                     Tuple record = targetHeapFiles[i].getRecord(position);
                     switch (targetAttrTypes[i].attrType) {
                         case AttrType.attrInteger:
                             // Assumed that col heap page will have only one entry
-                            JTuple.setIntFld(i + 1,
+                            tTuple.setIntFld(i + 1,
                                     Convert.getIntValue(0, record.getTupleByteArray()));
                             break;
                         case AttrType.attrString:
-                            JTuple.setStrFld(i + 1,
+                            tTuple.setStrFld(i + 1,
                                     Convert.getStrValue(0, record.getTupleByteArray(), targetShortSizes[i] + 2));
                             break;
                         default:
                             throw new Exception("Attribute indexAttrType not supported");
                     }
                 }
-                if (PredEval.Eval(_selects, JTuple, null, targetAttrTypes, null))
-                    return JTuple;
+                if (PredEval.Eval(_selects, tTuple, null, targetAttrTypes, null)) {
+                    Projection.Project(tTuple, targetAttrTypes, Jtuple, perm_mat, perm_mat.length);
+                    return Jtuple;
+                }
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -232,38 +245,6 @@ public class ColumnarIndexScan extends Iterator{
             scan[i].close();
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-
-    /*
-    * Gets the attribute string sizes from the coulumar file
-    * and required for the seting the tuple header for the projection
-    * */
-    private void setTargetColumnStringSizes(short[] targetedCols) {
-        short[] attributeStringSizes = columnarfile.getAttrSizes();
-
-        for(int i=0; i < targetAttrTypes.length; i++) {
-            targetShortSizes[i] = attributeStringSizes[targetedCols[i]];
-        }
-    }
-
-    /*
-    * Gets the attribute types of the target columns for the columnar file
-    * Is used while setting the Tuple header for the projection
-    *
-    * */
-    private void setTargetColumnAttributeTypes(short[] targetedCols) {
-        AttrType[] attributes = columnarfile.getAttributes();
-
-        for(int i=0; i < targetAttrTypes.length; i++) {
-            targetAttrTypes[i] = attributes[targetedCols[i]];
-        }
-    }
-
-    // open the targeted column heap files and store those reference for scanning
-    private void setTargetHeapFiles(String relName, short[] targetedCols) throws HFException, HFBufMgrException, HFDiskMgrException, IOException {
-        for(int i=0; i < targetedCols.length; i++) {
-            targetHeapFiles[i] = new Heapfile(relName + Short.toString(targetedCols[i]));
         }
     }
 }
