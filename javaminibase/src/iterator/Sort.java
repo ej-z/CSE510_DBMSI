@@ -711,6 +711,7 @@ public class Sort extends Iterator implements GlobalConst {
             for (int i = 0; i < temp_files.length; i++) {
                 if (temp_files[i] != null) {
                     try {
+                        i_buf[i].close();
                         temp_files[i].deleteFile();
                     } catch (Exception e) {
                         throw new SortException(e, "Sort.java: Heapfile error");
