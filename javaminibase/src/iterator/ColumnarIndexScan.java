@@ -73,6 +73,11 @@ public class ColumnarIndexScan extends Iterator{
             switch (indexTypes[i].indexType) {
                 case IndexType.B_Index:
                     Iterator im = new ColumnarBTreeScan(columnarfile, columnNos[i], index_selects[i], indexOnly);
+                    if(columnNos.length == 1){
+                        scan[i]= im;
+                        break;
+                    }
+
                     AttrType[] types = new AttrType[1];
                     types[0] = new AttrType(AttrType.attrInteger);
                     short[] sizes = new short[0];
@@ -94,10 +99,6 @@ public class ColumnarIndexScan extends Iterator{
         Tuple t;
         while (position != -1) {
             try {
-                if(scan.length>=1){
-                    t=scan[0].get_next();
-                    max_pos=t.getIntFld(1);
-                }
                 position = get_next_position();
                 if (position < 0)
                     return null;
@@ -141,87 +142,27 @@ public class ColumnarIndexScan extends Iterator{
     * */
     public int get_next_position() throws Exception {
         /*iterate through all the scan objects*/
-        HashMap<Integer,Integer> result=new HashMap<>();
-        boolean retvalue=fun_recurse(result,scan,max_pos,index);
-        if(retvalue==true)
-            return result.get(0);
-        else
-            return -1;
-    }
-
-    private boolean fun_recurse(HashMap<Integer, Integer> result, Iterator[] scan, int max_pos, int index) throws Exception {
-        int tempos=-1,i=0;
-        Tuple t=null;
-        for(i=0;i<scan.length;i++){
-            if(i!=index){
-                t=scan[i].get_next();
-                if(t!=null) {
-                    tempos = t.getIntFld(1);
-                    if (tempos != max_pos) {
-                        if (max_pos < tempos) {
-                            break;
-                        } else {
-                            while (max_pos > tempos) {
-                                t = scan[i].get_next();
-                                if(t!=null) {
-                                    tempos = t.getIntFld(1);
-                                }
-                                else{
-                                    break;
-                                }
-                            }
-                            if (t == null) {
-                                return false;
-                            }
-                            if (tempos == max_pos) {
-                                result.put(i, tempos);
-                            } else {
-                                break;
-                            }
-                        }
-                    } else {
-                        result.put(i, tempos);
-                    }
-
-                }
-                else{
-                    break;
+        int curr_max = -1, curr_index = -1, cnt = 0;
+        Tuple t;
+        while (true) {
+            for (int i = 0; i < scan.length; i++) {
+                if (i == curr_index)
+                    continue;
+                t = scan[i].get_next();
+                if(t==null)
+                    return -1;
+                int p = t.getIntFld(1);
+                if (p > curr_max) {
+                    curr_max = p;
+                    curr_index = i;
+                    cnt = 1;
+                } else if (p == curr_max) {
+                    cnt++;
                 }
             }
+            if(cnt == scan.length)
+                return curr_max;
         }
-
-        if(t!=null){
-            if(tempos>max_pos){
-                max_pos=tempos;index=i;
-                result.put(index,max_pos);
-                return fun_recurse(result,scan,max_pos,index);
-            }
-        }
-       /*
-       should check if this can be included
-       else{
-            return false;
-        }*/
-        Set<Integer> keyvalue=result.keySet();
-        int prev=-1;
-        if(keyvalue.size()<scan.length){
-            return false;
-        }
-        for(Integer j:keyvalue){
-            if(prev!=-1){
-                if(prev==result.get(j)){
-                    prev=result.get(j);
-                }
-                else{
-                    return false;
-                }
-            }
-            else{
-                prev=result.get(j);
-            }
-        }
-
-        return true;
     }
 
     public boolean delete_next() throws Exception {
