@@ -170,6 +170,52 @@ public class InterfaceUtils {
         return condExprs;
     }
 
+    public static CondExpr[] processEquiJoinConditionExpression(String expression, String[] innerTargetColumns, String[] outerTargetColumns) throws Exception {
+        CondExpr[] condExprs;
+
+        if (expression.length() == 0) {
+            condExprs = new CondExpr[1];
+            condExprs[0] = null;
+
+            return condExprs;
+        }
+
+        String[] andExpressions = expression.split(" \\^ ");
+        condExprs = new CondExpr[andExpressions.length + 1];
+        for (int i = 0; i < andExpressions.length; i++) {
+            String temp = andExpressions[i].replace("(", "");
+            temp = temp.replace(")", "");
+            String[] orExpressions = temp.split(" v ");
+
+            condExprs[i] = new CondExpr();
+            CondExpr conditionalExpression = condExprs[i];
+            for (int j = 0; j < orExpressions.length; j++) {
+                String singleExpression = orExpressions[j].replace("[", "");
+                singleExpression = singleExpression.replace("]", "");
+                String[] expressionParts = singleExpression.split(" ");
+                String attribute1Name = expressionParts[0].split("\\.")[1];
+                String stringOperator = expressionParts[1];
+                String attribute2Name = expressionParts[2].split("\\.")[1];
+
+                conditionalExpression.type1 = new AttrType(AttrType.attrSymbol);
+                conditionalExpression.operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), getColumnPositionInTargets(attribute1Name, outerTargetColumns) + 1);
+                conditionalExpression.op = getOperatorForString(stringOperator);
+                conditionalExpression.type2 = new AttrType(AttrType.attrSymbol);
+                conditionalExpression.operand2.symbol = new FldSpec(new RelSpec(RelSpec.innerRel), getColumnPositionInTargets(attribute2Name, innerTargetColumns) + 1);
+
+                if (j == orExpressions.length - 1) {
+                    conditionalExpression.next = null;
+                } else {
+                    conditionalExpression.next = new CondExpr();
+                    conditionalExpression = conditionalExpression.next;
+                }
+            }
+        }
+        condExprs[andExpressions.length] = null;
+
+        return condExprs;
+    }
+
     public static CondExpr[] processRawConditionExpression(String expression, String[] targetColumns) throws Exception {
         // Sample input
         // String expression = "([columnarTable1.A = 'RandomTextHere'] v [columnarTable1.B > 2]) ^ ([columnarTable1.C = columnarTable1.D])"

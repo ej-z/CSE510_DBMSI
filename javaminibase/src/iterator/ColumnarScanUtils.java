@@ -69,4 +69,38 @@ public class ColumnarScanUtils {
         jTuple.setHdr((short)fldSpecs.length, types, strSizes);
         return jTuple;
     }
+
+    public static Tuple getProjectionTuple(Columnarfile outer, Columnarfile inner, FldSpec[] fldSpecs) throws Exception {
+
+        AttrType[] types = new AttrType[fldSpecs.length];
+        List<Short> sizes = new ArrayList<>();
+        for (int i = 0; i < fldSpecs.length; i++) {
+            switch (fldSpecs[i].relation.key) {
+                case RelSpec.outer:      // Field of outer (t1)
+                    types[i] = outer.getAttrtypeforcolumn(fldSpecs[i].offset-1);
+                    if(types[i].attrType == AttrType.attrString)
+                        sizes.add(outer.getAttrsizeforcolumn(fldSpecs[i].offset-1));
+                    break;
+                case RelSpec.innerRel:      // Field of outer (t1)
+                    types[i] = inner.getAttrtypeforcolumn(fldSpecs[i].offset-1);
+                    if(types[i].attrType == AttrType.attrString)
+                        sizes.add(inner.getAttrsizeforcolumn(fldSpecs[i].offset-1));
+                    break;
+                default:
+                    throw new WrongPermat("something is wrong in perm_mat");
+
+            }
+        }
+
+        short[] strSizes = new short[sizes.size()];
+        for (int i = 0; i < strSizes.length; i++) {
+            strSizes[i] = sizes.get(i);
+        }
+
+        Tuple jTuple = new Tuple();
+        jTuple.setHdr((short)fldSpecs.length, types, strSizes);
+        jTuple = new Tuple(jTuple.size());
+        jTuple.setHdr((short)fldSpecs.length, types, strSizes);
+        return jTuple;
+    }
 }

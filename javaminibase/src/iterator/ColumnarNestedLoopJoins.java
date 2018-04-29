@@ -11,59 +11,31 @@ import java.io.IOException;
 
 public class ColumnarNestedLoopJoins extends Iterator{
     private AttrType[] _in1,_in2;
-    private int in1_len,in2_len;
     private Iterator outerIterator;
     private Tuple innerTuple, Jtuple, outerTuple;
     private CondExpr[] RightFilter, OutputFilter;
-    private short t2_str_sizescopy[];
-    private int n_buf_pages;
-    private TupleScan innerScan;
+    private short[] InnertTargets;
+    private Iterator innerScan;
     private boolean done,getfromouter;
     private FldSpec perm_mat[];
-    private int n_out_flds;
-    private Columnarfile cf;
+    private FldSpec i_proj[];
+    private String cfName;
 
-    public ColumnarNestedLoopJoins(AttrType[] in1, short[] t1_str_sizes, AttrType[] in2, short[] t2_str_sizes, int amt_of_mem,
-                                   Iterator am1,String relName, CondExpr[] outputFilter, CondExpr[] rightFilter, FldSpec[] proj_list,
-                                   int nout_flds){
-        _in1 = new AttrType[in1.length];
-        _in2 = new AttrType[in2.length];
-        in1_len = in1.length;
-        in2_len = in2.length;
-        System.arraycopy(in1, 0, _in1, 0, in1.length);
-        System.arraycopy(in2, 0, _in2, 0, in2.length);
+    public ColumnarNestedLoopJoins(AttrType[] in1, AttrType[] in2, Iterator am1,String relName, CondExpr[] outputFilter, CondExpr[] innerFilter, short[] innerTargets,FldSpec[] inner_Proj, FldSpec[] proj_list, Tuple proj_t){
+        _in1 = in1;
+        _in2 = in2;
         outerIterator = am1;
         innerTuple = new Tuple();
-        Jtuple=new Tuple();
-        RightFilter = rightFilter;
+        Jtuple=proj_t;
+        RightFilter = innerFilter;
         OutputFilter=outputFilter;
-        n_buf_pages = amt_of_mem;
+        InnertTargets = innerTargets;
         innerScan = null;
         done = false;
         getfromouter = true;
-        t2_str_sizescopy=t2_str_sizes;
-        AttrType[] Jtypes=new AttrType[nout_flds];
-        short[] t_size;
         perm_mat=proj_list;
-        n_out_flds = nout_flds;
-        try {
-            t_size = TupleUtils.setup_op_tuple(Jtuple,Jtypes,in1,in1_len,in2,in2_len,t1_str_sizes,t2_str_sizes,proj_list,n_out_flds);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (TupleUtilsException e) {
-            e.printStackTrace();
-        }
-        try {
-            cf = new Columnarfile(relName);
-        } catch (HFException e) {
-            e.printStackTrace();
-        } catch (HFBufMgrException e) {
-            e.printStackTrace();
-        } catch (HFDiskMgrException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        cfName = relName;
+        i_proj = inner_Proj;
     }
 
     public Tuple get_next() throws Exception {
@@ -76,27 +48,20 @@ public class ColumnarNestedLoopJoins extends Iterator{
                     innerScan=null;
                 }
                 try {
-                    innerScan=cf.openTupleScan();
+                    innerScan= new ColumnarFileScan(cfName, i_proj, InnertTargets, RightFilter);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 if((outerTuple=outerIterator.get_next())==null){
                     done=true;
-                    if(innerScan!=null){
-                        innerScan=null;
-                    }
                     return null;
                 }
             }
 
-            TID tid=new TID();
-            while((innerTuple=innerScan.getNext(tid))!=null){
-                innerTuple.setHdr((short)in2_len,_in2,t2_str_sizescopy);
-                if(PredEval.Eval(RightFilter,innerTuple,null,_in2,null)==true){
-                    if(PredEval.Eval(OutputFilter,outerTuple,innerTuple,_in1,_in2)==true){
-                        Projection.Join(outerTuple,_in1,innerTuple,_in2,Jtuple,perm_mat,n_out_flds);
-                        return Jtuple;
-                    }
+            while((innerTuple=innerScan.get_next())!=null) {
+                if (PredEval.Eval(OutputFilter, outerTuple, innerTuple, _in1, _in2) == true) {
+                    Projection.Join(outerTuple, _in1, innerTuple, _in2, Jtuple, perm_mat, perm_mat.length);
+                    return Jtuple;
                 }
             }
             getfromouter=true;
@@ -108,6 +73,8 @@ public class ColumnarNestedLoopJoins extends Iterator{
 
             try {
                 outerIterator.close();
+                if(innerScan!= null)
+                    innerScan.close();
             } catch (Exception e) {
                 throw new JoinsException(e, "NestedLoopsJoin.java: error in closing iterator.");
             }
