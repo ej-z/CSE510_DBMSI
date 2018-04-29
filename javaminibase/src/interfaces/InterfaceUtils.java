@@ -7,6 +7,9 @@ import iterator.CondExpr;
 import iterator.FldSpec;
 import iterator.RelSpec;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class InterfaceUtils {
 
     public static CondExpr[] processEquiJoinConditionExpression(String expression, Columnarfile innerColumnarFile, Columnarfile outerColumnarFile) {
@@ -284,6 +287,20 @@ public class InterfaceUtils {
         return (os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0 || os.indexOf("aix") > 0);
     }
 
+    public static List<String> getSerializedConditionList(CondExpr[] condExprs) {
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i < condExprs.length - 1; i++) {
+            CondExpr temp = condExprs[i];
+            while (temp != null && temp.next != null) {
+                temp = temp.next;
+                result.add("OR");
+            }
+            if (condExprs[i + 1] != null) {
+                result.add("AND");
+            }
+        }
 
+        return result;
+    }
 
 }
