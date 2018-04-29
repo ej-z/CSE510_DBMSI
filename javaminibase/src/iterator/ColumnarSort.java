@@ -30,6 +30,7 @@ public class ColumnarSort extends Iterator implements GlobalConst {
     private int max_elems_in_heap;
     private int sortFldLen;
     private int tuple_size;
+    Tuple[] tuples;
 
     private List<RunFile> temp_files;
     private int n_tempfiles;
@@ -145,6 +146,7 @@ public class ColumnarSort extends Iterator implements GlobalConst {
     private void setup_for_merge(int tuple_size) throws HFBufMgrException, IOException, InvalidTupleSizeException, InvalidTypeException, UnknowAttrType, FieldNumberOutOfBoundException, HFException, HFDiskMgrException, InvalidSlotNumberException, TupleUtilsException, SpaceNotAvailableException, FileAlreadyDeletedException {
 
         int size = temp_files.size();
+        tuples = new Tuple[size];
         passes = 1;
         while (size >= _n_pages) {
             passes++;
@@ -153,8 +155,10 @@ public class ColumnarSort extends Iterator implements GlobalConst {
             while (i < size) {
                 int j = i;
                 for (; j < i + _n_pages - 1; j++) {
-                    if (j < size)
+                    if (j < size) {
+                        tuples[j] = null;
                         temp_files.get(j).initiateScan();
+                    }
                 }
 
                 RunFile op = new RunFile();
@@ -174,13 +178,14 @@ public class ColumnarSort extends Iterator implements GlobalConst {
                     j = i;
                     for (; j < i + _n_pages - 1; j++) {
                         if (j < size) {
-                            Tuple tt = temp_files.get(j).getNext();
-                            if (tt != null) {
-                                tt.setHdr(n_cols, _in, str_lens);
-                                int ans = TupleUtils.CompareTupleWithTuple(_in[_sort_fld - 1], tt, _sort_fld, t, _sort_fld);
+                            if(tuples[j] == null)
+                                tuples[j] = temp_files.get(j).getNext();
+                            if (tuples[j] != null) {
+                                tuples[j].setHdr(n_cols, _in, str_lens);
+                                int ans = TupleUtils.CompareTupleWithTuple(_in[_sort_fld - 1], tuples[j], _sort_fld, t, _sort_fld);
                                 if ((order.tupleOrder == TupleOrder.Ascending && ans == -1) ||
                                         (order.tupleOrder == TupleOrder.Descending && ans == 1)) {
-                                    t = new Tuple(tt);
+                                    t = new Tuple(tuples[j]);
                                     k = j;
                                 }
                             }
@@ -189,13 +194,13 @@ public class ColumnarSort extends Iterator implements GlobalConst {
                     if (k > -1) {
                         done = false;
                         op.insertNext(t.returnTupleByteArray());
-                        //op.insertRecord(t.returnTupleByteArray());
-                        int l = i;
+                        tuples[k] = null;
+                        /*int l = i;
                         for (; l < i +_n_pages - 1; l++) {
                             if (l < size && l != k) {
                                 temp_files.get(l).setPrev();
                             }
-                        }
+                        }*/
                     }
                 }
                 for (; i < j; i++) {
@@ -577,8 +582,10 @@ public class ColumnarSort extends Iterator implements GlobalConst {
             // Open input buffers for all the input file
             setup_for_merge(tuple_size);
             for(int i = 0; i < temp_files.size(); i++)
-                if(temp_files.get(i) != null)
+                if(temp_files.get(i) != null) {
+                    tuples[i] = null;
                     temp_files.get(i).initiateScan();
+                }
         }
         int size = temp_files.size();
         int i = 0;
@@ -592,25 +599,27 @@ public class ColumnarSort extends Iterator implements GlobalConst {
         int j = i;
         for (; j < i + _n_pages; j++) {
             if (j < size && temp_files.get(j) != null) {
-                Tuple tt = temp_files.get(j).getNext();
-                if (tt != null) {
-                    tt.setHdr(n_cols, _in, str_lens);
-                    int ans = TupleUtils.CompareTupleWithTuple(_in[_sort_fld - 1], tt, _sort_fld, t, _sort_fld);
+                if(tuples[j]==null)
+                    tuples[j] = temp_files.get(j).getNext();
+                if (tuples[j] != null) {
+                    tuples[j].setHdr(n_cols, _in, str_lens);
+                    int ans = TupleUtils.CompareTupleWithTuple(_in[_sort_fld - 1], tuples[j], _sort_fld, t, _sort_fld);
                     if ((order.tupleOrder == TupleOrder.Ascending && ans == -1) ||
                             (order.tupleOrder == TupleOrder.Descending && ans == 1)){
-                        t = new Tuple(tt);
+                        t = new Tuple(tuples[j]);
                         k = j;
                     }
                 }
             }
         }
         if (k > -1) {
-            int l = i;
+            tuples[k] = null;
+            /*int l = i;
             for (; l < i +_n_pages; l++) {
                 if (l < size && l != k && temp_files.get(l)!= null) {
                     temp_files.get(l).setPrev();
                 }
-            }
+            }*/
         } else {
             passes++;
             t = null;
@@ -642,15 +651,6 @@ public class ColumnarSort extends Iterator implements GlobalConst {
                 _am.close();
             } catch (Exception e) {
                 throw new SortException(e, "Sort.java: error in closing iterator.");
-            }
-
-            if (useBM) {
-                try {
-                    free_buffer_pages(_n_pages-1, bufs_pids);
-                } catch (Exception e) {
-                    throw new SortException(e, "Sort.java: BUFmgr error");
-                }
-                for (int i = 0; i < _n_pages-1; i++) bufs_pids[i].pid = INVALID_PAGE;
             }
 
             for (int i = 0; i < temp_files.size(); i++) {
