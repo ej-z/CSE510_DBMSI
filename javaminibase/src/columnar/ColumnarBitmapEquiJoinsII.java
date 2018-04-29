@@ -57,7 +57,6 @@ public class ColumnarBitmapEquiJoinsII {
 
         List<HashSet<String>> uniSet = getUniqueSetFromJoin(joinExp, leftColumnarFile, rightColumnarFile);
 
-        System.out.println(uniSet);
 
         List<List<String>> positions = new ArrayList<>();
 
@@ -73,8 +72,6 @@ public class ColumnarBitmapEquiJoinsII {
 
                 String rightBmName = rightColumnarFile.getBMName(offsets.get(0).get(i) - 1, new ValueString<>(eachUniqueSet));
                 BitMapFile rightBitMapfile = rightColumnarFile.getBMIndex(rightBmName);
-
-
 
                 //todo need to discuss this as header page is null
                 leftBitMapfile.setHeaderPage(new BitMapHeaderPage(leftBitMapfile.getHeaderPageId()));
@@ -115,10 +112,6 @@ public class ColumnarBitmapEquiJoinsII {
 
         }
 
-        System.out.println(positions);
-
-
-
         HashSet<String> resultTillNow = new HashSet<>(positions.get(0));
 
         List<HashSet<String>> newList = new ArrayList<>();
@@ -133,7 +126,6 @@ public class ColumnarBitmapEquiJoinsII {
         }
         newList.add(resultTillNow);
 
-        System.out.println(newList);
         resultTillNow = newList.get(0);
 
         for (int i=1; i < newList.size(); i++) {
@@ -141,22 +133,14 @@ public class ColumnarBitmapEquiJoinsII {
             resultTillNow.retainAll(newList.get(i));
         }
 
-        System.out.println(resultTillNow);
-        System.out.println("************ Print tuples ************");
-
         for(String positionsAfterJoin: resultTillNow) {
             String[] split = positionsAfterJoin.split("#");
 
             Tuple tuple = leftColumnarFile.getTuple(Integer.parseInt(split[0]));
 
             if(PredEval.Eval(outerExp, tuple, null, leftColumnarFile.getAttributes(), null)) {
-
                 Tuple tuple1 = rightColumnarFile.getTuple(Integer.parseInt(split[1]));
-//                tuple1.print(rightColumnarFile.getAttributes());
-
                 if(PredEval.Eval(innerExp, tuple1, null, rightColumnarFile.getAttributes(), null)) {
-//                    tuple1.print(rightColumnarFile.getAttributes());
-//                    tuple.print(leftColumnarFile.getAttributes());
 
                     Tuple Jtuple = new Tuple();
                     AttrType[] Jtypes=new AttrType[n_out_flds];
@@ -166,20 +150,10 @@ public class ColumnarBitmapEquiJoinsII {
                     Projection.Join(tuple, in1,
                             tuple1, in2,
                             Jtuple, proj_list, n_out_flds);
-
                     Jtuple.print(opAttr);
-//                    Projection.Project(tTuple, targetAttrTypes, Jtuple, perm_mat, perm_mat.length);
-
                 }
             }
-
-
-
-
         }
-
-
-
     }
 
     private List<BitSet> getEquiJoinRelation(List<List<String>> combinations, Columnarfile columnarfile) throws Exception {
