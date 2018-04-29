@@ -87,11 +87,20 @@ public class BitmapEquiJoins {
             CondExpr[] outerExp
         * */
 
-        ColumnarBitmapEquiJoinsII columnarBitmapEquiJoins = new ColumnarBitmapEquiJoinsII(null,
-                -1, null,
-                null, -1, null, -1, outerColumnarFile, -1,
-                innerColumnarFile, -1, projectionList, -1, equiJoinConstraint,
-                innerColumnarConstraint, outerColumnarConstraint);
+        ColumnarBitmapEquiJoinsII columnarBitmapEquiJoins = new ColumnarBitmapEquiJoinsII(outer.getAttributes(),
+                outer.getnumColumns(), outer.getAttrSizes(),
+                inner.getAttributes(),
+                inner.getnumColumns(),
+                inner.getAttrSizes(),
+                2,
+                outerColumnarFile,
+                -1,
+                innerColumnarFile,
+                -1,
+                projectionList,
+                targetColumns.length,
+                equiJoinConstraint,
+                innerColumnarConstraint, outerColumnarConstraint, opAttr);
 
         outer.close();
         inner.close();

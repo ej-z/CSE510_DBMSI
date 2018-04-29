@@ -5,9 +5,7 @@ import bitmap.BitMapFile;
 import bitmap.BitMapHeaderPage;
 import global.AttrType;
 import heap.Tuple;
-import iterator.CondExpr;
-import iterator.FldSpec;
-import iterator.PredEval;
+import iterator.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,7 +42,7 @@ public class ColumnarBitmapEquiJoinsII {
             int n_out_flds,
             CondExpr[] joinExp,
             CondExpr[] innerExp,
-            CondExpr[] outerExp) throws Exception {
+            CondExpr[] outerExp, AttrType[] opAttr) throws Exception {
 
 
         assert innerExp.length == 1;
@@ -157,11 +155,19 @@ public class ColumnarBitmapEquiJoinsII {
 //                tuple1.print(rightColumnarFile.getAttributes());
 
                 if(PredEval.Eval(innerExp, tuple1, null, rightColumnarFile.getAttributes(), null)) {
-                    tuple1.print(rightColumnarFile.getAttributes());
-                    tuple.print(leftColumnarFile.getAttributes());
+//                    tuple1.print(rightColumnarFile.getAttributes());
+//                    tuple.print(leftColumnarFile.getAttributes());
 
+                    Tuple Jtuple = new Tuple();
+                    AttrType[] Jtypes=new AttrType[n_out_flds];
 
+                    TupleUtils.setup_op_tuple(Jtuple,Jtypes,in1,len_in1,in2,len_in2,t1_str_sizes,t2_str_sizes,proj_list,n_out_flds);
 
+                    Projection.Join(tuple, in1,
+                            tuple1, in2,
+                            Jtuple, proj_list, n_out_flds);
+
+                    Jtuple.print(opAttr);
 //                    Projection.Project(tTuple, targetAttrTypes, Jtuple, perm_mat, perm_mat.length);
 
                 }
