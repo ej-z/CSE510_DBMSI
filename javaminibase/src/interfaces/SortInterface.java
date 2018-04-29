@@ -27,8 +27,8 @@ public class SortInterface {
         int bufferSize = Integer.parseInt(args[4]);
 
         String dbpath = InterfaceUtils.dbPath(columnDB);
-        SystemDefs sysdef = new SystemDefs(dbpath, 0, NUMBUF, "Clock");
-
+        SystemDefs sysdef = new SystemDefs(dbpath, 0, 25, "Clock");
+        int un = SystemDefs.JavabaseBM.getNumUnpinnedBuffers();
         runInterface(columnarFile, columnName, sortOrder, bufferSize);
 
         SystemDefs.JavabaseBM.flushAllPages();
@@ -59,9 +59,10 @@ public class SortInterface {
         ColumnarFileScan cfs = new ColumnarFileScan(columnarFile, Sprojection, targets, null);
 
         TupleOrder tupleSortOrder = (sortOrder.equals("ASC")) ? new TupleOrder(TupleOrder.Ascending) : new TupleOrder(TupleOrder.Descending);
-
+        int un = SystemDefs.JavabaseBM.getNumUnpinnedBuffers();
         int sortColNumber = cf.getAttributePosition(columnName);
-        ColumnarSort sort = new ColumnarSort(cf.getAttributes(), (short) cf.getAttributes().length, cf.getStrSize(), cfs, sortColNumber+1, tupleSortOrder, cf.getAttrsizeforcolumn(sortColNumber), bufferSize);
+        ColumnarSort sort = new ColumnarSort(cf.getAttributes(), (short) cf.getAttributes().length, cf.getStrSize(), cfs, sortColNumber+1, tupleSortOrder, cf.getAttrsizeforcolumn(sortColNumber), 3);
+
 
         int cnt = 1;
         while (true) {
@@ -76,6 +77,7 @@ public class SortInterface {
         System.out.println();
         System.out.println(cnt + " tuples selected");
         System.out.println();
+        System.out.println("Sort completed using "+sort.getPasses()+" passes.");
         // clean up
         sort.close();
 

@@ -508,6 +508,35 @@ public class HFPage extends Page
         return rid;
     }
 
+    public RID lastRecord()
+            throws IOException {
+        RID rid = new RID();
+        // find the first non-empty slot
+
+
+        slotCnt = Convert.getShortValue(SLOT_CNT, data);
+
+        int i;
+        short length;
+        for (i = slotCnt-1; i >= 0; i--) {
+            length = getSlotLength(i);
+            if (length != EMPTY_SLOT)
+                break;
+        }
+
+        if (i < 0)
+            return null;
+
+        // found a non-empty slot
+
+        rid.slotNo = i;
+        curPage.pid = Convert.getIntValue(CUR_PAGE, data);
+        rid.pageNo.pid = curPage.pid;
+
+        return rid;
+    }
+
+
     /**
      * @param curRid current record ID
      * @return RID of next record on the page, null if no more
@@ -531,6 +560,33 @@ public class HFPage extends Page
         }
 
         if (i >= slotCnt)
+            return null;
+
+        // found a non-empty slot
+
+        rid.slotNo = i;
+        curPage.pid = Convert.getIntValue(CUR_PAGE, data);
+        rid.pageNo.pid = curPage.pid;
+
+        return rid;
+    }
+
+    public RID prevRecord(RID curRid)
+            throws IOException {
+        RID rid = new RID();
+        slotCnt = Convert.getShortValue(SLOT_CNT, data);
+
+        int i = curRid.slotNo;
+        short length;
+
+        // find the next non-empty slot
+        for (i--; i >= 0; i--) {
+            length = getSlotLength(i);
+            if (length != EMPTY_SLOT)
+                break;
+        }
+
+        if (i < 0)
             return null;
 
         // found a non-empty slot

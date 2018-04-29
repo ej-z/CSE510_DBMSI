@@ -4,11 +4,11 @@ import global.AttrType;
 import global.GlobalConst;
 import global.PageId;
 import global.TupleOrder;
-import heap.FieldNumberOutOfBoundException;
-import heap.Heapfile;
-import heap.Tuple;
+import heap.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The Sort class sorts a file. All necessary information are passed as
@@ -34,17 +34,16 @@ public class ColumnarSort extends Iterator implements GlobalConst {
     private int sortFldLen;
     private int tuple_size;
 
-    private pnodeSplayPQ Q;
-    private Heapfile[] temp_files;
+    private List<RunFile> temp_files;
     private int n_tempfiles;
     private Tuple output_tuple;
-    private int[] n_tuples;
+    private List<Integer> n_tuples;
     private int n_runs;
     private Tuple op_buf;
-    private OBuf o_buf;
-    private SpoofIbuf[] i_buf;
+    private COBuf o_buf;
     private PageId[] bufs_pids;
     private boolean useBM = true; // flag for whether to use buffer manager
+    private int passes = 0;
 
     /**
      * Class constructor, take information about the tuples, and set up
@@ -105,12 +104,12 @@ public class ColumnarSort extends Iterator implements GlobalConst {
 
         // this may need change, bufs ???  need io_bufs.java
         //    bufs = get_buffer_pages(_n_pages, bufs_pids, bufs);
-        bufs_pids = new PageId[_n_pages];
-        bufs = new byte[_n_pages][];
+        bufs_pids = new PageId[_n_pages-1];
+        bufs = new byte[_n_pages-1][];
 
         if (useBM) {
             try {
-                get_buffer_pages(_n_pages, bufs_pids, bufs);
+                get_buffer_pages(_n_pages-1, bufs_pids, bufs);
             } catch (Exception e) {
                 throw new SortException(e, "Sort.java: BUFmgr error");
             }
@@ -122,33 +121,15 @@ public class ColumnarSort extends Iterator implements GlobalConst {
 
         // as a heuristic, we set the number of runs to an arbitrary value
         // of ARBIT_RUNS
-        temp_files = new Heapfile[ARBIT_RUNS];
+        temp_files = new ArrayList<>();
         n_tempfiles = ARBIT_RUNS;
-        n_tuples = new int[ARBIT_RUNS];
+        n_tuples = new ArrayList<>();
         n_runs = ARBIT_RUNS;
 
-        try {
-            temp_files[0] = new Heapfile(null);
-        } catch (Exception e) {
-            throw new SortException(e, "Sort.java: Heapfile error");
-        }
-
-        o_buf = new OBuf();
-
-        o_buf.init(bufs, _n_pages, tuple_size, temp_files[0], false);
-        //    output_tuple = null;
+        o_buf = new COBuf();
 
         max_elems_in_heap = 200;
         sortFldLen = sort_fld_len;
-
-        Q = new pnodeSplayPQ(sort_fld, in[sort_fld - 1], order);
-
-        op_buf = new Tuple(tuple_size);   // need Tuple.java
-        try {
-            op_buf.setHdr(n_cols, _in, str_lens);
-        } catch (Exception e) {
-            throw new SortException(e, "Sort.java: op_buf.setHdr() failed");
-        }
     }
 
     /**
@@ -158,70 +139,80 @@ public class ColumnarSort extends Iterator implements GlobalConst {
      * the minimum of all runs.
      *
      * @param tuple_size size (in bytes) of each tuple
-     * @param n_R_runs   number of runs
      * @throws IOException     from lower layers
      * @throws LowMemException there is not enough memory to
      *                         sort in two passes (a subclass of SortException).
      * @throws SortException   something went wrong in the lower layer.
      * @throws Exception       other exceptions
      */
-    private void setup_for_merge(int tuple_size, int n_R_runs)
-            throws IOException,
-            LowMemException,
-            SortException,
-            Exception {
-        // don't know what will happen if n_R_runs > _n_pages
-        if (n_R_runs > _n_pages)
-            throw new LowMemException("Sort.java: Not enough memory to sort in two passes.");
+    private void setup_for_merge(int tuple_size) throws HFBufMgrException, IOException, InvalidTupleSizeException, InvalidTypeException, UnknowAttrType, FieldNumberOutOfBoundException, HFException, HFDiskMgrException, InvalidSlotNumberException, TupleUtilsException, SpaceNotAvailableException, FileAlreadyDeletedException {
 
-        int i;
-        pnode cur_node;  // need pq_defs.java
-
-        i_buf = new SpoofIbuf[n_R_runs];   // need io_bufs.java
-        for (int j = 0; j < n_R_runs; j++) i_buf[j] = new SpoofIbuf();
-
-        // construct the lists, ignore TEST for now
-        // this is a patch, I am not sure whether it works well -- bingjie 4/20/98
-
-        for (i = 0; i < n_R_runs; i++) {
-            byte[][] apage = new byte[1][];
-            apage[0] = bufs[i];
-
-            // need iobufs.java
-            i_buf[i].init(temp_files[i], apage, 1, tuple_size, n_tuples[i]);
-
-            cur_node = new pnode();
-            cur_node.run_num = i;
-
-            // may need change depending on whether Get() returns the original
-            // or make a copy of the tuple, need io_bufs.java ???
-            Tuple temp_tuple = new Tuple(tuple_size);
-
-            try {
-                temp_tuple.setHdr(n_cols, _in, str_lens);
-            } catch (Exception e) {
-                throw new SortException(e, "Sort.java: Tuple.setHdr() failed");
-            }
-
-            temp_tuple = i_buf[i].Get(temp_tuple);  // need io_bufs.java
-
-            if (temp_tuple != null) {
-	/*
-	System.out.print("Get tuple from run " + i);
-	temp_tuple.print(_in);
-	*/
-                cur_node.tuple = temp_tuple; // no copy needed
-                try {
-                    Q.enq(cur_node);
-                } catch (UnknowAttrType e) {
-                    throw new SortException(e, "Sort.java: UnknowAttrType caught from Q.enq()");
-                } catch (TupleUtilsException e) {
-                    throw new SortException(e, "Sort.java: TupleUtilsException caught from Q.enq()");
+        int size = temp_files.size();
+        passes = 1;
+        while (size > 1) {
+            passes++;
+            int i = 0;
+            int x = 0;
+            while (i < size) {
+                int j = i;
+                for (; j < i + _n_pages - 1; j++) {
+                    if (j < size)
+                        temp_files.get(j).initiateScan();
                 }
 
+                RunFile op = new RunFile();
+                op.initiateSequentialInsert();
+                Tuple t = new Tuple(tuple_size);
+                t.setHdr(n_cols, _in, str_lens);
+
+
+                boolean done = false;
+                while (!done) {
+                    if (order.tupleOrder == TupleOrder.Ascending)
+                        MAX_VAL(t, _in[_sort_fld - 1]);
+                    else
+                        MIN_VAL(t, _in[_sort_fld - 1]);
+                    done = true;
+                    int k = -1;
+                    j = i;
+                    for (; j < i + _n_pages - 1; j++) {
+                        if (j < size) {
+                            Tuple tt = temp_files.get(j).getNext();
+                            if (tt != null) {
+                                tt.setHdr(n_cols, _in, str_lens);
+                                int ans = TupleUtils.CompareTupleWithTuple(_in[_sort_fld - 1], tt, _sort_fld, t, _sort_fld);
+                                if (order.tupleOrder == TupleOrder.Ascending && ans == -1) {
+                                    t = new Tuple(tt);
+                                    k = j;
+                                }
+                            }
+                        }
+                    }
+                    if (k > -1) {
+                        done = false;
+                        op.insertNext(t.returnTupleByteArray());
+                        //op.insertRecord(t.returnTupleByteArray());
+                        int l = i;
+                        for (; l < i +_n_pages - 1; l++) {
+                            if (l < size && l != k) {
+                                temp_files.get(l).setPrev();
+                            }
+                        }
+                    }
+                }
+                for (; i < j; i++) {
+                    if (i < size) {
+                        temp_files.get(i).finishScan();
+                        temp_files.get(i).deleteFile();
+                        temp_files.set(i, null);
+                    }
+                }
+                op.finishSequentialInsert();
+                temp_files.set(x, op);
+                x++;
             }
+            size = x;
         }
-        return;
     }
 
     /**
@@ -230,19 +221,27 @@ public class ColumnarSort extends Iterator implements GlobalConst {
      *
      * @param max_elems   maximum number of elements in heap
      * @param sortFldType attribute type of the sort field
-     * @param sortFldLen  length of the sort field
      * @return number of runs generated
      * @throws IOException    from lower layers
      * @throws SortException  something went wrong in the lower layer.
      * @throws JoinsException from <code>Iterator.get_next()</code>
      */
-    private int generate_runs(int max_elems, AttrType sortFldType, int sortFldLen)
+    private int generate_runs(int max_elems, AttrType sortFldType)
             throws IOException,
             SortException,
             UnknowAttrType,
             TupleUtilsException,
             JoinsException,
             Exception {
+        temp_files.add(new RunFile());
+        temp_files.get(0).initiateSequentialInsert();
+        o_buf.init(bufs, _n_pages-1, tuple_size, temp_files.get(0), false);
+        op_buf = new Tuple(tuple_size);   // need Tuple.java
+        try {
+            op_buf.setHdr(n_cols, _in, str_lens);
+        } catch (Exception e) {
+            throw new SortException(e, "Sort.java: op_buf.setHdr() failed");
+        }
         Tuple tuple;
         pnode cur_node;
         pnodeSplayPQ Q1 = new pnodeSplayPQ(_sort_fld, sortFldType, order);
@@ -336,34 +335,19 @@ public class ColumnarSort extends Iterator implements GlobalConst {
             // check whether the other queue is full
             if (p_elems_other_Q == max_elems) {
                 // close current run and start next run
-                n_tuples[run_num] = (int) o_buf.flush();  // need io_bufs.java
+                n_tuples.add((int) o_buf.flush());  // need io_bufs.java
                 run_num++;
 
-                // check to see whether need to expand the array
-                if (run_num == n_tempfiles) {
-                    Heapfile[] temp1 = new Heapfile[2 * n_tempfiles];
-                    for (int i = 0; i < n_tempfiles; i++) {
-                        temp1[i] = temp_files[i];
-                    }
-                    temp_files = temp1;
-                    n_tempfiles *= 2;
-
-                    int[] temp2 = new int[2 * n_runs];
-                    for (int j = 0; j < n_runs; j++) {
-                        temp2[j] = n_tuples[j];
-                    }
-                    n_tuples = temp2;
-                    n_runs *= 2;
-                }
-
                 try {
-                    temp_files[run_num] = new Heapfile(null);
+                    temp_files.get(run_num-1).finishSequentialInsert();
+                    temp_files.add(new RunFile());
+                    temp_files.get(run_num).initiateSequentialInsert();
                 } catch (Exception e) {
                     throw new SortException(e, "Sort.java: create Heapfile failed");
                 }
 
                 // need io_bufs.java
-                o_buf.init(bufs, _n_pages, tuple_size, temp_files[run_num], false);
+                o_buf.init(bufs, _n_pages-1, tuple_size, temp_files.get(run_num), false);
 
                 // set the last Elem to be the minimum value for the sort field
                 if (order.tupleOrder == TupleOrder.Ascending) {
@@ -427,34 +411,18 @@ public class ColumnarSort extends Iterator implements GlobalConst {
                 } else {
                     // generate one more run for all tuples in the other queue
                     // close current run and start next run
-                    n_tuples[run_num] = (int) o_buf.flush();  // need io_bufs.java
+                    n_tuples.add((int) o_buf.flush());  // need io_bufs.java
                     run_num++;
-
-                    // check to see whether need to expand the array
-                    if (run_num == n_tempfiles) {
-                        Heapfile[] temp1 = new Heapfile[2 * n_tempfiles];
-                        for (int i = 0; i < n_tempfiles; i++) {
-                            temp1[i] = temp_files[i];
-                        }
-                        temp_files = temp1;
-                        n_tempfiles *= 2;
-
-                        int[] temp2 = new int[2 * n_runs];
-                        for (int j = 0; j < n_runs; j++) {
-                            temp2[j] = n_tuples[j];
-                        }
-                        n_tuples = temp2;
-                        n_runs *= 2;
-                    }
-
                     try {
-                        temp_files[run_num] = new Heapfile(null);
+                        temp_files.get(run_num-1).finishSequentialInsert();
+                        temp_files.add(new RunFile());
+                        temp_files.get(run_num).initiateSequentialInsert();
                     } catch (Exception e) {
                         throw new SortException(e, "Sort.java: create Heapfile failed");
                     }
 
                     // need io_bufs.java
-                    o_buf.init(bufs, _n_pages, tuple_size, temp_files[run_num], false);
+                    o_buf.init(bufs, _n_pages-1, tuple_size, temp_files.get(run_num), false);
 
                     // set the last Elem to be the minimum value for the sort field
                     if (order.tupleOrder == TupleOrder.Ascending) {
@@ -487,66 +455,11 @@ public class ColumnarSort extends Iterator implements GlobalConst {
         } // end of while (true)
 
         // close the last run
-        n_tuples[run_num] = (int) o_buf.flush();
+        n_tuples.add((int) o_buf.flush());
+        temp_files.get(run_num).finishSequentialInsert();
         run_num++;
 
         return run_num;
-    }
-
-    /**
-     * Remove the minimum value among all the runs.
-     *
-     * @return the minimum tuple removed
-     * @throws IOException   from lower layers
-     * @throws SortException something went wrong in the lower layer.
-     */
-    private Tuple delete_min()
-            throws IOException,
-            SortException,
-            Exception {
-        pnode cur_node;                // needs pq_defs.java
-        Tuple new_tuple, old_tuple;
-
-        cur_node = Q.deq();
-        old_tuple = cur_node.tuple;
-    /*
-    System.out.print("Get ");
-    old_tuple.print(_in);
-    */
-        // we just removed one tuple from one run, now we need to put another
-        // tuple of the same run into the queue
-        if (i_buf[cur_node.run_num].empty() != true) {
-            // run not exhausted
-            new_tuple = new Tuple(tuple_size); // need tuple.java??
-
-            try {
-                new_tuple.setHdr(n_cols, _in, str_lens);
-            } catch (Exception e) {
-                throw new SortException(e, "Sort.java: setHdr() failed");
-            }
-
-            new_tuple = i_buf[cur_node.run_num].Get(new_tuple);
-            if (new_tuple != null) {
-	/*
-	System.out.print(" fill in from run " + cur_node.run_num);
-	new_tuple.print(_in);
-	*/
-                cur_node.tuple = new_tuple;  // no copy needed -- I think Bingjie 4/22/98
-                try {
-                    Q.enq(cur_node);
-                } catch (UnknowAttrType e) {
-                    throw new SortException(e, "Sort.java: UnknowAttrType caught from Q.enq()");
-                } catch (TupleUtilsException e) {
-                    throw new SortException(e, "Sort.java: TupleUtilsException caught from Q.enq()");
-                }
-            } else {
-                throw new SortException("********** Wait a minute, I thought input is not empty ***************");
-            }
-
-        }
-
-        // changed to return Tuple instead of return char array ????
-        return old_tuple;
     }
 
     /**
@@ -660,25 +573,24 @@ public class ColumnarSort extends Iterator implements GlobalConst {
             first_time = false;
 
             // generate runs
-            Nruns = generate_runs(max_elems_in_heap, _in[_sort_fld - 1], sortFldLen);
-            //      System.out.println("Generated " + Nruns + " runs");
+            Nruns = generate_runs(max_elems_in_heap, _in[_sort_fld - 1]);
 
             // setup state to perform merge of runs.
             // Open input buffers for all the input file
-            setup_for_merge(tuple_size, Nruns);
+            setup_for_merge(tuple_size);
+            temp_files.get(0).initiateScan();
         }
 
-        if (Q.empty()) {
-            // no more tuples availble
-            return null;
+        Tuple output_tuple = temp_files.get(0).getNext();
+        if(output_tuple != null){
+            output_tuple.setHdr(n_cols, _in, str_lens);
+            return output_tuple;
         }
+        return null;
+    }
 
-        output_tuple = delete_min();
-        if (output_tuple != null) {
-            op_buf.tupleCopy(output_tuple);
-            return op_buf;
-        } else
-            return null;
+    public int getPasses() {
+        return passes;
     }
 
     /**
@@ -700,22 +612,22 @@ public class ColumnarSort extends Iterator implements GlobalConst {
 
             if (useBM) {
                 try {
-                    free_buffer_pages(_n_pages, bufs_pids);
+                    free_buffer_pages(_n_pages-1, bufs_pids);
                 } catch (Exception e) {
                     throw new SortException(e, "Sort.java: BUFmgr error");
                 }
-                for (int i = 0; i < _n_pages; i++) bufs_pids[i].pid = INVALID_PAGE;
+                for (int i = 0; i < _n_pages-1; i++) bufs_pids[i].pid = INVALID_PAGE;
             }
 
-            for (int i = 0; i < temp_files.length; i++) {
-                if (temp_files[i] != null) {
+            for (int i = 0; i < temp_files.size(); i++) {
+                if (temp_files.get(i) != null) {
                     try {
-                        i_buf[i].close();
-                        temp_files[i].deleteFile();
+                        temp_files.get(i).finishScan();
+                        temp_files.get(i).deleteFile();
                     } catch (Exception e) {
                         throw new SortException(e, "Sort.java: Heapfile error");
                     }
-                    temp_files[i] = null;
+                    temp_files.set(i, null);
                 }
             }
             closeFlag = true;

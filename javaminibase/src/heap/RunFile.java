@@ -54,55 +54,31 @@ public class RunFile implements heap.Filetype, GlobalConst {
         _ftype = TEMP;
         tempfilecount++;
 
-
-        // The constructor gets run in two different cases.
-        // In the first case, the file is new and the header page
-        // must be initialized.  This case is detected via a failure
-        // in the db->get_file_entry() call.  In the second case, the
-        // file already exists and all that must be done is to fetch
-        // the header page into the buffer pool
-
-        // try to open the file
-
         Page apage = new Page();
         _firstDataPageId = null;
-        if (_ftype == ORDINARY)
-            _firstDataPageId = get_file_entry(_fileName);
+        // file doesn't exist. First create it.
+        _firstDataPageId = newPage(apage, 1);
+        // check error
+        if (_firstDataPageId == null)
+            throw new HFException(null, "can't new page");
 
-        if (_firstDataPageId == null) {
-            // file doesn't exist. First create it.
-            _firstDataPageId = newPage(apage, 1);
-            // check error
-            if (_firstDataPageId == null)
-                throw new HFException(null, "can't new page");
+        add_file_entry(_fileName, _firstDataPageId);
+        // check error(new exception: Could not add file entry
 
-            add_file_entry(_fileName, _firstDataPageId);
-            // check error(new exception: Could not add file entry
-
-            HFPage firstDataPage = new HFPage();
-            firstDataPage.init(_firstDataPageId, apage);
-            PageId pageId = new PageId(INVALID_PAGE);
-            _currentDataPageId = new PageId(_firstDataPageId.pid);
-            firstDataPage.setNextPage(pageId);
-            firstDataPage.setPrevPage(pageId);
-            unpinPage(_firstDataPageId, true /*dirty*/);
-
-
-        }
+        HFPage firstDataPage = new HFPage();
+        firstDataPage.init(_firstDataPageId, apage);
+        PageId pageId = new PageId(INVALID_PAGE);
+        //_currentDataPageId = new PageId(_firstDataPageId.pid);
+        firstDataPage.setNextPage(pageId);
+        firstDataPage.setPrevPage(pageId);
+        unpinPage(_firstDataPageId, true /*dirty*/);
         _file_deleted = false;
-        // ASSERTIONS:
-        // - ALL private data members of class Heapfile are valid:
-        //
-        //  - _firstDirPageId valid
-        //  - _fileName valid
-        //  - no datapage pinned yet
-
-    } // end of constructor
+    }
 
     /* get a new datapage from the buffer manager and initialize dpinfo
        @param dpinfop the information in the new HFPage
     */
-    private HFPage _newDatapage(PageId pid)
+    private void _newDatapage(PageId pid, PageId prevPage)
             throws HFException,
             HFBufMgrException,
             HFDiskMgrException,
@@ -116,7 +92,9 @@ public class RunFile implements heap.Filetype, GlobalConst {
         HFPage hfpage = new HFPage();
         hfpage.init(pageId, apage);
         pid.pid = pageId.pid;
-        return hfpage;
+        hfpage.setPrevPage(prevPage);
+        hfpage.setNextPage(new PageId(INVALID_PAGE));
+        unpinPage(pageId, true);
     } // end of _newDatapage
 
     /**
@@ -144,6 +122,7 @@ public class RunFile implements heap.Filetype, GlobalConst {
         PageId currentDataPageId = new PageId(_firstDataPageId.pid);
         HFPage currentDataPage = new HFPage();
         pinPage(currentDataPageId, currentDataPage, false/*Rdisk*/);
+
         while (true) {
             if (currentDataPage.available_space() >= recLen){
                 break;
@@ -152,13 +131,14 @@ public class RunFile implements heap.Filetype, GlobalConst {
             HFPage nextdataPage = new HFPage();
             boolean dirty = false;
             if(nextPageId.pid == INVALID_PAGE){
-                _newDatapage(nextPageId);
+                _newDatapage(nextPageId, currentDataPageId);
                 currentDataPage.setNextPage(nextPageId);
                 dirty = true;
             }
             unpinPage(currentDataPageId, dirty);
             pinPage(nextPageId,nextdataPage,false);
-            currentDataPageId = nextPageId;
+
+            currentDataPageId = new PageId(nextPageId.pid);
             currentDataPage = nextdataPage;
         }
 
@@ -167,6 +147,41 @@ public class RunFile implements heap.Filetype, GlobalConst {
 
         unpinPage(currentDataPageId, true /* = DIRTY */);
         return rid;
+    }
+
+    public void initiateSequentialInsert() throws HFBufMgrException, IOException {
+        _currentDataPageId = _firstDataPageId;
+        currentDataPage = new HFPage();
+        pinPage(_currentDataPageId, currentDataPage, false);
+    }
+
+    public void insertNext(byte[] recPtr) throws HFBufMgrException, IOException, InvalidSlotNumberException, HFException, HFDiskMgrException {
+
+        int recLen = recPtr.length;
+        while (true) {
+            if (currentDataPage.available_space() >= recLen){
+                break;
+            }
+            PageId nextPageId = currentDataPage.getNextPage();
+            HFPage nextdataPage = new HFPage();
+            boolean dirty = false;
+            if(nextPageId.pid == INVALID_PAGE){
+                _newDatapage(nextPageId, _currentDataPageId);
+                currentDataPage.setNextPage(nextPageId);
+                dirty = true;
+            }
+            unpinPage(_currentDataPageId, dirty);
+            pinPage(nextPageId,nextdataPage,false);
+
+            _currentDataPageId = new PageId(nextPageId.pid);
+            currentDataPage = nextdataPage;
+        }
+        currentDataPage.insertRecord(recPtr);
+    }
+
+    public void finishSequentialInsert() throws HFBufMgrException {
+        unpinPage(_currentDataPageId, false);
+        _currentDataPageId = null;
     }
 
     public void initiateScan() throws HFBufMgrException, IOException {
@@ -178,17 +193,36 @@ public class RunFile implements heap.Filetype, GlobalConst {
 
     public Tuple getNext() throws HFBufMgrException, IOException, InvalidSlotNumberException {
 
-        if(currRec == null){
-            PageId nextPageId = currentDataPage.getNextPage();
-            unpinPage(_currentDataPageId, false);
-            if(nextPageId.pid == INVALID_PAGE)
-                return null;
-            pinPage(nextPageId, currentDataPage, false);
-            currRec = currentDataPage.firstRecord();
-        }
+        if(currRec == null)
+            return null;
         Tuple t = currentDataPage.getRecord(currRec);
         currRec = currentDataPage.nextRecord(currRec);
+        if(currRec == null){
+            PageId nextPageId = currentDataPage.getNextPage();
+            if(nextPageId.pid == INVALID_PAGE) {
+                currRec = null;
+                return t;
+            }
+            unpinPage(_currentDataPageId, false);
+            pinPage(nextPageId, currentDataPage, false);
+            _currentDataPageId = new PageId(nextPageId.pid);
+            currRec = currentDataPage.firstRecord();
+        }
         return t;
+    }
+
+    public void setPrev() throws HFBufMgrException, IOException, InvalidSlotNumberException {
+
+        if(currRec == null)
+            return;
+        currRec = currentDataPage.prevRecord(currRec);
+        if(currRec == null){
+            PageId prevPageId = currentDataPage.getPrevPage();
+            unpinPage(_currentDataPageId, false);
+            pinPage(prevPageId, currentDataPage, false);
+            _currentDataPageId = new PageId(prevPageId.pid);
+            currRec = currentDataPage.lastRecord();
+        }
     }
 
     public void finishScan() throws HFBufMgrException {
@@ -224,41 +258,16 @@ public class RunFile implements heap.Filetype, GlobalConst {
         // Deallocate all data pages
         PageId currentDataPageId = new PageId();
         currentDataPageId.pid = _firstDataPageId.pid;
-        PageId nextDataPageId = new PageId();
-        nextDataPageId.pid = 0;
-        Page pageinbuffer = new Page();
+        //PageId nextDataPageId = new PageId();
+        //nextDataPageId.pid = 0;
         HFPage currentDataPage = new HFPage();
-        Tuple atuple;
 
-        pinPage(currentDataPageId, currentDataPage, false);
-        //currentDirPage.openHFpage(pageinbuffer);
-
-        RID rid = new RID();
         while (currentDataPageId.pid != INVALID_PAGE) {
-            for (rid = currentDataPage.firstRecord();
-                 rid != null;
-                 rid = currentDataPage.nextRecord(rid)) {
-                atuple = currentDataPage.getRecord(rid);
-                DataPageInfo dpinfo = new DataPageInfo(atuple);
-                //int dpinfoLen = arecord.length;
-
-                freePage(dpinfo.pageId);
-
-            }
-            // ASSERTIONS:
-            // - we have freePage()'d all data pages referenced by
-            // the current directory page.
-
-            nextDataPageId = currentDataPage.getNextPage();
+            pinPage(currentDataPageId, currentDataPage, false);
+            PageId nextDataPageId = currentDataPage.getNextPage();
             freePage(currentDataPageId);
-
-            currentDataPageId.pid = nextDataPageId.pid;
-            if (nextDataPageId.pid != INVALID_PAGE) {
-                pinPage(currentDataPageId, currentDataPage, false);
-                //currentDirPage.openHFpage(pageinbuffer);
-            }
+            currentDataPageId = new PageId(nextDataPageId.pid);
         }
-
         delete_file_entry(_fileName);
     }
 
