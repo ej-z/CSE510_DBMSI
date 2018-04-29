@@ -61,7 +61,7 @@ public class SortInterface {
         TupleOrder tupleSortOrder = (sortOrder.equals("ASC")) ? new TupleOrder(TupleOrder.Ascending) : new TupleOrder(TupleOrder.Descending);
         int un = SystemDefs.JavabaseBM.getNumUnpinnedBuffers();
         int sortColNumber = cf.getAttributePosition(columnName);
-        ColumnarSort sort = new ColumnarSort(cf.getAttributes(), (short) cf.getAttributes().length, cf.getStrSize(), cfs, sortColNumber+1, tupleSortOrder, cf.getAttrsizeforcolumn(sortColNumber), 3);
+        ColumnarSort sort = new ColumnarSort(cf.getAttributes(), (short) cf.getAttributes().length, cf.getStrSize(), cfs, sortColNumber+1, tupleSortOrder, cf.getAttrsizeforcolumn(sortColNumber), 12);
 
 
         int cnt = 1;

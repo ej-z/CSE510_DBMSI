@@ -1,9 +1,6 @@
 package iterator;
 
-import global.AttrType;
-import global.GlobalConst;
-import global.PageId;
-import global.TupleOrder;
+import global.*;
 import heap.*;
 
 import java.io.IOException;
@@ -181,7 +178,8 @@ public class ColumnarSort extends Iterator implements GlobalConst {
                             if (tt != null) {
                                 tt.setHdr(n_cols, _in, str_lens);
                                 int ans = TupleUtils.CompareTupleWithTuple(_in[_sort_fld - 1], tt, _sort_fld, t, _sort_fld);
-                                if (order.tupleOrder == TupleOrder.Ascending && ans == -1) {
+                                if ((order.tupleOrder == TupleOrder.Ascending && ans == -1) ||
+                                        (order.tupleOrder == TupleOrder.Descending && ans == 1)) {
                                     t = new Tuple(tt);
                                     k = j;
                                 }
@@ -458,7 +456,7 @@ public class ColumnarSort extends Iterator implements GlobalConst {
         n_tuples.add((int) o_buf.flush());
         temp_files.get(run_num).finishSequentialInsert();
         run_num++;
-
+        free_buffer_pages(_n_pages-1,bufs_pids);
         return run_num;
     }
 
@@ -598,7 +596,8 @@ public class ColumnarSort extends Iterator implements GlobalConst {
                 if (tt != null) {
                     tt.setHdr(n_cols, _in, str_lens);
                     int ans = TupleUtils.CompareTupleWithTuple(_in[_sort_fld - 1], tt, _sort_fld, t, _sort_fld);
-                    if (order.tupleOrder == TupleOrder.Ascending && ans == -1) {
+                    if ((order.tupleOrder == TupleOrder.Ascending && ans == -1) ||
+                            (order.tupleOrder == TupleOrder.Descending && ans == 1)){
                         t = new Tuple(tt);
                         k = j;
                     }
