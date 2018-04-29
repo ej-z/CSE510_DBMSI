@@ -149,7 +149,7 @@ public class ColumnarSort extends Iterator implements GlobalConst {
 
         int size = temp_files.size();
         passes = 1;
-        while (size > 1) {
+        while (size >= _n_pages) {
             passes++;
             int i = 0;
             int x = 0;
@@ -578,13 +578,48 @@ public class ColumnarSort extends Iterator implements GlobalConst {
             // setup state to perform merge of runs.
             // Open input buffers for all the input file
             setup_for_merge(tuple_size);
-            temp_files.get(0).initiateScan();
+            for(int i = 0; i < temp_files.size(); i++)
+                if(temp_files.get(i) != null)
+                    temp_files.get(i).initiateScan();
         }
-
-        Tuple output_tuple = temp_files.get(0).getNext();
-        if(output_tuple != null){
-            output_tuple.setHdr(n_cols, _in, str_lens);
-            return output_tuple;
+        int size = temp_files.size();
+        int i = 0;
+        Tuple t = new Tuple(tuple_size);
+        t.setHdr(n_cols, _in, str_lens);
+        if (order.tupleOrder == TupleOrder.Ascending)
+            MAX_VAL(t, _in[_sort_fld - 1]);
+        else
+            MIN_VAL(t, _in[_sort_fld - 1]);
+        int k = -1;
+        int j = i;
+        for (; j < i + _n_pages; j++) {
+            if (j < size && temp_files.get(j) != null) {
+                Tuple tt = temp_files.get(j).getNext();
+                if (tt != null) {
+                    tt.setHdr(n_cols, _in, str_lens);
+                    int ans = TupleUtils.CompareTupleWithTuple(_in[_sort_fld - 1], tt, _sort_fld, t, _sort_fld);
+                    if (order.tupleOrder == TupleOrder.Ascending && ans == -1) {
+                        t = new Tuple(tt);
+                        k = j;
+                    }
+                }
+            }
+        }
+        if (k > -1) {
+            int l = i;
+            for (; l < i +_n_pages; l++) {
+                if (l < size && l != k && temp_files.get(l)!= null) {
+                    temp_files.get(l).setPrev();
+                }
+            }
+        } else {
+            passes++;
+            t = null;
+        }
+        //Tuple output_tuple = temp_files.get(0).getNext();
+        if(t != null){
+            t.setHdr(n_cols, _in, str_lens);
+            return t;
         }
         return null;
     }
