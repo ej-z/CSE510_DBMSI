@@ -92,7 +92,7 @@ public class InterfaceUtils {
                     conditionalExpression.operand2.integer = Integer.parseInt(attributeValue);
                 } else if (isString(attributeValue)) {
                     conditionalExpression.type2 = new AttrType(AttrType.attrString);
-                    conditionalExpression.operand2.string = attributeValue;
+                    conditionalExpression.operand2.string = attributeValue.replace("'","");
                 } else {
                     conditionalExpression.type2 = new AttrType(AttrType.attrSymbol);
                     String name = getAttributeName(attributeValue);
@@ -148,7 +148,7 @@ public class InterfaceUtils {
                     conditionalExpression.operand2.integer = Integer.parseInt(attributeValue);
                 } else if (isString(attributeValue)) {
                     conditionalExpression.type2 = new AttrType(AttrType.attrString);
-                    conditionalExpression.operand2.string = attributeValue;
+                    conditionalExpression.operand2.string = attributeValue.replace("'","");
                 } else {
                     conditionalExpression.type2 = new AttrType(AttrType.attrSymbol);
                     conditionalExpression.operand2.symbol = new FldSpec(new RelSpec(RelSpec.outer), 1);
@@ -204,7 +204,7 @@ public class InterfaceUtils {
                     conditionalExpression.operand2.integer = Integer.parseInt(attributeValue);
                 } else if (isString(attributeValue)) {
                     conditionalExpression.type2 = new AttrType(AttrType.attrString);
-                    conditionalExpression.operand2.string = attributeValue;
+                    conditionalExpression.operand2.string = attributeValue.replace("'","");
                 } else {
                     conditionalExpression.type2 = new AttrType(AttrType.attrSymbol);
                     String name = getAttributeName(attributeValue);
