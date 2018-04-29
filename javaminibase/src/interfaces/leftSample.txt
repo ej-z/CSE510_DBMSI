@@ -1,9 +1,6 @@
-A:int	B:char(25)	X:char(25)
-1	a	A
-2	b	D
-3	a	S
-4	b	I
-5	a	H
-6	b	X
-7	a	I
-8	b	I
+A:int	B:int	C:int
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5

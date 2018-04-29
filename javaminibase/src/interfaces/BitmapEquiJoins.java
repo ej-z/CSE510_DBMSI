@@ -1,11 +1,13 @@
 package interfaces;
 
-import columnar.ColumnarBitmapEquiJoins;
+import columnar.ColumnarBitmapEquiJoinsII;
 import columnar.Columnarfile;
 import diskmgr.PCounter;
 import global.AttrType;
 import global.SystemDefs;
 import iterator.CondExpr;
+import iterator.FldSpec;
+import iterator.RelSpec;
 
 public class BitmapEquiJoins {
 
@@ -13,6 +15,13 @@ public class BitmapEquiJoins {
         // Query Skeleton: COLUMNDB OUTERFILE INNERFILE OUTERCONST INNERCONST EQUICONST [TARGETCOLUMNS] NUMBUF
         // Example Query: testColumnDB columnarTable1 columnarTable2 "([columnarTable1.A = 10] v [columnnarTable1.B > 2]) ^ ([columnnarTable1.C = 20])" "([columnarTable2.A = 10] v [columnarTable2.B > 2]) ^ ([columnarTable2.C = 20])" "([columnarTable1.A = columnarTable2.A] v [columnarTable1.B = columnarTable2.B]) ^ ([columnarTable1.C = columnarTable2.C])" columnarTable1.A,columnarTable1.B,columnarTable2.C,columnarTable2.D 100
         // In case no constraints need to be applied, pass "" as input.
+        //test R1 R2 "([R1.X = 10] v [R1.B > 2])" "([R2.C = 20])" "([R1.A = R2.C]) ^ ([R1.B = R2.D])" R1.A,R1.B,R2.C,R2.D 100
+
+        //test R1 R2 "[R1.A > 2])" "([R2.C < 20])" "([R1.A = R2.C] v [R1.B = R2.D])" R1.A,R1.B,R2.C,R2.D 100
+
+        //test R1 R2 "[R1.A > 2])" "([R2.D < 20])" "([R1.A = R2.D]) ^ ([R1.B = R2.E]) ^ ([R1.C = R2.F])" R1.A,R1.B,R2.D,R2.E 100
+        //test R1 R2 "[R1.A > 2])" "([R2.D < 20])" "([R1.A = R2.D] v [R1.B = R2.E]) ^ ([R1.C = R2.F])" R1.A,R1.B,R2.D,R2.E 100
+
         String columnDB = args[0];
         String outerColumnarFile = args[1];
         String innerColumnarFile = args[2];
@@ -44,17 +53,18 @@ public class BitmapEquiJoins {
 
         AttrType[] opAttr = new AttrType[targetColumns.length];
         //todO Uncomment this
-//        FldSpec[] projectionList = new FldSpec[targetColumns.length];
-//        for (int i = 0; i < targetColumns.length; i++) {
-//            String attribute = targetColumns[i].split("\\.")[1];
-//            if (targetColumns[i].equals(outerColumnarFile)) {
-//                projectionList[i] = new FldSpec(new RelSpec(RelSpec.outer), outer.getAttributePosition(attribute) + 1);
-//                opAttr[i] = new AttrType(outer.getAttrtypeforcolumn(outer.getAttributePosition(attribute)).attrType);
-//            } else {
-//                projectionList[i] = new FldSpec(new RelSpec(RelSpec.innerRel), inner.getAttributePosition(attribute) + 1);
-//                opAttr[i] = new AttrType(inner.getAttrtypeforcolumn(inner.getAttributePosition(attribute)).attrType);
-//            }
-//        }
+        FldSpec[] projectionList = new FldSpec[targetColumns.length];
+        for (int i = 0; i < targetColumns.length; i++) {
+            String attribute = targetColumns[i].split("\\.")[1];
+            String relationName = targetColumns[i].split("\\.")[0];
+            if (relationName.equals(outerColumnarFile)) {
+                projectionList[i] = new FldSpec(new RelSpec(RelSpec.outer), outer.getAttributePosition(attribute) + 1);
+                opAttr[i] = new AttrType(outer.getAttrtypeforcolumn(outer.getAttributePosition(attribute)).attrType);
+            } else {
+                projectionList[i] = new FldSpec(new RelSpec(RelSpec.innerRel), inner.getAttributePosition(attribute) + 1);
+                opAttr[i] = new AttrType(inner.getAttrtypeforcolumn(inner.getAttributePosition(attribute)).attrType);
+            }
+        }
 
         // Call the equijoin interface
         /*
@@ -77,9 +87,10 @@ public class BitmapEquiJoins {
             CondExpr[] outerExp
         * */
 
-        ColumnarBitmapEquiJoins columnarBitmapEquiJoins = new ColumnarBitmapEquiJoins(null, -1, null,
+        ColumnarBitmapEquiJoinsII columnarBitmapEquiJoins = new ColumnarBitmapEquiJoinsII(null,
+                -1, null,
                 null, -1, null, -1, outerColumnarFile, -1,
-                innerColumnarFile, -1, null, -1, equiJoinConstraint,
+                innerColumnarFile, -1, projectionList, -1, equiJoinConstraint,
                 innerColumnarConstraint, outerColumnarConstraint);
 
         outer.close();
