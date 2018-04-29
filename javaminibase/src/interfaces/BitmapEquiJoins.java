@@ -22,6 +22,8 @@ public class BitmapEquiJoins {
         //test R1 R2 "[R1.A > 2])" "([R2.D < 20])" "([R1.A = R2.D]) ^ ([R1.B = R2.E]) ^ ([R1.C = R2.F])" R1.A,R1.B,R2.D,R2.E 100
         //test R1 R2 "[R1.A > 2])" "([R2.D < 20])" "([R1.A = R2.D] v [R1.B = R2.E]) ^ ([R1.C = R2.F])" R1.A,R1.B,R2.D,R2.E 100
 
+        //test R1 R2 "" "" "([R1.A = R2.C]) ^ ([R1.B = R2.D]) ^ ([R1.X = R2.Y])" R1.A,R1.B,R1.X,R2.C,R2.Y 100
+
         String columnDB = args[0];
         String outerColumnarFile = args[1];
         String innerColumnarFile = args[2];
@@ -52,7 +54,6 @@ public class BitmapEquiJoins {
         CondExpr[] equiJoinConstraint = InterfaceUtils.processEquiJoinConditionExpression(rawEquijoinConstraint, inner, outer);
 
         AttrType[] opAttr = new AttrType[targetColumns.length];
-        //todO Uncomment this
         FldSpec[] projectionList = new FldSpec[targetColumns.length];
         for (int i = 0; i < targetColumns.length; i++) {
             String attribute = targetColumns[i].split("\\.")[1];

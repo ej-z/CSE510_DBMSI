@@ -2,7 +2,6 @@ package columnar;
 
 import bitmap.BM;
 import bitmap.BitMapFile;
-import bitmap.BitMapHeaderPage;
 import global.AttrType;
 import heap.Tuple;
 import iterator.*;
@@ -68,16 +67,12 @@ public class ColumnarBitmapEquiJoinsII {
             for(String eachUniqueSet: unisets ) {
 
                 String leftBMname = leftColumnarFile.getBMName(offsets.get(0).get(i) - 1, new ValueString<>(eachUniqueSet));
-                BitMapFile leftBitMapfile = leftColumnarFile.getBMIndex(leftBMname);
+                BitMapFile leftBitMapfile = new BitMapFile(leftBMname);
 
                 String rightBmName = rightColumnarFile.getBMName(offsets.get(0).get(i) - 1, new ValueString<>(eachUniqueSet));
-                BitMapFile rightBitMapfile = rightColumnarFile.getBMIndex(rightBmName);
+                BitMapFile rightBitMapfile = new BitMapFile(rightBmName);
 
-                //todo need to discuss this as header page is null
-                leftBitMapfile.setHeaderPage(new BitMapHeaderPage(leftBitMapfile.getHeaderPageId()));
                 BitSet leftBitMaps = BM.getBitMap(leftBitMapfile.getHeaderPage());
-
-                rightBitMapfile.setHeaderPage(new BitMapHeaderPage(rightBitMapfile.getHeaderPageId()));
                 BitSet rightBitMaps = BM.getBitMap(rightBitMapfile.getHeaderPage());
 
 
@@ -163,11 +158,7 @@ public class ColumnarBitmapEquiJoinsII {
             List<BitSet> bitSets = new ArrayList<>();
             for (int i = 0; i < combination.size(); i++) {
                 String bmName = columnarfile.getBMName(offsets.get(0).get(i) - 1, new ValueString<>(combination.get(i)));
-                BitMapFile bitMapFile = columnarfile.getBMIndex(bmName);
-
-                //todo need to discuss this as header page is null
-                bitMapFile.setHeaderPage(new BitMapHeaderPage(bitMapFile.getHeaderPageId()));
-
+                BitMapFile bitMapFile = new BitMapFile(bmName);
 
                 BitSet bitMaps = BM.getBitMap(bitMapFile.getHeaderPage());
                 bitSets.add(bitMaps);
@@ -215,7 +206,7 @@ public class ColumnarBitmapEquiJoinsII {
 
                 offsets.get(0).add(offset1);
 
-                //todo move this is to interface we assume that the colums already have indexes
+                //todo remove before submission
                 leftColumnarFile.createAllBitMapIndexForColumn(offset1 - 1);
 
                 HashMap<String, BitMapFile> allBitMaps = leftColumnarFile.getAllBitMaps();
@@ -224,7 +215,7 @@ public class ColumnarBitmapEquiJoinsII {
                 offset2 = symbol2.offset;
                 offsets.get(1).add(offset2);
 
-                //todo move this is to interface we assume that the colums already have indexes
+                //todo remove before submission
                 rightColumnarFile.createAllBitMapIndexForColumn(offset2 -1);
 
                 HashSet<String> set1 = extractUniqueValues(offset1 - 1, allBitMaps);
