@@ -2,12 +2,9 @@ package columnar;
 
 import bitmap.BM;
 import bitmap.BitMapFile;
-import bitmap.BitMapHeaderPage;
 import global.AttrType;
 import heap.Tuple;
-import iterator.CondExpr;
-import iterator.FldSpec;
-import iterator.PredEval;
+import iterator.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,10 +12,10 @@ import java.util.stream.Collectors;
 //test R1 R2 "([R1.X = 10] v [R1.B > 2])" "([R2.C = 20])" "([R1.A = R2.C]) ^ ([R1.B = R1.D])" R1.A,R1.B,R2.C,R2.D 100
 //test R1 R2 "([R1.B > 2])" "([R2.C = 20])" "([R1.A = R2.C]) ^ ([R1.B = R1.D])" R1.A,R1.B,R2.C,R2.D 100
 //test R1 R2 "([R1.X = A])" "([R2.C = 20])" "([R1.A = R2.C]) ^ ([R1.B = R1.D])" R1.A,R1.B,R2.C,R2.D 100
-
+//test R1 R2 "[R1.A > 2])" "([R2.C < 20])" "([R1.A = R2.C]) ^ ([R1.B = R2.D])" R1.A,R1.B,R2.C,R2.D 100
 //todo check writes?
 
-public class ColumnarBitmapEquiJoins  {
+public class ColumnarBitmapEquiJoinsII {
     private final Columnarfile leftColumnarFile;
     private final Columnarfile rightColumnarFile;
     private int offset1;
@@ -28,7 +25,7 @@ public class ColumnarBitmapEquiJoins  {
     private List<List<Integer>> offsets = new ArrayList<>();
     // need to change to ValueClass
 
-    public ColumnarBitmapEquiJoins(
+    public ColumnarBitmapEquiJoinsII(
             AttrType[] in1,
             int len_in1,
             short[] t1_str_sizes,
@@ -44,7 +41,7 @@ public class ColumnarBitmapEquiJoins  {
             int n_out_flds,
             CondExpr[] joinExp,
             CondExpr[] innerExp,
-            CondExpr[] outerExp) throws Exception {
+            CondExpr[] outerExp, AttrType[] opAttr) throws Exception {
 
 
         assert innerExp.length == 1;
@@ -58,68 +55,100 @@ public class ColumnarBitmapEquiJoins  {
         offsets.add(new ArrayList<>());
 
         List<HashSet<String>> uniSet = getUniqueSetFromJoin(joinExp, leftColumnarFile, rightColumnarFile);
-        List<List<String>> combinations = getSubs(uniSet);
 
 
-        List<BitSet> addedCombinationsOfR1 = getEquiJoinRelation(combinations, leftColumnarFile);
-        List<BitSet> addedCombinationsOfR2 = getEquiJoinRelation(combinations, rightColumnarFile);
+        List<List<String>> positions = new ArrayList<>();
 
-        List<List<Integer>> r1Positions = new ArrayList<>();
-
-        for (int i = 0; i < addedCombinationsOfR1.size(); i++) {
-            BitSet currentBitSet = addedCombinationsOfR1.get(i);
-            r1Positions.add(new ArrayList<>());
-            for(int k = 0; k < currentBitSet.length(); k++) {
-                if(currentBitSet.get(k)) {
-                    r1Positions.get(i).add(k);
-                }
-            }
-        }
-
-        List<List<Integer>> r2Positions = new ArrayList<>();
-        for (int i = 0; i < addedCombinationsOfR2.size(); i++) {
-            BitSet currentBitSet = addedCombinationsOfR2.get(i);
-            r2Positions.add(new ArrayList<>());
-            for(int k = 0; k < currentBitSet.length(); k++) {
-                if(currentBitSet.get(k)) {
-                    r2Positions.get(i).add(k);
-                }
-            }
-        }
-
-        System.out.println(r1Positions);
-        System.out.println(r2Positions);
+        for(int i =0; i < uniSet.size(); i++) {
+            HashSet<String> unisets = uniSet.get(i);
 
 
-         for(int i = 0; i < r1Positions.size(); i++) {
-            List<Integer> leftRelation = r1Positions.get(i);
-            List<Integer> rightRelation = r2Positions.get(i);
-            List<List<Integer>> entries = new ArrayList<>();
+            List<String> predicatePositions = new ArrayList<>();
+            for(String eachUniqueSet: unisets ) {
 
-            entries.add(leftRelation);
-            entries.add(rightRelation);
-            List<List<Integer>> entriesAfterJoin = nestedLoop(entries);
+                String leftBMname = leftColumnarFile.getBMName(offsets.get(0).get(i) - 1, new ValueString<>(eachUniqueSet));
+                BitMapFile leftBitMapfile = new BitMapFile(leftBMname);
 
+                String rightBmName = rightColumnarFile.getBMName(offsets.get(0).get(i) - 1, new ValueString<>(eachUniqueSet));
+                BitMapFile rightBitMapfile = new BitMapFile(rightBmName);
 
-            for(int k =0; k < entriesAfterJoin.size(); k++) {
-                Tuple tuple = leftColumnarFile.getTuple(entriesAfterJoin.get(k).get(0));
-                tuple.print(leftColumnarFile.getAttributes());
-
-                Tuple tuple1 = rightColumnarFile.getTuple(entriesAfterJoin.get(k).get(1));
-                tuple1.print(rightColumnarFile.getAttributes());
+                BitSet leftBitMaps = BM.getBitMap(leftBitMapfile.getHeaderPage());
+                BitSet rightBitMaps = BM.getBitMap(rightBitMapfile.getHeaderPage());
 
 
-                if(PredEval.Eval(outerExp, tuple, null, leftColumnarFile.getAttributes(), null)) {
-                    if(PredEval.Eval(innerExp, tuple, null, rightColumnarFile.getAttributes(), null)) {
-                        //todo
+                List<Integer> r1Positions = new ArrayList<>();
+                List<Integer> r2Positions = new ArrayList<>();
+
+                for(int k = 0; k < leftBitMaps.size(); k++) {
+                    if(leftBitMaps.get(k)) {
+                        r1Positions.add(k);
                     }
                 }
+
+                for(int k = 0; k < rightBitMaps.size(); k++) {
+                    if(rightBitMaps.get(k)) {
+                        r2Positions.add(k);
+                    }
+                }
+
+                List<List<Integer>> entries = new ArrayList<>();
+                entries.add(r1Positions);
+                entries.add(r2Positions);
+                List<List<Integer>> lists = nestedLoop(entries);
+
+
+                for (List<Integer> list : lists) {
+
+                    predicatePositions.add(list.get(0) + "#" + list.get(1));
+                }
             }
 
+            positions.add(predicatePositions);
 
         }
 
-        System.out.println(joinConditions);
+        HashSet<String> resultTillNow = new HashSet<>(positions.get(0));
+
+        List<HashSet<String>> newList = new ArrayList<>();
+
+        for(int i = 0, j = 1; i < joinConditions.size(); i++, j++) {
+            if(joinConditions.get(i).equals("OR")) {
+                resultTillNow.addAll(positions.get(j));
+            } else {
+                newList.add(resultTillNow);
+                resultTillNow = new HashSet<>(positions.get(j));
+            }
+        }
+        newList.add(resultTillNow);
+
+        resultTillNow = newList.get(0);
+
+        for (int i=1; i < newList.size(); i++) {
+
+            resultTillNow.retainAll(newList.get(i));
+        }
+
+        for(String positionsAfterJoin: resultTillNow) {
+            String[] split = positionsAfterJoin.split("#");
+
+            Tuple tuple = leftColumnarFile.getTuple(Integer.parseInt(split[0]));
+
+            if(PredEval.Eval(outerExp, tuple, null, leftColumnarFile.getAttributes(), null)) {
+                Tuple tuple1 = rightColumnarFile.getTuple(Integer.parseInt(split[1]));
+                if(PredEval.Eval(innerExp, tuple1, null, rightColumnarFile.getAttributes(), null)) {
+
+                    Tuple Jtuple = new Tuple();
+                    AttrType[] Jtypes=new AttrType[n_out_flds];
+
+                    TupleUtils.setup_op_tuple(Jtuple,Jtypes,in1,len_in1,in2,len_in2,t1_str_sizes,t2_str_sizes,proj_list,n_out_flds);
+
+                    Projection.Join(tuple, in1,
+                            tuple1, in2,
+                            Jtuple, proj_list, n_out_flds);
+                    Jtuple.print(opAttr);
+                }
+            }
+        }
     }
 
     private List<BitSet> getEquiJoinRelation(List<List<String>> combinations, Columnarfile columnarfile) throws Exception {
@@ -129,11 +158,7 @@ public class ColumnarBitmapEquiJoins  {
             List<BitSet> bitSets = new ArrayList<>();
             for (int i = 0; i < combination.size(); i++) {
                 String bmName = columnarfile.getBMName(offsets.get(0).get(i) - 1, new ValueString<>(combination.get(i)));
-                BitMapFile bitMapFile = columnarfile.getBMIndex(bmName);
-
-                //todo need to discuss this as header page is null
-                bitMapFile.setHeaderPage(new BitMapHeaderPage(bitMapFile.getHeaderPageId()));
-
+                BitMapFile bitMapFile = new BitMapFile(bmName);
 
                 BitSet bitMaps = BM.getBitMap(bitMapFile.getHeaderPage());
                 bitSets.add(bitMaps);
@@ -181,7 +206,7 @@ public class ColumnarBitmapEquiJoins  {
 
                 offsets.get(0).add(offset1);
 
-                //todo move this is to interface we assume that the colums already have indexes
+                //todo remove before submission
                 leftColumnarFile.createAllBitMapIndexForColumn(offset1 - 1);
 
                 HashMap<String, BitMapFile> allBitMaps = leftColumnarFile.getAllBitMaps();
@@ -190,7 +215,7 @@ public class ColumnarBitmapEquiJoins  {
                 offset2 = symbol2.offset;
                 offsets.get(1).add(offset2);
 
-                //todo move this is to interface we assume that the colums already have indexes
+                //todo remove before submission
                 rightColumnarFile.createAllBitMapIndexForColumn(offset2 -1);
 
                 HashSet<String> set1 = extractUniqueValues(offset1 - 1, allBitMaps);
