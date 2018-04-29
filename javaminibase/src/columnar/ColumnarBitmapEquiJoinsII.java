@@ -25,6 +25,27 @@ public class ColumnarBitmapEquiJoinsII {
     private List<List<Integer>> offsets = new ArrayList<>();
     // need to change to ValueClass
 
+    /**
+     *
+     * @param in1
+     * @param len_in1
+     * @param t1_str_sizes
+     * @param in2
+     * @param len_in2
+     * @param t2_str_sizes
+     * @param amt_of_mem
+     * @param leftColumnarFileName
+     * @param leftJoinField
+     * @param rightColumnarFileName
+     * @param rightJoinField
+     * @param proj_list
+     * @param n_out_flds
+     * @param joinExp
+     * @param innerExp
+     * @param outerExp
+     * @param opAttr
+     * @throws Exception
+     */
     public ColumnarBitmapEquiJoinsII(
             AttrType[] in1,
             int len_in1,
@@ -207,7 +228,7 @@ public class ColumnarBitmapEquiJoinsII {
                 offsets.get(0).add(offset1);
 
                 //todo remove before submission
-                leftColumnarFile.createAllBitMapIndexForColumn(offset1 - 1);
+//                leftColumnarFile.createAllBitMapIndexForColumn(offset1 - 1);
 
                 HashMap<String, BitMapFile> allBitMaps = leftColumnarFile.getAllBitMaps();
 
@@ -216,7 +237,7 @@ public class ColumnarBitmapEquiJoinsII {
                 offsets.get(1).add(offset2);
 
                 //todo remove before submission
-                rightColumnarFile.createAllBitMapIndexForColumn(offset2 -1);
+//                rightColumnarFile.createAllBitMapIndexForColumn(offset2 -1);
 
                 HashSet<String> set1 = extractUniqueValues(offset1 - 1, allBitMaps);
                 HashMap<String, BitMapFile> allRightRelationBitMaps = rightColumnarFile.getAllBitMaps();
