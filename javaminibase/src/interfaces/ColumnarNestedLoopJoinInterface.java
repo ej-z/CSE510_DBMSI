@@ -33,11 +33,12 @@ public class ColumnarNestedLoopJoinInterface {
         String[] innerTargetColumns = args[10].split(",");
         String joinConstraints = args[11];
         Integer bufferSize = Integer.parseInt(args[12]);
+        Integer sortmem = Integer.parseInt(args[13]);
 
         String dbpath = InterfaceUtils.dbPath(columnDB);
         SystemDefs sysdef = new SystemDefs(dbpath, 0, bufferSize, "Clock");
 
-        runInterface(columnarFile1, columnarFile2, projection, outerConstraints, outerScanColumns, outerScanTypes, outerScanConstraints, outerTargetColumns, innerConstraints, innerTargetColumns, joinConstraints);
+        runInterface(columnarFile1, columnarFile2, projection, outerConstraints, outerScanColumns, outerScanTypes, outerScanConstraints, outerTargetColumns, innerConstraints, innerTargetColumns, joinConstraints, sortmem);
 
         SystemDefs.JavabaseBM.flushAllPages();
         SystemDefs.JavabaseDB.closeDB();
@@ -46,7 +47,7 @@ public class ColumnarNestedLoopJoinInterface {
         System.out.println("Writes: " + PCounter.wcounter);
     }
 
-    private static void runInterface(String ocf, String icf, String[] projection, String outerConstraints, String[] outerScanColumns, String[] outerScanTypes, String[] outerScanConstraints, String[] outerTargetColumns, String innerConstraints, String[] innerTargetColumns, String joinConstraints) throws Exception {
+    private static void runInterface(String ocf, String icf, String[] projection, String outerConstraints, String[] outerScanColumns, String[] outerScanTypes, String[] outerScanConstraints, String[] outerTargetColumns, String innerConstraints, String[] innerTargetColumns, String joinConstraints, int sortmem) throws Exception {
 
         Columnarfile outer = new Columnarfile(ocf);
         Columnarfile inner = new Columnarfile(icf);
@@ -124,7 +125,7 @@ public class ColumnarNestedLoopJoinInterface {
                     else
                         throw new Exception("Scan type <" + outerScanTypes[i] + "> not recognized.");
                 }
-                it = new ColumnarIndexScan(ocf, scanCols, indexType, scanConstraint, outerConstraint, false, outertargets, outerProjection);
+                it = new ColumnarIndexScan(ocf, scanCols, indexType, scanConstraint, outerConstraint, false, outertargets, outerProjection, sortmem);
             } else
                 throw new Exception("Scan type <" + outerScanTypes[0] + "> not recognized.");
 
