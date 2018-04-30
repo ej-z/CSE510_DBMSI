@@ -154,6 +154,17 @@ public class BitMapFile implements GlobalConst {
     }
 
     /***
+     * closes the bitmap file
+     * @throws Exception
+     */
+    public void scanClose() throws Exception {
+        if (headerPage != null) {
+            SystemDefs.JavabaseBM.unpinPage(headerPageId, false);
+            headerPage = null;
+        }
+    }
+
+    /***
      * delete all the bitmap related data
      * @throws Exception
      */

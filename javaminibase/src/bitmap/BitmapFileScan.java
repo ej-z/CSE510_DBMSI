@@ -112,7 +112,7 @@ public class BitmapFileScan {
     }
 
     public void close() throws Exception {
-        file.close();
+        file.scanClose();
         if(currentPageId != null && currentPageId.pid != INVALID_PAGE)
             unpinPage(currentPageId, false);
     }
