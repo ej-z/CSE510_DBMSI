@@ -97,7 +97,7 @@ public class SelectQuery {
             } else
                 throw new Exception("Scan type <" + scanTypes[0] + "> not recognized.");
 
-            int cnt = 1;
+            int cnt = 0;
             while (true) {
                 Tuple result = it.get_next();
                 if (result == null) {

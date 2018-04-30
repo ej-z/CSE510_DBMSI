@@ -78,7 +78,7 @@ public class DeleteInterface {
         }
 
         Iterator it = null;
-        int cnt = 1;
+        int cnt = 0;
         try {
             if (scanTypes[0].equals(FILESCAN)) {
                 ColumnarFileScan cfs;

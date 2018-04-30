@@ -71,7 +71,7 @@ public class BatchInsert {
 
 			Columnarfile cf = new Columnarfile(columnarFile, numColumns , types, sizes, names);
 
-			int cnt = 1;
+			int cnt = 0;
 
 			while ((strLine = br.readLine()) != null)   {
 				String values[] = strLine.split("\t");
@@ -103,7 +103,7 @@ public class BatchInsert {
 			}
 			cf.close();
 			br.close();
-			System.out.println(cnt +" tuples inserted");
+			System.out.println(cnt +" tuples inserted in columnar file : "+columnarFile);
 			System.out.println();
 
 		} catch (Exception e) {

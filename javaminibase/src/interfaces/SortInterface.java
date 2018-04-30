@@ -118,7 +118,7 @@ public class SortInterface {
 
             csort = new ColumnarSort(opAttr, (short) opAttr.length, str_sizes, it, sortColNumber+1, tupleSortOrder, sortColAttrSize,numPages);
 
-            int cnt = 1;
+            int cnt = 0;
             while (true) {
                 Tuple result = csort.get_next();
 
