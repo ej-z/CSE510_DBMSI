@@ -43,7 +43,7 @@ public class ColumnarFileScan extends Iterator{
         try {
             columnarfile = new Columnarfile(file_name);
             targetAttrTypes = ColumnarScanUtils.getTargetColumnAttributeTypes(columnarfile, targetedCols);
-            Jtuple = ColumnarScanUtils.getProjectionTuple(columnarfile, perm_mat);
+            Jtuple = ColumnarScanUtils.getProjectionTuple(columnarfile, perm_mat, targetedCols);
             scan = columnarfile.openTupleScan(targetedCols);
             PageId pid = SystemDefs.JavabaseDB.get_file_entry(columnarfile.getDeletedFileName());
             if (pid != null) {

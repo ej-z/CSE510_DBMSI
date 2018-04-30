@@ -103,7 +103,7 @@ public class ColumnarNestedLoopJoinInterface {
             scanConstraint[i] = InterfaceUtils.processRawConditionExpression(outerScanConstraints[i]);
         }
 
-        Tuple proj_tuple = ColumnarScanUtils.getProjectionTuple(outer, inner, projectionList);
+        Tuple proj_tuple = ColumnarScanUtils.getProjectionTuple(outer, inner, projectionList, innertargets, outertargets);
 
         inner.close();
         outer.close();

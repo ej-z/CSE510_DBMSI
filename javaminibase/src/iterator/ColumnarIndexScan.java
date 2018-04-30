@@ -68,7 +68,7 @@ public class ColumnarIndexScan extends Iterator{
         targetHeapFiles = ColumnarScanUtils.getTargetHeapFiles(columnarfile, targetedCols);
         targetAttrTypes = ColumnarScanUtils.getTargetColumnAttributeTypes(columnarfile, targetedCols);
         targetShortSizes = ColumnarScanUtils.getTargetColumnStringSizes(columnarfile, targetedCols);
-        Jtuple = ColumnarScanUtils.getProjectionTuple(columnarfile, perm_mat);
+        Jtuple = ColumnarScanUtils.getProjectionTuple(columnarfile, perm_mat, targetedCols);
         for(int i = 0; i < columnNos.length; i++) {
             switch (indexTypes[i].indexType) {
                 case IndexType.B_Index:

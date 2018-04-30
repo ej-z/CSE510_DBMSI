@@ -44,7 +44,7 @@ public class ColumnarColumnScan extends Iterator{
             targetHeapFiles = ColumnarScanUtils.getTargetHeapFiles(columnarfile, targetedCols);
             targetAttrTypes = ColumnarScanUtils.getTargetColumnAttributeTypes(columnarfile, targetedCols);
             targetShortSizes = ColumnarScanUtils.getTargetColumnStringSizes(columnarfile, targetedCols);
-            Jtuple = ColumnarScanUtils.getProjectionTuple(columnarfile, perm_mat);
+            Jtuple = ColumnarScanUtils.getProjectionTuple(columnarfile, perm_mat, targetedCols);
         } catch (Exception e) {
             e.printStackTrace();
             return;
