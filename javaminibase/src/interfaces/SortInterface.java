@@ -133,6 +133,8 @@ public class SortInterface {
             System.out.println();
             System.out.println(cnt + " tuples selected");
             System.out.println();
+            System.out.println("Sort completed in "+csort.getPasses()+" passes.");
+            System.out.println();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
