@@ -57,7 +57,7 @@ public class ColumnarIndexScan extends Iterator{
                              CondExpr[] selects,
                              boolean indexOnly,
                              short[] targetedCols,
-                             FldSpec[] proj_list) throws Exception {
+                             FldSpec[] proj_list, int mem) throws Exception {
 
 
         _selects = selects;
@@ -69,6 +69,7 @@ public class ColumnarIndexScan extends Iterator{
         targetAttrTypes = ColumnarScanUtils.getTargetColumnAttributeTypes(columnarfile, targetedCols);
         targetShortSizes = ColumnarScanUtils.getTargetColumnStringSizes(columnarfile, targetedCols);
         Jtuple = ColumnarScanUtils.getProjectionTuple(columnarfile, perm_mat, targetedCols);
+
         for(int i = 0; i < columnNos.length; i++) {
             switch (indexTypes[i].indexType) {
                 case IndexType.B_Index:
@@ -77,11 +78,10 @@ public class ColumnarIndexScan extends Iterator{
                         scan[i]= im;
                         break;
                     }
-
                     AttrType[] types = new AttrType[1];
                     types[0] = new AttrType(AttrType.attrInteger);
                     short[] sizes = new short[0];
-                    scan[i] = new Sort(types, (short) 1, sizes, im, 1, new TupleOrder(TupleOrder.Ascending), 4, 12);
+                    scan[i] = new ColumnarSort(types, (short) 1, sizes, im, 1, new TupleOrder(TupleOrder.Ascending), 4, mem);
                     break;
                 case IndexType.BitMapIndex:
                     scan[i] = new ColumnarBitmapScan(columnarfile, columnNos[i], index_selects[i], indexOnly);

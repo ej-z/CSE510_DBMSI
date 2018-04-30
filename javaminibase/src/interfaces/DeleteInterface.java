@@ -30,11 +30,12 @@ public class DeleteInterface {
         String[] targetColumns = args[7].split(",");
         Integer bufferSize = Integer.parseInt(args[8]);
         String purge = args[9];
+        Integer sortmem = Integer.parseInt(args[10]);
 
         String dbpath = InterfaceUtils.dbPath(columnDB);
         SystemDefs sysdef = new SystemDefs(dbpath, 0, bufferSize, "Clock");
 
-        runInterface(columnarFile, projection, otherConstraints, scanColumns, scanTypes, scanConstraints, targetColumns, purge);
+        runInterface(columnarFile, projection, otherConstraints, scanColumns, scanTypes, scanConstraints, targetColumns, purge, sortmem);
 
         SystemDefs.JavabaseBM.flushAllPages();
         SystemDefs.JavabaseDB.closeDB();
@@ -43,7 +44,7 @@ public class DeleteInterface {
         System.out.println("Writes: " + PCounter.wcounter);
     }
 
-    private static void runInterface(String columnarFile, String[] projection, String otherConstraints, String[] scanColumns, String[] scanTypes, String[] scanConstraints, String[] targetColumns, String purge) throws Exception {
+    private static void runInterface(String columnarFile, String[] projection, String otherConstraints, String[] scanColumns, String[] scanTypes, String[] scanConstraints, String[] targetColumns, String purge, int sortmem) throws Exception {
 
         Columnarfile cf = new Columnarfile(columnarFile);
 
@@ -118,7 +119,7 @@ public class DeleteInterface {
                         throw new Exception("Scan type <" + scanTypes[i] + "> not recognized.");
                 }
                 ColumnarIndexScan cis;
-                cis = new ColumnarIndexScan(columnarFile, scanCols, indexType, scanConstraint, otherConstraint, false, targets, projectionList);
+                cis = new ColumnarIndexScan(columnarFile, scanCols, indexType, scanConstraint, otherConstraint, false, targets, projectionList, sortmem);
                 Boolean deleted = true;
                 while (deleted) {
                     deleted = cis.delete_next();

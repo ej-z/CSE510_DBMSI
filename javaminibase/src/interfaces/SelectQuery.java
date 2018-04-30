@@ -18,8 +18,8 @@ public class SelectQuery {
     private static String BTREESCAN = "BTREE";
 
     public static void main(String args[]) throws Exception {
-        // Query Skeleton: COLUMNDB COLUMNFILE PROJECTION OTHERCONST SCANCOLS [SCANTYPE] [SCANCONST] TARGETCOLUMNS NUMBUF
-        // Example Query: testColumnDB columnarTable A,B,C "C = 5" A,B [BTREE,BITMAP] "(A = 5 v A = 6),(B > 7)" A,B,C 100
+        // Query Skeleton: COLUMNDB COLUMNFILE PROJECTION OTHERCONST SCANCOLS [SCANTYPE] [SCANCONST] TARGETCOLUMNS NUMBUF SORTMEM
+        // Example Query: testColumnDB columnarTable A,B,C "C = 5" A,B [BTREE,BITMAP] "(A = 5 v A = 6),(B > 7)" A,B,C 100 0
         // In case no constraints need to be applied, pass "" as input.
         String columnDB = args[0];
         String columnarFile = args[1];
@@ -30,11 +30,12 @@ public class SelectQuery {
         String[] scanConstraints = args[6].split(",");
         String[] targetColumns = args[7].split(",");
         Integer bufferSize = Integer.parseInt(args[8]);
+        Integer sortmem = Integer.parseInt(args[9]);
 
         String dbpath = InterfaceUtils.dbPath(columnDB);
         SystemDefs sysdef = new SystemDefs(dbpath, 0, bufferSize, "Clock");
 
-        runInterface(columnarFile, projection, otherConstraints, scanColumns, scanTypes, scanConstraints, targetColumns);
+        runInterface(columnarFile, projection, otherConstraints, scanColumns, scanTypes, scanConstraints, targetColumns, sortmem);
 
         SystemDefs.JavabaseBM.flushAllPages();
         SystemDefs.JavabaseDB.closeDB();
@@ -43,7 +44,7 @@ public class SelectQuery {
         System.out.println("Writes: " + PCounter.wcounter);
     }
 
-    private static void runInterface(String columnarFile, String[] projection, String otherConstraints, String[] scanColumns, String[] scanTypes, String[] scanConstraints, String[] targetColumns) throws Exception {
+    private static void runInterface(String columnarFile, String[] projection, String otherConstraints, String[] scanColumns, String[] scanTypes, String[] scanConstraints, String[] targetColumns, int sortmem) throws Exception {
 
         Columnarfile cf = new Columnarfile(columnarFile);
 
@@ -93,7 +94,7 @@ public class SelectQuery {
                     else
                         throw new Exception("Scan type <" + scanTypes[i] + "> not recognized.");
                 }
-                it = new ColumnarIndexScan(columnarFile, scanCols, indexType, scanConstraint, otherConstraint, false, targets, projectionList);
+                it = new ColumnarIndexScan(columnarFile, scanCols, indexType, scanConstraint, otherConstraint, false, targets, projectionList, sortmem);
             } else
                 throw new Exception("Scan type <" + scanTypes[0] + "> not recognized.");
 

@@ -22,7 +22,7 @@ public class SortInterface {
     private static String BTREESCAN = "BTREE";
 
     public static void main(String args[]) throws Exception {
-        // Query Skeleton: COLUMNDB COLUMNFILE PROJECTION OTHERCONST SCANCOLS [SCANTYPE] [SCANCONST] TARGETCOLUMNS SORTING COLUMN SORTING ORDER NUMBUF NUMPAGE
+        // Query Skeleton: COLUMNDB COLUMNFILE PROJECTION OTHERCONST SCANCOLS [SCANTYPE] [SCANCONST] TARGETCOLUMNS SORTING COLUMN SORTING ORDER NUMBUF NUMPAGE SORTMEM
         // Example Query: testColumnDB columnarTable A,B,C "C = 5" A,B [BTREE,BITMAP] "(A = 5 v A = 6),(B > 7)" A,B,C A ASC 100 3
         // In case no constraints need to be applied, pass "" as input.
         String columnDB = args[0];
@@ -37,11 +37,12 @@ public class SortInterface {
         String sortingOrder = args[9];
         Integer bufferSize = Integer.parseInt(args[10]);
         Integer numPages = Integer.parseInt(args[11]);
+        Integer sortmem = Integer.parseInt(args[12]);
 
         String dbpath = InterfaceUtils.dbPath(columnDB);
         SystemDefs sysdef = new SystemDefs(dbpath, 0, bufferSize, "Clock");
 
-        runInterface(columnarFile, projection, otherConstraints, scanColumns, scanTypes, scanConstraints, targetColumns, sotingColumn, sortingOrder, bufferSize, numPages);
+        runInterface(columnarFile, projection, otherConstraints, scanColumns, scanTypes, scanConstraints, targetColumns, sotingColumn, sortingOrder, numPages, sortmem);
 
         SystemDefs.JavabaseBM.flushAllPages();
         SystemDefs.JavabaseDB.closeDB();
@@ -50,7 +51,7 @@ public class SortInterface {
         System.out.println("Writes: " + PCounter.wcounter);
     }
 
-    private static void runInterface(String columnarFile, String[] projection, String otherConstraints, String[] scanColumns, String[] scanTypes, String[] scanConstraints, String[] targetColumns, String sortColumn, String sortOrder, int bufferSize, int numPages) throws Exception {
+    private static void runInterface(String columnarFile, String[] projection, String otherConstraints, String[] scanColumns, String[] scanTypes, String[] scanConstraints, String[] targetColumns, String sortColumn, String sortOrder, int numPages, int sortmem) throws Exception {
 
         Columnarfile cf = new Columnarfile(columnarFile);
 
@@ -111,7 +112,7 @@ public class SortInterface {
                     else
                         throw new Exception("Scan type <" + scanTypes[i] + "> not recognized.");
                 }
-                it = new ColumnarIndexScan(columnarFile, scanCols, indexType, scanConstraint, otherConstraint, false, targets, projectionList);
+                it = new ColumnarIndexScan(columnarFile, scanCols, indexType, scanConstraint, otherConstraint, false, targets, projectionList, sortmem);
 
             } else
                 throw new Exception("Scan type <" + scanTypes[0] + "> not recognized.");
