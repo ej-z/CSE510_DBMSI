@@ -77,7 +77,7 @@ public class DeleteInterface {
         for (int i = 0; i < scanTypes.length; i++) {
             scanConstraint[i] = InterfaceUtils.processRawConditionExpression(scanConstraints[i]);
         }
-
+        cf.close();
         Iterator it = null;
         int cnt = 0;
         try {

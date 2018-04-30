@@ -58,10 +58,10 @@ public class ColumnarNestedLoopJoinInterface {
             String attribute = projection[i].split("\\.")[1];
             String relationName = projection[i].split("\\.")[0];
             if (relationName.equals(ocf)) {
-                projectionList[i] = new FldSpec(new RelSpec(RelSpec.outer), outer.getAttributePosition(attribute) + 1);
+                projectionList[i] = new FldSpec(new RelSpec(RelSpec.outer), InterfaceUtils.getColumnPositionInTargets(attribute, outerTargetColumns) + 1);
                 opAttr[i] = new AttrType(outer.getAttrtypeforcolumn(outer.getAttributePosition(attribute)).attrType);
             } else {
-                projectionList[i] = new FldSpec(new RelSpec(RelSpec.innerRel), inner.getAttributePosition(attribute) + 1);
+                projectionList[i] = new FldSpec(new RelSpec(RelSpec.innerRel), InterfaceUtils.getColumnPositionInTargets(attribute, innerTargetColumns) + 1);
                 opAttr[i] = new AttrType(inner.getAttrtypeforcolumn(inner.getAttributePosition(attribute)).attrType);
             }
         }
