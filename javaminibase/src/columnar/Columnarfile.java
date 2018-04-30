@@ -847,7 +847,7 @@ public class Columnarfile {
         int cnt = 0;
         for (int i = 0; i < targetColumns.length; i++) {
             if (atype[targetColumns[i]].attrType == AttrType.attrString) {
-                strSize[cnt++] = attrsizes[i];
+                strSize[cnt++] = attrsizes[targetColumns[i]];
             }
         }
 
